@@ -3,7 +3,8 @@ import Parse from "parse";
 import { useDispatch } from "react-redux";
 import axios from "axios";
 import { NavLink, useNavigate, useLocation } from "react-router";
-import login_img from "../assets/images/login_img.svg";
+import BrandHero from "../components/BrandHero";
+import { bs } from "../theme/md3Theme";
 import { useWindowSize } from "../hook/useWindowSize";
 import ModalUi from "../primitives/ModalUi";
 import {
@@ -21,7 +22,11 @@ import {
 import Loader from "../primitives/Loader";
 import { useTranslation } from "react-i18next";
 import SelectLanguage from "../components/pdf/SelectLanguage";
-import BetterSignLogin from "../components/BetterSignLogin";
+import {
+  BSID_CALLBACK_PATH,
+  startBsIdLogin,
+  takeBsIdCallback
+} from "../constant/bsid";
 import Box from "@mui/material/Box";
 import Paper from "@mui/material/Paper";
 import Button from "@mui/material/Button";
@@ -56,16 +61,43 @@ function Login() {
   });
   const [isModal, setIsModal] = useState(false);
   const [image, setImage] = useState();
+  // A tenant's own logo (white-label); the default one is replaced by the brand mark.
+  const isCustomLogo = image && image !== appInfo?.applogo;
   const [errMsg, setErrMsg] = useState();
-  // Experiment #2 (v2): "Log in with BetterSign" modal.
-  const [showBsLogin, setShowBsLogin] = useState(false);
   useEffect(() => {
     handleUserExist();
     // eslint-disable-next-line
   }, []);
 
   const handleUserExist = async () => {
-    checkUserExt();
+    await checkUserExt();
+    if (location.pathname === BSID_CALLBACK_PATH) {
+      await finishBsIdLogin();
+    }
+  };
+
+  // Back from bs-id ("Sign in with BetterSign"): trade the code for a session.
+  const finishBsIdLogin = async () => {
+    const cb = takeBsIdCallback(location.search);
+    // Drop the code from the address bar without remounting this page.
+    window.history.replaceState(null, "", "/");
+    if (cb.error) {
+      showToast("danger", cb.error);
+      return;
+    }
+    setState((prev) => ({ ...prev, loading: true }));
+    try {
+      const res = await Parse.Cloud.run("bsidlogin", {
+        code: cb.code,
+        codeVerifier: cb.codeVerifier,
+        nonce: cb.nonce,
+        redirectUri: cb.redirectUri
+      });
+      await thirdpartyLoginfn(res.sessionToken);
+    } catch (error) {
+      console.error("BetterSign sign-in failed", error);
+      showToast("danger", error?.message || t("something-went-wrong-mssg"));
+    }
   };
 
 
@@ -222,8 +254,8 @@ function Login() {
           logOutUser();
         }
       } catch (error) {
-        console.error("err in fetching extUser", err);
-        showToast("danger", `${err.message}`);
+        console.error("err in fetching extUser", error);
+        showToast("danger", `${error.message}`);
         const payload = { sessionToken: _user.sessionToken };
         handleSubmitbtn(payload);
       } finally {
@@ -456,42 +488,116 @@ function Login() {
       )}
       {appInfo && appInfo.appId ? (
         <>
-          <div
-            aria-labelledby="loginHeading"
-            role="region"
-            className="pb-1 md:pb-4 pt-10 md:px-10 lg:px-16 h-full"
-          >
+          <BrandHero aria-labelledby="loginHeading" role="region">
+            <Box
+              sx={{
+                maxWidth: 1120,
+                mx: "auto",
+                px: 3,
+                pt: { xs: 2, md: 6 },
+                pb: { xs: 4, md: 8 },
+                display: "grid",
+                gridTemplateColumns: { xs: "1fr", md: "1.05fr 0.95fr" },
+                gap: { xs: 3, md: 6 },
+                alignItems: "center"
+              }}
+            >
+              {width >= 768 && (
+                <Box>
+                  <Typography
+                    variant="overline"
+                    component="p"
+                    sx={{ color: bs.teal, letterSpacing: "0.22em", mb: 2.25 }}
+                  >
+                    Open BetterSign &middot; Document signing
+                  </Typography>
+                  <Typography
+                    variant="h1"
+                    sx={{
+                      fontSize: "clamp(36px, 5vw, 58px)",
+                      maxWidth: "15ch",
+                      mb: 2.75
+                    }}
+                  >
+                    Sign documents with an identity you hold.
+                  </Typography>
+                  <Typography
+                    sx={{
+                      fontSize: { md: 18, lg: 20 },
+                      lineHeight: 1.55,
+                      color: "rgba(255,255,255,0.84)",
+                      maxWidth: "48ch",
+                      mb: 3.25
+                    }}
+                  >
+                    Send, sign and verify PDFs. Approve sign-in and signatures
+                    on your phone with BetterSign, so there is no password to
+                    steal.
+                  </Typography>
+                  <Box
+                    component="ul"
+                    sx={{ listStyle: "none", p: 0, m: 0, display: "grid", gap: 1.5 }}
+                  >
+                    {[
+                      ["Sign on your phone", "approve each signature with a biometric"],
+                      ["Request signatures", "send a document to anyone, in order or all at once"],
+                      ["Verify anywhere", "every completed document carries its audit trail"]
+                    ].map(([title, text]) => (
+                      <Box
+                        component="li"
+                        key={title}
+                        sx={{
+                          position: "relative",
+                          pl: 3.5,
+                          fontSize: 16,
+                          lineHeight: 1.45,
+                          color: "rgba(255,255,255,0.86)",
+                          "&::before": {
+                            content: '""',
+                            position: "absolute",
+                            left: 2,
+                            top: 7,
+                            width: 9,
+                            height: 9,
+                            borderRadius: "3px",
+                            background: `linear-gradient(135deg, ${bs.teal}, #4bbf9a)`
+                          }
+                        }}
+                      >
+                        <Box component="strong" sx={{ color: "#fff" }}>
+                          {title}
+                        </Box>
+                        : {text}
+                      </Box>
+                    ))}
+                  </Box>
+                </Box>
+              )}
             <Paper
               elevation={0}
               sx={{
-                p: { xs: 2, md: 2, lg: 5 },
+                p: { xs: 3, md: 4 },
                 bgcolor: "background.paper",
                 color: "text.primary",
-                borderRadius: 3,
+                borderRadius: "20px",
                 border: 1,
-                borderColor: "divider"
+                borderColor: "divider",
+                boxShadow: "0 30px 60px rgba(10,31,44,0.28)"
               }}
             >
-              <Box
-                sx={{
-                  width: 250,
-                  height: 66,
-                  display: "inline-block",
-                  overflow: "hidden"
-                }}
-              >
-                {image && (
+              {image && isCustomLogo && (
+                <Box sx={{ height: 48, mb: 1 }}>
                   <img
                     src={image}
                     className="object-contain h-full"
                     alt="applogo"
                   />
-                )}
-              </Box>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-2">
+                </Box>
+              )}
+              <div>
                 <div>
                   <form onSubmit={handleLoginBtn} aria-label="Login Form">
-                    <Typography variant="h4" sx={{ mt: 3 }}>
+                    <Typography id="loginHeading" variant="h4" component="h1">
                       {t("welcome")}
                     </Typography>
                     <Box
@@ -500,28 +606,17 @@ function Login() {
                     >
                       <Typography
                         component="legend"
-                        variant="caption"
-                        sx={{ color: "text.secondary" }}
+                        variant="body1"
+                        sx={{ color: "text.secondary", mt: 0.5 }}
                       >
                         {t("Login-to-your-account")}
                       </Typography>
-                      <Paper
-                        elevation={2}
-                        sx={{
-                          width: "100%",
-                          px: 3,
-                          py: 1.5,
-                          my: 1,
-                          borderRadius: 3,
-                          border: 1,
-                          borderColor: "divider"
-                        }}
-                      >
+                      <Box sx={{ width: "100%", mt: 2.5, mb: 1 }}>
                         <Typography
                           component="label"
                           htmlFor="email"
-                          variant="caption"
-                          sx={{ display: "block" }}
+                          variant="subtitle2"
+                          sx={{ display: "block", mb: 0.5 }}
                         >
                           {t("email")}
                         </Typography>
@@ -547,8 +642,8 @@ function Login() {
                         <Typography
                           component="label"
                           htmlFor="password"
-                          variant="caption"
-                          sx={{ display: "block" }}
+                          variant="subtitle2"
+                          sx={{ display: "block", mb: 0.5 }}
                         >
                           {t("password")}
                         </Typography>
@@ -598,60 +693,59 @@ function Login() {
                             {t("forgot-password")}?
                           </Link>
                         </Box>
-                      </Paper>
+                      </Box>
                     </Box>
                     <Box
                       sx={{
                         display: "grid",
-                        gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
-                        gap: 1,
-                        mt: 1
+                        gridTemplateColumns: "1fr",
+                        gap: 1.25,
+                        mt: 2
                       }}
                     >
                       <Button
                         type="submit"
                         variant="contained"
+                        size="large"
                         disabled={state.loading}
                       >
                         {state.loading ? t("loading") : t("login")}
                       </Button>
                       <Button
                         type="button"
-                        variant="outlined"
+                        variant="contained"
+                        color="secondary"
+                        size="large"
                         disabled={state.loading}
-                        onClick={() => setShowBsLogin(true)}
+                        onClick={() => startBsIdLogin()}
+                        startIcon={
+                          <i className="fa-light fa-fingerprint" aria-hidden="true"></i>
+                        }
                       >
-                        📱 Log in with BetterSign
+                        Sign in with BetterSign
                       </Button>
                     </Box>
                   </form>
-                  <BetterSignLogin
-                    isOpen={showBsLogin}
-                    onClose={() => setShowBsLogin(false)}
-                    onLoggedIn={(sessionToken) => {
-                      setShowBsLogin(false);
-                      thirdpartyLoginfn(sessionToken);
-                    }}
-                  />
                 </div>
-                {width >= 768 && (
-                  <div className="place-self-center">
-                    <div className="mx-auto md:w-[300px] lg:w-[400px] xl:w-[500px]">
-                      <img
-                        src={login_img}
-                        alt="The image illustrates a person from behind, seated at a desk with a four-monitor computer setup, in an environment with a light blue and white color scheme, featuring a potted plant to the right."
-                        width="100%"
-                      />
-                    </div>
-                  </div>
-                )}
               </div>
+              <Box
+                sx={{
+                  mt: 2.5,
+                  pt: 2,
+                  borderTop: 1,
+                  borderColor: "divider",
+                  "& > .MuiBox-root": { mt: 0, pb: 0 },
+                  "& .MuiTextField-root": { width: { xs: "60%", md: "50%" } }
+                }}
+              >
+                <SelectLanguage />
+              </Box>
             </Paper>
-            <SelectLanguage />
+            </Box>
             {state.alertMsg && (
               <Alert type={state.alertType}>{state.alertMsg}</Alert>
             )}
-          </div>
+          </BrandHero>
           <ModalUi
             isOpen={isModal}
             title={t("additional-info")}

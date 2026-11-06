@@ -29,7 +29,10 @@ const Menu = ({ item, isOpen, closeSidebar }) => {
           justifyContent: "flex-start",
           textAlign: "left",
           columnGap: 2.5,
-          p: 1.5,
+          px: 1.5,
+          py: 1.25,
+          borderRadius: "12px",
+          fontWeight: 600,
           color: "text.primary",
           "&:hover": {
             bgcolor: "surface.container",
@@ -38,7 +41,11 @@ const Menu = ({ item, isOpen, closeSidebar }) => {
           },
           "&:focus": { bgcolor: "surface.container", outline: "none" },
           ...(selectedMenu && {
-            "&.active": { bgcolor: "surface.container", color: "text.primary" }
+            "&.active": {
+              bgcolor: "primary.container",
+              color: "primary.onContainer",
+              fontWeight: 700
+            }
           })
         }}
       >

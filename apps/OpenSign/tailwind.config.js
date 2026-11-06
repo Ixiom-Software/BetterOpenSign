@@ -80,27 +80,28 @@ module.exports = {
     themes: [
       {
         opensigndark: {
-          primary: "#007ACC", // VS Code blue - CTA & highlight color
-          "primary-content": "#FFFFFF",
+          // BetterSign brand, dark (matches src/theme/md3Theme.js darkColors)
+          primary: "#15C79A", // brand green, bright - CTA & highlight color
+          "primary-content": "#042019",
 
-          secondary: "#1F2937", // Sidebar background (darker slate)
-          "secondary-content": "#E5E7EB",
+          secondary: "#0E2433", // Sidebar background (deep ink)
+          "secondary-content": "#E2E8EE",
 
-          accent: "#4A9EFF", // Lighter VS Code blue for hover, minor CTA
-          "accent-content": "#FFFFFF",
+          accent: "#7FF0CF", // brand teal for hover, minor CTA
+          "accent-content": "#042019",
 
-          neutral: "#3C3C3C", // VS Code inactive/disabled element background
-          "neutral-content": "#CCCCCC", // VS Code inactive text color
+          neutral: "#1B3A4E", // inactive/disabled element background
+          "neutral-content": "#A9B8C2", // inactive text color
 
-          "base-100": "#121212", // App background
-          "base-200": "#181818", // Slight elevation (cards)
-          "base-300": "#1E1E1E", // Further elevated items (panels)
-          "base-content": "#F3F4F6", // Main text color (soft white)
+          "base-100": "#0A1F2C", // App background (ink-2)
+          "base-200": "#11293A", // Slight elevation (cards)
+          "base-300": "#163246", // Further elevated items (panels)
+          "base-content": "#E9F0F4", // Main text color
 
-          info: "#2563EB", // For info panels like "Out for signature"
-          success: "#22C55E", // Optional: for completed docs or alerts
-          warning: "#FBBF24",
-          error: "#EF4444",
+          info: "#7CC4EC",
+          success: "#15C79A",
+          warning: "#F5BD4F",
+          error: "#FFB4AB",
 
           "--rounded-btn": "1.9rem",
           "--tab-border": "2px",
@@ -110,38 +111,39 @@ module.exports = {
           "--icon-color": "#CCCCCC",
           "--icon-color-muted": "#999999",
           "--icon-color-disabled": "#858585",
-          "--btn-disabled-bg": "#3C3C3C",
-          "--btn-disabled-color": "#CCCCCC",
-          "--btn-disabled-border": "#565656",
+          "--btn-disabled-bg": "#1B3A4E",
+          "--btn-disabled-color": "#A9B8C2",
+          "--btn-disabled-border": "#1F3D51",
 
           // Optional polish
           "--navbar-padding": "0.8rem",
-          "--border-color": "#2C2C2C", // Card/table separation
-          "--tooltip-color": "#1F2937"
+          "--border-color": "#1F3D51", // Card/table separation
+          "--tooltip-color": "#0A1F2C"
         }
       },
       {
         opensigncss: {
-          primary: "#002864",
-          "primary-content": "#cacccf",
-          secondary: "#29354a",
-          "secondary-content": "#c8d1e0",
-          accent: "#E10032",
-          "accent-content": "#ffd8d5",
-          neutral: "#c1ccdb",
-          "neutral-content": "#111312",
-          "base-100": "#ffffff",
-          "base-200": "#dedede",
-          "base-300": "#bebebe",
-          "base-content": "#161616",
-          info: "#00b6ff",
-          "info-content": "#f5f5f4",
-          success: "#00a96e",
-          "success-content": "#f5f5f4",
-          warning: "#ffbe00",
-          "warning-content": "#ccd9e8",
-          error: "#ffa1a7",
-          "error-content": "#16090a",
+          // BetterSign brand, light (matches src/theme/md3Theme.js lightColors)
+          primary: "#0E7A5F",
+          "primary-content": "#FFFFFF",
+          secondary: "#0F2B3D",
+          "secondary-content": "#E2E8EE",
+          accent: "#15C79A",
+          "accent-content": "#042019",
+          neutral: "#E2E8EE",
+          "neutral-content": "#0F2B3D",
+          "base-100": "#FFFFFF",
+          "base-200": "#F4F7F9",
+          "base-300": "#E2E8EE",
+          "base-content": "#0F2B3D",
+          info: "#0B5C8A",
+          "info-content": "#FFFFFF",
+          success: "#0E7A5F",
+          "success-content": "#FFFFFF",
+          warning: "#F5BD4F",
+          "warning-content": "#2F2100",
+          error: "#F0C9C6",
+          "error-content": "#7A1A14",
           "--rounded-btn": "1.9rem",
           "--tab-border": "2px",
           "--tab-radius": "0.7rem"

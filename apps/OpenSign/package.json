@@ -8,7 +8,6 @@
     "@formkit/auto-animate": "^0.9.0",
     "@imgly/background-removal": "^1.7.0",
     "@lottiefiles/dotlottie-react": "^0.19.0",
-    "@fontsource/roboto": "^5.1.0",
     "@mui/icons-material": "^7.2.0",
     "@mui/material": "^7.2.0",
     "@pdf-lib/fontkit": "^1.1.1",
@@ -117,7 +116,6 @@
     }
   },
   "devDependencies": {
-    "patch-package": "^8.0.0",
     "@babel/core": "^7.29.0",
     "@babel/preset-env": "^7.29.2",
     "@babel/preset-react": "^7.28.5",
@@ -139,6 +137,7 @@
     "eslint-plugin-react": "^7.37.5",
     "jsdom": "^29.0.2",
     "lint-staged": "^16.4.0",
+    "patch-package": "^8.0.0",
     "postcss": "^8.5.23",
     "pretty-quick": "^4.2.2",
     "rollup-plugin-node-polyfills": "^0.2.1",

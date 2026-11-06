@@ -45,7 +45,7 @@ function emailForVlad(vlad) {
   return `bs-${safe}@bettersign.local`;
 }
 
-async function sessionViaLoginAs(userId) {
+export async function sessionViaLoginAs(userId) {
   const res = await axios({
     method: 'POST',
     url: `${serverUrl}/loginAs`,

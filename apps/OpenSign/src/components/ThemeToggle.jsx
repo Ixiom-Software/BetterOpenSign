@@ -2,6 +2,7 @@ import Switch from "@mui/material/Switch";
 import DarkModeOutlinedIcon from "@mui/icons-material/DarkModeOutlined";
 import LightModeOutlinedIcon from "@mui/icons-material/LightModeOutlined";
 import { useThemeMode } from "../theme/ThemeModeProvider";
+import { bs } from "../theme/md3Theme";
 
 /**
  * Material Design 3 light/dark toggle. Mode state lives in ThemeModeProvider,
@@ -18,7 +19,7 @@ const ThemeToggle = () => {
       color="primary"
       inputProps={{ "aria-label": "Toggle dark mode" }}
       icon={<LightModeOutlinedIcon sx={{ fontSize: 16, color: "#fbbf24" }} />}
-      checkedIcon={<DarkModeOutlinedIcon sx={{ fontSize: 16, color: "#4a9eff" }} />}
+      checkedIcon={<DarkModeOutlinedIcon sx={{ fontSize: 16, color: bs.teal }} />}
       sx={{
         "& .MuiSwitch-switchBase": { padding: "7px" },
         "& .MuiSwitch-thumb": {

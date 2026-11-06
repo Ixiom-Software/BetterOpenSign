@@ -70,7 +70,11 @@ const FullScreenButton = () => {
       <IconButton
         onClick={toggleFullScreen}
         size="small"
-        sx={{ color: "text.primary" }}
+        aria-label="Toggle full screen"
+        sx={{
+          color: "rgba(255,255,255,0.78)",
+          "&:hover": { color: "#fff", bgcolor: "rgba(255,255,255,0.1)" }
+        }}
       >
         {isFullScreen ? (
           <i className="fa-light fa-compress"></i>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
-import login_img from "../assets/images/login_img.svg";
+import BrandHero from "../components/BrandHero";
 import Parse from "parse";
 import Alert from "../primitives/Alert";
 import { appInfo } from "../constant/appinfo";
@@ -21,10 +21,9 @@ function ForgotPassword() {
   const { t } = useTranslation();
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const [state, setState] = useState({ email: "", password: "", hideNav: "" });
+  const [state, setState] = useState({ email: "", password: "" });
   const [toast, setToast] = useState({ type: "", message: "" });
   const [isLoading, setIsLoading] = useState(false);
-  const [image, setImage] = useState();
 
   const handleChange = (event) => {
     let { name, value } = event.target;
@@ -32,13 +31,6 @@ function ForgotPassword() {
       value = value?.toLowerCase()?.replace(/\s/g, "");
     }
     setState({ ...state, [name]: value });
-  };
-
-  const resize = () => {
-    let currentHideNav = window.innerWidth <= 760;
-    if (currentHideNav !== state.hideNav) {
-      setState({ ...state, hideNav: currentHideNav });
-    }
   };
 
   const handleSubmit = async (event) => {
@@ -71,9 +63,6 @@ function ForgotPassword() {
   useEffect(() => {
     dispatch(fetchAppInfo());
     saveLogo();
-    resize();
-    window.addEventListener("resize", resize);
-    return () => window.removeEventListener("resize", resize);
     // eslint-disable-next-line
   }, []);
   const saveLogo = async () => {
@@ -82,7 +71,6 @@ function ForgotPassword() {
     } catch (err) {
       console.log("err while logging out ", err);
     }
-      setImage(appInfo?.applogo || undefined);
   };
   return (
     <Box>
@@ -104,110 +92,70 @@ function ForgotPassword() {
         </Box>
       )}
       {toast?.message && <Alert type={toast.type}>{toast.message}</Alert>}
-      <Box sx={{ p: { xs: 0, md: 5, lg: 8 } }}>
-        <Card
-          sx={{
-            p: { xs: 2, md: 2, lg: 5 },
-            bgcolor: "surface.main",
-            color: "surface.onMain"
-          }}
-        >
-          <Box
+      <BrandHero>
+        <Box sx={{ px: 3, pt: { xs: 2, md: 8 }, pb: 6 }}>
+          <Card
             sx={{
-              width: 250,
-              height: 66,
-              display: "inline-block",
-              overflow: "hidden"
+              maxWidth: 460,
+              mx: "auto",
+              p: { xs: 3, md: 4 },
+              bgcolor: "surface.main",
+              color: "surface.onMain",
+              borderRadius: "20px",
+              boxShadow: "0 30px 60px rgba(10,31,44,0.28)"
             }}
           >
-            {image && (
-              <img
-                src={image}
-                style={{ objectFit: "contain", height: "100%" }}
-                alt="applogo"
-              />
-            )}
-          </Box>
-          <Box
-            sx={{
-              display: "grid",
-              gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
-              columnGap: 1
-            }}
-          >
-            <Box>
-              <form onSubmit={handleSubmit}>
-                <Typography component="h2" sx={{ fontSize: "30px", mt: 3 }}>
-                  {t("welcome")}
-                </Typography>
+            <form onSubmit={handleSubmit}>
+              <Typography variant="h4" component="h1">
+                {t("welcome")}
+              </Typography>
+              <Typography
+                component="p"
+                sx={{ mt: 0.5, color: "text.secondary" }}
+              >
+                {t("reset-password-alert-3")}
+              </Typography>
+              <Box sx={{ mt: 2.5, mb: 2 }}>
                 <Typography
-                  component="span"
-                  sx={{ fontSize: "12px", color: "text.secondary" }}
+                  component="label"
+                  variant="subtitle2"
+                  sx={{ display: "block", mb: 0.5 }}
                 >
-                  {t("reset-password-alert-3")}
+                  {t("email")}
                 </Typography>
-                <Card sx={{ width: "100%", my: 2, boxShadow: 3 }}>
-                  <Box sx={{ px: 3, py: 2 }}>
-                    <Typography
-                      component="label"
-                      sx={{ display: "block", fontSize: "0.75rem" }}
-                    >
-                      {t("email")}
-                    </Typography>
-                    <TextField
-                      type="email"
-                      name="email"
-                      fullWidth
-                      value={state.email}
-                      onChange={handleChange}
-                      slotProps={{
-                        htmlInput: {
-                          required: true,
-                          onInvalid: (e) =>
-                            e.target.setCustomValidity(t("input-required")),
-                          onInput: (e) => e.target.setCustomValidity("")
-                        }
-                      }}
-                      sx={{ mt: 0.5 }}
-                    />
-                  </Box>
-                </Card>
-                <Box
-                  sx={{
-                    display: "grid",
-                    gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
-                    gap: 1
+                <TextField
+                  type="email"
+                  name="email"
+                  fullWidth
+                  value={state.email}
+                  onChange={handleChange}
+                  slotProps={{
+                    htmlInput: {
+                      required: true,
+                      onInvalid: (e) =>
+                        e.target.setCustomValidity(t("input-required")),
+                      onInput: (e) => e.target.setCustomValidity("")
+                    }
                   }}
-                >
-                  <Button type="submit" variant="contained">
-                    {t("submit")}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="contained"
-                    color="secondary"
-                    onClick={() => navigate("/", { replace: true })}
-                  >
-                    {t("login")}
-                  </Button>
-                </Box>
-              </form>
-            </Box>
-            {!state.hideNav && (
-              <Box sx={{ alignSelf: "center" }}>
-                <Box
-                  sx={{
-                    mx: "auto",
-                    width: { md: "300px", lg: "500px" }
-                  }}
-                >
-                  <img src={login_img} alt="bisec" width="100%" />
-                </Box>
+                />
               </Box>
-            )}
-          </Box>
-        </Card>
-      </Box>
+              <Box sx={{ display: "grid", gap: 1.25 }}>
+                <Button type="submit" variant="contained" size="large">
+                  {t("submit")}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outlined"
+                  size="large"
+                  onClick={() => navigate("/", { replace: true })}
+                >
+                  {t("login")}
+                </Button>
+              </Box>
+            </form>
+          </Card>
+        </Box>
+      </BrandHero>
     </Box>
   );
 }

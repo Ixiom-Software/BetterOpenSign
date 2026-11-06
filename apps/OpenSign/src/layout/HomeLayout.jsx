@@ -213,12 +213,13 @@ const HomeLayout = () => {
               sx={{
                 flex: 1,
                 overflow: "auto",
+                bgcolor: "background.default",
                 transition: "all 0.3s ease-in-out"
               }}
             >
               <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100%" }}>
                 {/* your page content */}
-                <Box sx={{ p: 1.5 }}>{<Outlet />}</Box>
+                <Box sx={{ p: { xs: 1.5, md: 3 } }}>{<Outlet />}</Box>
                 {/* sticky-but-scrollable footer */}
                 <Box sx={{ mt: "auto", zIndex: 30 }}>
                   <Footer />

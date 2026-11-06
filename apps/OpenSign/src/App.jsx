@@ -67,6 +67,10 @@ function App() {
           <Routes>
             <Route element={<ValidateRoute />}>
               <Route exact path="/" element={<Lazy Page={Login} />} />
+              <Route
+                path="/auth/bettersign/callback"
+                element={<Lazy Page={Login} />}
+              />
                   <Route path="/addadmin" element={<Lazy Page={AddAdmin} />} />
                   <Route
                     path="/upgrade-2.1"
