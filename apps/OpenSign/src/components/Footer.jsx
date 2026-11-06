@@ -7,6 +7,7 @@ import Fab from "@mui/material/Fab";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import { openInNewTab } from "../constant/Utils";
 import { useTranslation } from "react-i18next";
+import { bs } from "../theme/md3Theme";
 const Footer = () => {
   const appName = "OpenSign™";
   const { t } = useTranslation();
@@ -54,20 +55,45 @@ const Footer = () => {
       <Box
         component="footer"
         sx={{
-          py: 1.5,
-          bgcolor: "surface.containerHighest",
-          color: "text.primary",
-          textAlign: "center",
-          fontSize: "13px"
+          py: 3,
+          px: 3,
+          bgcolor: bs.ink2,
+          color: "rgba(255,255,255,0.6)",
+          fontSize: "13.5px",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: 1.5,
+          "& a, & .footer-link": {
+            color: bs.teal,
+            textDecoration: "none",
+            cursor: "pointer",
+            "&:hover": { textDecoration: "underline", textUnderlineOffset: "3px" }
+          }
         }}
       >
-        <Typography variant="body2" component="p" sx={{ fontSize: "13px" }}>
-          {t("all-right")} &copy; {new Date().getFullYear()} &nbsp;
-          <Box
-            component="span"
-            onClick={openUrl}
-            sx={{ cursor: "pointer", "&:hover": { textDecoration: "underline" } }}
-          >
+        <Typography variant="body2" component="p" sx={{ fontSize: "inherit", m: 0 }}>
+          &copy; 2021&ndash;{new Date().getFullYear()} Cryptid Technologies, Inc.{" "}
+          {t("all-right")}
+          &nbsp;&middot;&nbsp;
+          <a href="https://www.bettersign.ing/" target="_blank" rel="noreferrer">
+            bettersign.ing
+          </a>
+          &nbsp;&middot;&nbsp;
+          <a href="https://www.bettersign.ing/privacy/" target="_blank" rel="noreferrer">
+            Privacy
+          </a>
+          &nbsp;&middot;&nbsp;
+          <a href="mailto:contact@bettersign.ing">contact@bettersign.ing</a>
+        </Typography>
+        <Typography
+          variant="body2"
+          component="p"
+          sx={{ fontSize: "inherit", m: 0, color: "rgba(255,255,255,0.45)" }}
+        >
+          Built on{" "}
+          <Box component="span" className="footer-link" onClick={openUrl}>
             {appName} ( {t("version")}:{" "}
             {version ? version : `${Package.version} `})
           </Box>
@@ -77,7 +103,7 @@ const Footer = () => {
         <Fab
           onClick={scrollToTop}
           size="medium"
-          color="secondary"
+          color="primary"
           aria-label="scroll to top"
           sx={{ position: "fixed", bottom: 16, right: 16 }}
         >

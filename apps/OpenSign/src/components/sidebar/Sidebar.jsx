@@ -89,18 +89,20 @@ const Sidebar = () => {
         overflowY: "auto",
         transition: "all 0.2s",
         zIndex: 500,
-        boxShadow: 3,
+        borderRight: isOpen ? 1 : 0,
+        borderColor: "divider",
         width: isOpen ? { xs: "100%", md: "16rem" } : 0
       }}
     >
       <Box
         sx={{
           display: "flex",
-          px: 1,
-          py: 1.5,
-          gap: 1,
+          px: 2,
+          py: 2,
+          gap: 1.5,
           alignItems: "center",
-          boxShadow: 2
+          borderBottom: 1,
+          borderColor: "divider"
         }}
       >
         <Avatar
@@ -108,12 +110,12 @@ const Sidebar = () => {
           src={image}
           alt="Profile"
           sx={{
-            width: 75,
-            height: 75,
+            width: 56,
+            height: 56,
             cursor: "pointer",
             border: "2px solid",
-            borderColor: "outline.main",
-            boxShadow: (theme) => `0 0 0 2px ${theme.palette.background.paper}`,
+            borderColor: "primary.light",
+            boxShadow: (theme) => `0 0 0 3px ${theme.palette.primary.container}`,
             "& img": { objectFit: "contain" }
           }}
         />
@@ -121,8 +123,9 @@ const Sidebar = () => {
           <Typography
             onClick={handleProfile}
             sx={{
-              fontSize: "14px",
-              fontWeight: 700,
+              fontSize: "15px",
+              fontWeight: 800,
+              letterSpacing: "-0.01em",
               color: "text.primary",
               cursor: "pointer"
             }}
@@ -134,8 +137,8 @@ const Sidebar = () => {
             sx={{
               cursor: "pointer",
               fontSize: "12px",
-              color: "text.primary",
-              mt: tenantname ? 1 : 0
+              color: "text.secondary",
+              mt: tenantname ? 0.5 : 0
             }}
           >
             {tenantname}
@@ -148,7 +151,7 @@ const Sidebar = () => {
       >
         <Box
           component="ul"
-          sx={{ fontSize: "0.875rem", listStyle: "none", m: 0, p: 0 }}
+          sx={{ fontSize: "0.875rem", listStyle: "none", m: 0, px: 1, py: 1.5 }}
           role="menubar"
           aria-label="OpenSign Sidebar Navigation"
         >
@@ -179,8 +182,8 @@ const Sidebar = () => {
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
-          fontSize: "25px",
-          color: "text.primary",
+          fontSize: "22px",
+          color: "text.secondary",
           gap: 1.5
         }}
       >

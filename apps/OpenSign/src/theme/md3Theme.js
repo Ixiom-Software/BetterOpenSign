@@ -1,273 +1,401 @@
 import { createTheme } from "@mui/material/styles";
 
 /**
- * OpenSign Material Design 3 (Material You) theme.
+ * Open BetterSign theme: Material UI v7 dressed in the BetterSign brand.
  *
- * Brand source colors (from the legacy DaisyUI themes):
- *   - Light primary : #002864 (deep navy)
- *   - Accent/CTA    : #E10032 (red)
- *   - Dark primary  : #007ACC / #4A9EFF (VS Code blue)
+ * Tokens come from the bettersign.ing sites (BetterSignApps
+ * website/brand/brand.css), so the app shares their look: deep ink top bar and
+ * footer, green gradient pill buttons, teal accents, soft-shadowed 16px cards
+ * on a cool grey page, and the system font stack with heavy, tight headings.
  *
- * These are mapped onto the MD3 color-role system (primary / secondary /
- * tertiary + their container + on- roles, plus surface tones). MUI v7 consumes
- * the standard palette keys; the extra MD3 roles (container tones, surface
- * variants, outline) are attached under each color so components and `sx`
- * styles can reference the full Material You system.
+ * MUI consumes the standard palette keys; the extra MD3 roles (container
+ * tones, surface variants, outline) stay attached under each color so
+ * components and `sx` styles can keep referencing them.
  */
 
+// BetterSign brand tokens (mirror of brand.css `:root`).
+export const bs = {
+  green: "#0e7a5f",
+  greenBr: "#15c79a",
+  teal: "#7ff0cf",
+  blue: "#0b5c8a",
+  ink: "#0f2b3d",
+  ink2: "#0a1f2c",
+  muted: "#5b6b76",
+  line: "#e2e8ee",
+  bg: "#f4f7f9",
+  card: "#ffffff",
+  red: "#b3261e",
+  onGreen: "#042019",
+  gradient: "linear-gradient(135deg, #15c79a, #0e7a5f)",
+  shadow: "0 18px 50px rgba(10, 31, 44, 0.12)",
+  shadowSoft: "0 18px 50px rgba(10, 31, 44, 0.08)",
+  // The dark hero band with its faint grid (brand.css `.hero`).
+  heroBackground: [
+    "radial-gradient(1200px 600px at 12% -10%, rgba(14,122,95,0.55), transparent 60%)",
+    "radial-gradient(1000px 700px at 100% 115%, rgba(11,92,138,0.6), transparent 55%)",
+    "linear-gradient(160deg, #0a1f2c, #0f2b3d)"
+  ].join(","),
+  heroGrid: [
+    "linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px)",
+    "linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px)"
+  ].join(","),
+  fontFamily:
+    '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+  mono: "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
+};
+
 // ---------------------------------------------------------------------------
-// MD3 color schemes
+// Color schemes
 // ---------------------------------------------------------------------------
 const lightColors = {
   primary: {
-    main: "#002864",
-    light: "#2a4d8a",
-    dark: "#001a41",
+    main: bs.green,
+    light: bs.greenBr,
+    dark: "#0a5c48",
     contrastText: "#ffffff",
-    container: "#d8e2ff",
-    onContainer: "#001a41"
+    container: "#dcf7ec",
+    onContainer: bs.green
   },
   secondary: {
-    // Brand accent (red) — used for CTAs/highlights in the legacy theme.
-    main: "#c00028",
-    light: "#e10032",
-    dark: "#93000f",
+    // Ink: the brand's dark navy, used for neutral/strong actions.
+    main: bs.ink,
+    light: "#24465c",
+    dark: bs.ink2,
     contrastText: "#ffffff",
-    container: "#ffdad9",
-    onContainer: "#410007"
+    container: "#e6eff6",
+    onContainer: bs.ink
   },
   tertiary: {
-    main: "#006874",
+    main: bs.blue,
     contrastText: "#ffffff",
-    container: "#97f0ff",
-    onContainer: "#001f24"
+    container: "#e6eff6",
+    onContainer: bs.blue
   },
   error: {
-    main: "#ba1a1a",
+    main: bs.red,
     contrastText: "#ffffff",
-    container: "#ffdad6",
-    onContainer: "#410002"
+    container: "#fdf1f0",
+    onContainer: "#7a1a14"
   },
   warning: {
-    main: "#9c6f00",
+    main: "#8a5300",
     contrastText: "#ffffff",
-    container: "#ffdf9a",
-    onContainer: "#2f2100"
+    container: "#fdf0e1",
+    onContainer: "#8a5300"
   },
   info: {
-    main: "#00639b",
+    main: bs.blue,
     contrastText: "#ffffff",
-    container: "#cde5ff",
-    onContainer: "#001d33"
+    container: "#e9f3fa",
+    onContainer: bs.blue
   },
   success: {
-    main: "#2e6c2e",
+    main: bs.green,
     contrastText: "#ffffff",
-    container: "#b1f1a7",
-    onContainer: "#002204"
+    container: "#e7f8f0",
+    onContainer: bs.green
   },
   background: {
-    default: "#fdfbff",
-    paper: "#ffffff"
+    default: bs.bg,
+    paper: bs.card
   },
   surface: {
-    main: "#fdfbff",
-    variant: "#e0e2ec",
-    onMain: "#1a1c1e",
-    onVariant: "#43474e",
-    // MD3 surface-container tonal elevation ramp
-    container: "#f0f0f7",
-    containerLow: "#f6f5fb",
-    containerHigh: "#eaeaf1",
-    containerHighest: "#e4e4eb"
+    main: bs.card,
+    variant: "#eef3f6",
+    onMain: bs.ink,
+    onVariant: bs.muted,
+    container: "#eef3f6",
+    containerLow: "#f7fafb",
+    containerHigh: "#e8eef2",
+    containerHighest: "#e2e8ee"
   },
   outline: {
-    main: "#74777f",
-    variant: "#c4c6d0"
+    main: "#9aa6ad",
+    variant: bs.line
   },
   text: {
-    primary: "#1a1c1e",
-    secondary: "#43474e",
-    disabled: "rgba(26,28,30,0.38)"
+    primary: bs.ink,
+    secondary: bs.muted,
+    disabled: "rgba(15,43,61,0.38)"
   },
-  divider: "#c4c6d0"
+  divider: bs.line
 };
 
 const darkColors = {
   primary: {
-    main: "#4a9eff",
-    light: "#80bbff",
-    dark: "#007acc",
-    contrastText: "#00315c",
-    container: "#004a77",
-    onContainer: "#cfe5ff"
+    main: bs.greenBr,
+    light: bs.teal,
+    dark: bs.green,
+    contrastText: bs.onGreen,
+    container: "#0f3d33",
+    onContainer: bs.teal
   },
   secondary: {
-    main: "#ffb3b0",
-    light: "#ffdad9",
-    dark: "#e10032",
-    contrastText: "#680010",
-    container: "#93000f",
-    onContainer: "#ffdad9"
+    main: "#c9d6df",
+    light: "#e2e8ee",
+    dark: "#9aa6ad",
+    contrastText: bs.ink2,
+    container: "#1b3a4e",
+    onContainer: "#e2e8ee"
   },
   tertiary: {
-    main: "#4fd8eb",
-    contrastText: "#00363d",
-    container: "#004f58",
-    onContainer: "#97f0ff"
+    main: "#7cc4ec",
+    contrastText: "#002a40",
+    container: "#0b4566",
+    onContainer: "#d3ecfa"
   },
   error: {
     main: "#ffb4ab",
     contrastText: "#690005",
-    container: "#93000a",
+    container: "#5c1612",
     onContainer: "#ffdad6"
   },
   warning: {
     main: "#f5bd4f",
     contrastText: "#2f2100",
-    container: "#765600",
+    container: "#4a3500",
     onContainer: "#ffdf9a"
   },
   info: {
-    main: "#94ccff",
-    contrastText: "#003354",
-    container: "#004a77",
-    onContainer: "#cde5ff"
+    main: "#7cc4ec",
+    contrastText: "#002a40",
+    container: "#0b4566",
+    onContainer: "#d3ecfa"
   },
   success: {
-    main: "#96d88d",
-    contrastText: "#00390a",
-    container: "#115314",
-    onContainer: "#b1f1a7"
+    main: bs.greenBr,
+    contrastText: bs.onGreen,
+    container: "#0f3d33",
+    onContainer: bs.teal
   },
   background: {
-    default: "#121212",
-    paper: "#181818"
+    default: bs.ink2,
+    paper: "#11293a"
   },
   surface: {
-    main: "#121212",
-    variant: "#43474e",
-    onMain: "#e3e2e6",
-    onVariant: "#c3c7cf",
-    container: "#1e1e1e",
-    containerLow: "#181818",
-    containerHigh: "#282828",
-    containerHighest: "#333333"
+    main: "#11293a",
+    variant: "#1b3a4e",
+    onMain: "#e9f0f4",
+    onVariant: "#a9b8c2",
+    container: "#163246",
+    containerLow: "#0e2433",
+    containerHigh: "#1b3a4e",
+    containerHighest: "#224459"
   },
   outline: {
-    main: "#8d9199",
-    variant: "#43474e"
+    main: "#5f7a8b",
+    variant: "#1f3d51"
   },
   text: {
-    primary: "#e3e2e6",
-    secondary: "#c3c7cf",
-    disabled: "rgba(227,226,230,0.38)"
+    primary: "#e9f0f4",
+    secondary: "#a9b8c2",
+    disabled: "rgba(233,240,244,0.38)"
   },
-  divider: "#2c2c2c"
+  divider: "#1f3d51"
 };
 
 // ---------------------------------------------------------------------------
-// MD3 type scale (Roboto)
+// Type scale: the brand's system stack, heavy and tight at display sizes
 // ---------------------------------------------------------------------------
+const heading = { fontWeight: 800, letterSpacing: "-0.025em" };
 const typography = {
-  fontFamily:
-    '"Roboto","Helvetica","Arial","Segoe UI",system-ui,sans-serif',
-  // MD3 display / headline / title / body / label roles mapped onto MUI slots
-  h1: { fontSize: "3.5rem", lineHeight: 1.12, fontWeight: 400, letterSpacing: "-0.015625em" },
-  h2: { fontSize: "2.8125rem", lineHeight: 1.16, fontWeight: 400 },
-  h3: { fontSize: "2.25rem", lineHeight: 1.22, fontWeight: 400 },
-  h4: { fontSize: "2rem", lineHeight: 1.25, fontWeight: 400 },
-  h5: { fontSize: "1.75rem", lineHeight: 1.29, fontWeight: 400 },
-  h6: { fontSize: "1.375rem", lineHeight: 1.27, fontWeight: 500 },
-  subtitle1: { fontSize: "1rem", lineHeight: 1.5, fontWeight: 500, letterSpacing: "0.009375em" },
-  subtitle2: { fontSize: "0.875rem", lineHeight: 1.43, fontWeight: 500, letterSpacing: "0.00714em" },
-  body1: { fontSize: "1rem", lineHeight: 1.5, fontWeight: 400, letterSpacing: "0.03125em" },
-  body2: { fontSize: "0.875rem", lineHeight: 1.43, fontWeight: 400, letterSpacing: "0.017857em" },
-  button: { fontSize: "0.875rem", lineHeight: 1.43, fontWeight: 500, letterSpacing: "0.00714em", textTransform: "none" },
-  caption: { fontSize: "0.75rem", lineHeight: 1.33, fontWeight: 400, letterSpacing: "0.033em" },
-  overline: { fontSize: "0.6875rem", lineHeight: 1.45, fontWeight: 500, letterSpacing: "0.045em", textTransform: "uppercase" }
+  fontFamily: bs.fontFamily,
+  h1: { ...heading, fontSize: "3.5rem", lineHeight: 1.05, letterSpacing: "-0.03em" },
+  h2: { ...heading, fontSize: "2.625rem", lineHeight: 1.08 },
+  h3: { ...heading, fontSize: "2.25rem", lineHeight: 1.12 },
+  h4: { ...heading, fontSize: "2rem", lineHeight: 1.15 },
+  h5: { ...heading, fontSize: "1.5rem", lineHeight: 1.2, letterSpacing: "-0.02em" },
+  h6: { fontSize: "1.25rem", lineHeight: 1.27, fontWeight: 700, letterSpacing: "-0.015em" },
+  subtitle1: { fontSize: "1rem", lineHeight: 1.5, fontWeight: 600 },
+  subtitle2: { fontSize: "0.875rem", lineHeight: 1.43, fontWeight: 600 },
+  body1: { fontSize: "1rem", lineHeight: 1.6, fontWeight: 400 },
+  body2: { fontSize: "0.875rem", lineHeight: 1.5, fontWeight: 400 },
+  button: { fontSize: "0.9375rem", lineHeight: 1.43, fontWeight: 700, textTransform: "none" },
+  caption: { fontSize: "0.75rem", lineHeight: 1.33, fontWeight: 400 },
+  // brand.css `.eyebrow` / `.sec-eyebrow`
+  overline: { fontSize: "0.75rem", lineHeight: 1.45, fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase" }
 };
 
-// MD3 shape scale
-const shape = { borderRadius: 12 };
+// Base unit for `sx` radii (2 = the brand's 16px --radius). Cards, dialogs
+// and menus get their brand radii in the overrides below.
+const shape = { borderRadius: 8 };
 
 // ---------------------------------------------------------------------------
-// Component overrides — give MUI an authentic Material You feel
+// Component overrides: the brand's buttons, cards, inputs and chips
 // ---------------------------------------------------------------------------
 const components = {
   MuiCssBaseline: {
-    styleOverrides: {
+    styleOverrides: (theme) => ({
       "*": { boxSizing: "border-box" },
-      body: { margin: 0 }
-    }
+      body: {
+        margin: 0,
+        backgroundColor: theme.palette.background.default,
+        WebkitFontSmoothing: "antialiased"
+      },
+      "code, kbd, pre": { fontFamily: bs.mono }
+    })
   },
   MuiButton: {
     defaultProps: { disableElevation: true },
     styleOverrides: {
-      // MD3 buttons are pill-shaped (full-rounded).
+      // brand.css `.btn`: full pill, bold label.
       root: {
         borderRadius: 9999,
-        paddingInline: 24,
-        minHeight: 40,
+        paddingInline: 22,
+        minHeight: 42,
         textTransform: "none",
-        fontWeight: 500
+        fontWeight: 700,
+        whiteSpace: "nowrap",
+        transition: "transform .12s ease, filter .12s ease, background .15s ease",
+        "&:active": { transform: "translateY(1px)" }
       },
-      sizeSmall: { minHeight: 32, paddingInline: 16 },
-      sizeLarge: { minHeight: 48, paddingInline: 28 }
+      sizeSmall: { minHeight: 34, paddingInline: 16, fontSize: "0.875rem" },
+      sizeLarge: { minHeight: 50, paddingInline: 28 },
+      // `.btn.primary`: green gradient with ink-on-green text.
+      containedPrimary: {
+        background: bs.gradient,
+        color: bs.onGreen,
+        "&:hover": { background: bs.gradient, filter: "brightness(1.07)" },
+        "&.Mui-disabled": {
+          background: bs.gradient,
+          color: bs.onGreen,
+          filter: "grayscale(0.5) brightness(0.95)",
+          opacity: 0.6
+        }
+      },
+      // `.btn.secondary`: white with a hairline border, green on hover.
+      outlined: ({ theme }) => ({
+        backgroundColor: theme.palette.background.paper,
+        borderColor: theme.palette.divider,
+        color: theme.palette.text.primary,
+        "&:hover": {
+          backgroundColor: theme.palette.background.paper,
+          borderColor: bs.greenBr
+        }
+      }),
+      outlinedError: ({ theme }) => ({
+        borderColor: theme.palette.mode === "dark" ? theme.palette.error.container : "#f0c9c6",
+        color: theme.palette.error.main,
+        "&:hover": {
+          backgroundColor: theme.palette.error.container,
+          borderColor: theme.palette.error.main
+        }
+      }),
+      text: { "&:hover": { backgroundColor: "rgba(21,199,154,0.08)" } }
     }
   },
   MuiIconButton: {
     styleOverrides: { root: { borderRadius: 9999 } }
   },
+  MuiFab: {
+    styleOverrides: {
+      primary: {
+        background: bs.gradient,
+        color: bs.onGreen,
+        "&:hover": { background: bs.gradient, filter: "brightness(1.07)" }
+      }
+    }
+  },
   MuiToggleButton: {
-    styleOverrides: { root: { borderRadius: 9999, textTransform: "none" } }
+    styleOverrides: { root: { borderRadius: 9999, textTransform: "none", fontWeight: 700 } }
   },
   MuiChip: {
-    styleOverrides: { root: { borderRadius: 8, fontWeight: 500 } }
+    // brand.css `.badge`: small, bold, pill.
+    styleOverrides: { root: { borderRadius: 9999, fontWeight: 700 } }
   },
   MuiCard: {
     defaultProps: { elevation: 0 },
     styleOverrides: {
+      // brand.css `.card`
       root: ({ theme }) => ({
-        borderRadius: 12,
+        borderRadius: 16,
         border: `1px solid ${theme.palette.divider}`,
-        backgroundImage: "none"
+        backgroundImage: "none",
+        boxShadow: theme.palette.mode === "dark" ? "none" : bs.shadowSoft
       })
     }
   },
   MuiPaper: {
-    styleOverrides: { rounded: { borderRadius: 12 } }
+    styleOverrides: {
+      root: { backgroundImage: "none" },
+      rounded: { borderRadius: 16 }
+    }
   },
   MuiDialog: {
     styleOverrides: {
-      paper: { borderRadius: 28, backgroundImage: "none" }
+      paper: ({ theme }) => ({
+        borderRadius: 20,
+        backgroundImage: "none",
+        boxShadow: theme.palette.mode === "dark" ? undefined : bs.shadow
+      })
     }
+  },
+  MuiDialogTitle: {
+    styleOverrides: { root: { fontWeight: 800, letterSpacing: "-0.02em" } }
   },
   MuiTextField: {
     defaultProps: { variant: "outlined", size: "small" }
   },
   MuiOutlinedInput: {
-    styleOverrides: { root: { borderRadius: 12 } }
+    styleOverrides: {
+      root: ({ theme }) => ({
+        borderRadius: 10,
+        "& .MuiOutlinedInput-notchedOutline": { borderColor: theme.palette.divider },
+        "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: bs.greenBr },
+        "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+          borderColor: theme.palette.primary.main
+        }
+      })
+    }
   },
   MuiTooltip: {
     styleOverrides: {
-      tooltip: ({ theme }) => ({
+      tooltip: {
         borderRadius: 8,
         fontSize: "0.75rem",
-        backgroundColor: theme.palette.mode === "dark" ? "#43474e" : "#1a1c1e"
-      })
+        backgroundColor: bs.ink2
+      },
+      arrow: { color: bs.ink2 }
     }
   },
   MuiAppBar: {
     defaultProps: { elevation: 0, color: "inherit" }
   },
   MuiMenu: {
-    styleOverrides: { paper: { borderRadius: 12 } }
+    styleOverrides: { paper: ({ theme }) => ({ borderRadius: 14, border: `1px solid ${theme.palette.divider}` }) }
+  },
+  MuiTableHead: {
+    // brand.css `.doc-table th`
+    styleOverrides: {
+      root: ({ theme }) => ({
+        "& .MuiTableCell-head": {
+          fontSize: 12,
+          fontWeight: 700,
+          letterSpacing: "0.1em",
+          textTransform: "uppercase",
+          color: theme.palette.text.secondary,
+          backgroundColor: theme.palette.surface.containerLow
+        }
+      })
+    }
+  },
+  MuiTableCell: {
+    styleOverrides: { root: ({ theme }) => ({ borderBottomColor: theme.palette.divider }) }
+  },
+  MuiTab: {
+    styleOverrides: { root: { textTransform: "none", fontWeight: 700 } }
+  },
+  MuiLink: {
+    styleOverrides: { root: { fontWeight: 600, textUnderlineOffset: 3 } }
+  },
+  MuiAlert: {
+    styleOverrides: { root: { borderRadius: 16 } }
   }
 };
 
 /**
- * Build a Material Design 3 theme for the given mode.
+ * Build the Open BetterSign theme for the given mode.
  * @param {"light"|"dark"} mode
  */
 export function createMd3Theme(mode) {

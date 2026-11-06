@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import dp from "../assets/images/dp.png";
+import { BrandMark } from "./BrandHero";
+import { bs } from "../theme/md3Theme";
 import FullScreenButton from "./FullScreenButton";
 import ThemeToggle from "./ThemeToggle";
 import Box from "@mui/material/Box";
 import IconButton from "@mui/material/IconButton";
 import Avatar from "@mui/material/Avatar";
-import Typography from "@mui/material/Typography";
 import Paper from "@mui/material/Paper";
 import MenuList from "@mui/material/MenuList";
 import MenuItem from "@mui/material/MenuItem";
@@ -33,7 +34,7 @@ const Header = ({ isConsole, setIsLoggingOut }) => {
   const image = localStorage.getItem("profileImg") || dp;
   const [isOpen, setIsOpen] = useState(false);
   const [applogo, setAppLogo] = useState("");
-  const [isDarkTheme, setIsDarkTheme] = useState();
+  const [isCustomLogo, setIsCustomLogo] = useState(false);
 
   const toggleDropdown = () => {
     setIsOpen(!isOpen);
@@ -63,6 +64,7 @@ const Header = ({ isConsole, setIsLoggingOut }) => {
       const applogo = await getAppLogo();
       if (applogo?.logo) {
         setAppLogo(applogo?.logo);
+        setIsCustomLogo(applogo.logo !== appInfo.applogo);
       } else {
         const logo = localStorage.getItem("appLogo") || appInfo.applogo;
         setAppLogo(logo);
@@ -116,37 +118,18 @@ const Header = ({ isConsole, setIsLoggingOut }) => {
   }, [isOpen]);
 
 
-  useEffect(() => {
-    const updateThemeStatus = () => {
-      const isDarkTheme =
-        document.documentElement.getAttribute("data-theme") === "opensigndark";
-      setIsDarkTheme(isDarkTheme);
-    };
-    updateThemeStatus();
-
-    const observer = new MutationObserver(() => {
-      updateThemeStatus();
-    });
-
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["data-theme"]
-    });
-
-    return () => observer.disconnect();
-  }, []);
-
   return (
     <>
       <Box
         sx={{
           display: "flex",
           alignItems: "center",
-          minHeight: 64,
-          px: 1,
-          bgcolor: "background.paper",
-          color: "text.primary",
-          boxShadow: 1,
+          gap: 1.5,
+          minHeight: 60,
+          px: { xs: 1, md: 2 },
+          bgcolor: bs.ink2,
+          color: "#fff",
+          boxShadow: "0 1px 0 rgba(255,255,255,0.08)",
           touchAction: "none"
         }}
       >
@@ -154,34 +137,40 @@ const Header = ({ isConsole, setIsLoggingOut }) => {
           <IconButton
             onClick={showSidebar}
             size="small"
-            sx={{ color: "text.primary" }}
+            aria-label="Toggle navigation"
+            sx={{
+              color: "rgba(255,255,255,0.78)",
+              "&:hover": { color: "#fff", bgcolor: "rgba(255,255,255,0.1)" }
+            }}
           >
             <i className="fa-light fa-bars" style={{ fontSize: "1.25rem" }}></i>
           </IconButton>
         </Box>
-        <Box sx={{ flex: 1, ml: 1 }}>
-          <Box
+        <Box
+          sx={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 1.25 }}
+        >
+          <BrandMark
+            label="Open BetterSign home"
             onClick={() => navigate("/dashboard/35KBoSgoAK")}
-            sx={{
-              height: { xs: "25px", md: "40px" },
-              width: "auto",
-              overflow: "hidden",
-              cursor: "pointer"
-            }}
-          >
-            {applogo && (
+          />
+          {isCustomLogo && (
+            <Box
+              sx={{
+                height: { xs: "22px", md: "32px" },
+                ml: 1,
+                pl: 1.5,
+                borderLeft: "1px solid rgba(255,255,255,0.16)",
+                display: { xs: "none", md: "block" }
+              }}
+            >
               <Box
                 component="img"
                 sx={{ objectFit: "contain", height: "100%", width: "auto" }}
-                src={
-                  isDarkTheme
-                    ? "/static/js/assets/images/logo-dark.png"
-                    : applogo
-                }
+                src={applogo}
                 alt="logo"
               />
-            )}
-          </Box>
+            </Box>
+          )}
         </Box>
         <Box
           id="profile-menu"
@@ -199,8 +188,7 @@ const Header = ({ isConsole, setIsLoggingOut }) => {
                 width: 35,
                 height: 35,
                 cursor: "pointer",
-                border: "1px solid",
-                borderColor: "outline.main"
+                border: "2px solid rgba(127,240,207,0.4)"
               }}
             />
           )}
@@ -209,7 +197,12 @@ const Header = ({ isConsole, setIsLoggingOut }) => {
               onClick={toggleDropdown}
               role="button"
               tabIndex="0"
-              sx={{ cursor: "pointer", color: "text.primary", fontSize: "0.875rem" }}
+              sx={{
+                cursor: "pointer",
+                color: "rgba(255,255,255,0.86)",
+                fontSize: "0.875rem",
+                fontWeight: 600
+              }}
             >
               {username && username}
             </Box>
@@ -220,7 +213,10 @@ const Header = ({ isConsole, setIsLoggingOut }) => {
               role="button"
               onClick={toggleDropdown}
               size="small"
-              sx={{ color: "text.primary" }}
+              sx={{
+                color: "rgba(255,255,255,0.78)",
+                "&:hover": { color: "#fff", bgcolor: "rgba(255,255,255,0.1)" }
+              }}
             >
               <i className="fa-light fa-angle-down"></i>
             </IconButton>
@@ -233,7 +229,10 @@ const Header = ({ isConsole, setIsLoggingOut }) => {
                   mt: 2,
                   zIndex: 1,
                   width: 224,
-                  borderRadius: 2,
+                  borderRadius: "14px",
+                  border: 1,
+                  borderColor: "divider",
+                  boxShadow: bs.shadow,
                   color: "text.primary"
                 }}
               >

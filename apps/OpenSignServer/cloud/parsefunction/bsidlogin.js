@@ -1,0 +1,165 @@
+// bsidlogin — "Sign in with BetterSign" through bs-id (the BetterSign OIDC
+// provider, BetterSignApps apps/Experiments/bs-id, https://id.bettersign.ing).
+//
+// The browser runs the authorization-code + PKCE redirect (see
+// apps/OpenSign/src/constant/bsid.js) and hands us the code. We:
+//   1. exchange it at bs-id /token (public client: code_verifier, no secret),
+//   2. verify the id_token (ES256 against bs-id /jwks; iss, aud, nonce, exp),
+//   3. map its `vlad` to an existing OpenSign account via BS_ID_USERS,
+//   4. mint a Parse session for that account (same /loginAs path as
+//      bettersignlogin), which Login.jsx finishes with thirdpartyLoginfn.
+//
+// Only VLADs listed in BS_ID_USERS can sign in, and only to an account that
+// already exists: the admin picks the account, not the user.
+//
+// Env:
+//   BS_ID_URL        bs-id origin (= the id_token `iss`). Default https://id.bettersign.ing
+//   BS_ID_CLIENT_ID  this app's client_id at bs-id. Default bs-opensign
+//   BS_ID_USERS      JSON { "<vladHex>": "<account email>" }
+//
+// Params: { code, codeVerifier, redirectUri, nonce }
+// Returns: { sessionToken, objectId, email }
+
+import crypto from 'node:crypto';
+import axios from 'axios';
+import { sessionViaLoginAs } from './bettersignlogin.js';
+
+const B64URL_RE = /^[A-Za-z0-9_-]+$/;
+const JWKS_TTL_MS = 10 * 60 * 1000;
+
+function config() {
+  return {
+    url: (process.env.BS_ID_URL || 'https://id.bettersign.ing').replace(/\/$/, ''),
+    clientId: process.env.BS_ID_CLIENT_ID || 'bs-opensign',
+  };
+}
+
+// { vladHex (lower case): email (lower case) }
+function allowedUsers() {
+  if (!process.env.BS_ID_USERS) return {};
+  try {
+    const parsed = JSON.parse(process.env.BS_ID_USERS);
+    const out = {};
+    for (const [vlad, email] of Object.entries(parsed)) {
+      out[vlad.toLowerCase()] = String(email).toLowerCase().replace(/\s/g, '');
+    }
+    return out;
+  } catch (e) {
+    console.error('bsidlogin: BS_ID_USERS is not valid JSON');
+    return {};
+  }
+}
+
+const fail = msg => new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, msg);
+const b64urlJson = s => JSON.parse(Buffer.from(s, 'base64url').toString('utf8'));
+
+// --- id_token verification (bs-id, ES256) -------------------------------------
+
+let jwksCache = null; // { url, at, keys }
+
+async function bsIdKey(c, kid) {
+  const url = c.url + '/jwks';
+  if (
+    !jwksCache ||
+    jwksCache.url !== url ||
+    Date.now() - jwksCache.at > JWKS_TTL_MS ||
+    !jwksCache.keys.some(k => k.kid === kid)
+  ) {
+    const res = await axios.get(url, { timeout: 10000 });
+    jwksCache = { url, at: Date.now(), keys: res.data?.keys || [] };
+  }
+  const jwk = jwksCache.keys.find(k => k.kid === kid);
+  if (!jwk) throw new Error('id_token kid not in bs-id jwks');
+  return crypto.createPublicKey({ key: { kty: 'EC', crv: 'P-256', x: jwk.x, y: jwk.y }, format: 'jwk' });
+}
+
+export async function verifyIdToken(c, idToken, nonce) {
+  const parts = String(idToken || '').split('.');
+  if (parts.length !== 3 || !parts.every(p => B64URL_RE.test(p))) {
+    throw new Error('id_token is not a JWS');
+  }
+  const header = b64urlJson(parts[0]);
+  if (header.alg !== 'ES256' || !header.kid) throw new Error('id_token must be ES256 with a kid');
+  const key = await bsIdKey(c, header.kid);
+  const ok = crypto.verify(
+    'sha256',
+    Buffer.from(parts[0] + '.' + parts[1]),
+    { key, dsaEncoding: 'ieee-p1363' }, // JWS ES256 is raw r||s
+    Buffer.from(parts[2], 'base64url')
+  );
+  if (!ok) throw new Error('id_token signature does not verify');
+  const p = b64urlJson(parts[1]);
+  const now = Math.floor(Date.now() / 1000);
+  if (p.iss !== c.url) throw new Error(`id_token iss ${p.iss} is not ${c.url}`);
+  if (p.aud !== c.clientId) throw new Error('id_token aud is not this app');
+  if (p.nonce !== nonce) throw new Error('id_token nonce does not match this sign-in');
+  if (typeof p.exp !== 'number' || p.exp < now - 30) throw new Error('id_token expired');
+  if (typeof p.iat !== 'number' || p.iat > now + 60) throw new Error('id_token iat is in the future');
+  if (typeof p.sub !== 'string' || !p.sub) throw new Error('id_token has no sub');
+  if (typeof p.vlad !== 'string' || !/^[0-9a-f]+$/i.test(p.vlad)) throw new Error('id_token has no vlad');
+  return p;
+}
+
+// --- cloud function -------------------------------------------------------------
+
+export default async function bsidlogin(request) {
+  const { code, codeVerifier, redirectUri, nonce } = request.params || {};
+  if (![code, codeVerifier, nonce].every(v => typeof v === 'string' && B64URL_RE.test(v))) {
+    throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Missing or malformed sign-in parameters.');
+  }
+  if (typeof redirectUri !== 'string' || !/^https?:\/\//.test(redirectUri)) {
+    throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Missing redirect URI.');
+  }
+  const c = config();
+
+  // 1. Code -> tokens. bs-id checks client_id, redirect_uri and PKCE.
+  let tokens;
+  try {
+    const res = await axios.post(
+      c.url + '/token',
+      new URLSearchParams({
+        grant_type: 'authorization_code',
+        code,
+        redirect_uri: redirectUri,
+        client_id: c.clientId,
+        code_verifier: codeVerifier,
+      }).toString(),
+      { headers: { 'content-type': 'application/x-www-form-urlencoded' }, timeout: 15000 }
+    );
+    tokens = res.data;
+  } catch (e) {
+    console.log('bsidlogin: token exchange failed', e?.response?.data || e?.message);
+    throw fail('BetterSign sign-in failed. Please try again.');
+  }
+
+  // 2. Verify the id_token.
+  let claims;
+  try {
+    claims = await verifyIdToken(c, tokens?.id_token, nonce);
+  } catch (e) {
+    console.log('bsidlogin: id_token rejected:', e.message);
+    throw fail('BetterSign sign-in could not be verified.');
+  }
+
+  // 3. VLAD -> account.
+  const vlad = claims.vlad.toLowerCase();
+  const email = allowedUsers()[vlad];
+  if (!email) {
+    console.log(JSON.stringify({ event: 'bsidlogin_denied', vlad }));
+    throw fail(
+      `This BetterSign identity isn't linked to an account. Ask an admin to add it (VLAD ${vlad.slice(0, 16)}…).`
+    );
+  }
+  const userQuery = new Parse.Query(Parse.User);
+  userQuery.equalTo('username', email);
+  const user = await userQuery.first({ useMasterKey: true });
+  if (!user) {
+    console.log(JSON.stringify({ event: 'bsidlogin_no_account', vlad, email }));
+    throw fail('The account linked to this BetterSign identity does not exist.');
+  }
+
+  // 4. Session for that account.
+  const login = await sessionViaLoginAs(user.id);
+  console.log(JSON.stringify({ event: 'bsidlogin', vlad: vlad.slice(0, 16), userId: user.id }));
+  return { sessionToken: login.sessionToken, objectId: user.id, email };
+}

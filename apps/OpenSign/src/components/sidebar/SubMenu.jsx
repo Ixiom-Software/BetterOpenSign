@@ -18,7 +18,10 @@ const Submenu = ({ item, closeSidebar, toggleSubmenu, submenuOpen }) => {
     justifyContent: "flex-start",
     textAlign: "left",
     columnGap: 2.5,
-    p: 1.5,
+    px: 1.5,
+    py: 1.25,
+    borderRadius: "12px",
+    fontWeight: 600,
     color: "text.primary",
     "&:hover": {
       bgcolor: "surface.container",
@@ -89,7 +92,8 @@ const Submenu = ({ item, closeSidebar, toggleSubmenu, submenuOpen }) => {
                 role="menuitem"
                 tabIndex={submenuOpen ? 0 : -1}
                 sx={{
-                  pl: 2,
+                  pl: 3,
+                  borderRadius: "12px",
                   display: "flex",
                   alignItems: "center",
                   columnGap: 2.5,
@@ -105,9 +109,10 @@ const Submenu = ({ item, closeSidebar, toggleSubmenu, submenuOpen }) => {
                   "&:focus": { bgcolor: "surface.container", outline: "none" },
                   ...(selectedMenu && {
                     "&.active": {
-                      bgcolor: "surface.container",
-                      color: "text.primary"
-                    }
+              bgcolor: "primary.container",
+              color: "primary.onContainer",
+              fontWeight: 700
+            }
                   })
                 }}
               >

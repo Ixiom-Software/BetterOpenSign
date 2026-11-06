@@ -1,11 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { ThemeProvider as MuiThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
-// MD3 default typeface
-import "@fontsource/roboto/300.css";
-import "@fontsource/roboto/400.css";
-import "@fontsource/roboto/500.css";
-import "@fontsource/roboto/700.css";
 import { createMd3Theme } from "./md3Theme";
 
 const ThemeModeContext = createContext({
