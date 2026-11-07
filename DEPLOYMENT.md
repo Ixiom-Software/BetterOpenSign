@@ -179,8 +179,27 @@ cp -R apps/OpenSign/build /tmp/docsign-site/build
 cp deploy/cloudflare-frontend/{cloudflare.config.ts,wrangler.config.ts,package.json} /tmp/docsign-site/
 cd /tmp/docsign-site && npm install && cf deploy
 ```
+If `cf deploy` fails with `Cannot find package 'cf'` (its `cf/config` import), deploy the
+same settings with plain Wrangler instead (Cloudflare account brendonp@ixiomsoftware.com):
+```bash
+cd /tmp/docsign-site && rm -f cloudflare.config.ts wrangler.config.ts
+cat > wrangler.jsonc <<'JSON'
+{
+  "name": "docsign",
+  "compatibility_date": "2026-10-06",
+  "assets": { "directory": "./build", "not_found_handling": "single-page-application" },
+  "routes": [{ "pattern": "docsign.bettersign.ing", "custom_domain": true }]
+}
+JSON
+npx wrangler deploy
+```
+`apps/OpenSign/.env` (gitignored) must hold `REACT_APP_APPID=729aeaeb26bf`,
+`REACT_APP_SERVERURL=https://docsign-bettersign-api.fly.dev/app` and
+`REACT_APP_BS_SIGN_URL=https://bs-opensign-sign.brendonp.workers.dev` before the build.
 
 ### Redeploy / restart the backend
+The Fly apps belong to the **gtc6244@gmail.com** Fly account (`fly auth whoami`); other
+logins get `Could not find App`.
 ```bash
 cd apps/OpenSignServer && fly deploy --ha=false        # rebuild + roll
 fly logs  --app docsign-bettersign-api                 # tail logs
