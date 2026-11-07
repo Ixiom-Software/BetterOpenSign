@@ -13,7 +13,8 @@ on:
 
 jobs:
   docker:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, X64, Linux]
+    timeout-minutes: 90
     strategy:
       matrix:
         include:
