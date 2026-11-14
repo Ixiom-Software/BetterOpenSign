@@ -146,7 +146,7 @@ async function updateDoc(
 }
 
 // `sendNotifyMail` is used to send notification mail of signer signed the document
-async function sendNotifyMail(doc, signUser, mailProvider, publicUrl) {
+export async function sendNotifyMail(doc, signUser, mailProvider, publicUrl) {
   try {
     const TenantAppName = appName;
     const logo =
@@ -304,7 +304,7 @@ async function sendCompletedMail(obj) {
 }
 
 // `sendMailsaveCertifcate` is used send completion mail and update complete status of document
-async function sendMailsaveCertifcate(doc, pfx, isCustomMail, mailProvider, filename) {
+export async function sendMailsaveCertifcate(doc, pfx, isCustomMail, mailProvider, filename) {
   const certificate = await GenerateCertificate(doc);
   const certificatePdf = await PDFDocument.load(certificate);
   const P12Buffer = fs.readFileSync(pfx.name);

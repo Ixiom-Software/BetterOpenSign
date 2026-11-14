@@ -113,6 +113,23 @@ See §7 for how to move to a branded API host later.
 - **Volume:** `mongo_data` (1 GB) at `/data/db`. Daily snapshots, 5-day retention (Fly default).
 - **Auth:** root user from `MONGO_INITDB_ROOT_USERNAME/PASSWORD` (Fly secrets). No public IP — only reachable within the Fly org's private network.
 
+### 4.4 BetterSign desktop app API
+The BetterSign desktop app (BetterSignApps `client/BetterSignClient/lib/src/opensign/`)
+signs PDFs on the device and uses four cloud functions in
+`apps/OpenSignServer/cloud/parsefunction/bsDesktop.js`:
+
+| Function | What it does |
+| --- | --- |
+| `bsdesktopsend` | `{fileUrl, name, note?, signers:[{name,email}]}`: creates the document from a PDF uploaded with `POST /app/files/<name>.pdf`, adds one signature box per signer at the bottom right of the last page, and emails each the usual `/login/<b64>` signing link. |
+| `bsdesktopinbox` | Documents waiting for the caller's signature. |
+| `bsdesktopfetch` | `{docId}`: a short-lived download link for one of them, and the caller's field boxes. |
+| `bsdesktopreturn` | `{docId, fileUrl, signaturePng?}`: the caller's locally signed copy. Stored **byte for byte** (no pdf-lib re-save, so the BetterSign PAdES signature stays valid), with a `Signed` audit entry. On the last signature it completes the document (certificate and completion email, as `signPdf` does). |
+
+- **Auth:** each function requires a Parse session. The app gets one through `bsidlogin`, using the same bs-id client (`bs-opensign`) with a loopback redirect `http://127.0.0.1:<port>/opensign/callback`. bs-id must accept that redirect: the `loopback_path` change in BetterSignApps `server/bs-id/src/worker.js`, deployed with `cf deploy` there. Desktop users need a `BS_ID_USERS` entry, the same as on the website.
+- **Env:** `PUBLIC_URL` is the site in the emailed links. It defaults to `https://docsign.bettersign.ing`.
+- **Caveat:** if a later signer signs on the website, the web app re-saves the PDF with pdf-lib, and that breaks the earlier PAdES signature in the final file. The desktop signer's own copy and its `.sig` still verify.
+- **Tests:** `node --test utils/bsDesktopUtils.test.js` (in `apps/OpenSignServer`).
+
 ---
 
 ## 5. Expected costs

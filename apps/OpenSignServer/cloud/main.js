@@ -66,6 +66,12 @@ import updateEmailTemplates from './parsefunction/updateEmailTemplates.js';
 import triggerEvent from './parsefunction/triggerEvent.js';
 import setWidgetPreferences from './parsefunction/setWidgetPreferences.js';
 import createDocumentFromApp from './parsefunction/createDocumentFromApp.js';
+import {
+  bsDesktopSend,
+  bsDesktopInbox,
+  bsDesktopFetch,
+  bsDesktopReturn,
+} from './parsefunction/bsDesktop.js';
 
 // This afterSave function triggers after an object is added or updated in the specified class, allowing for post-processing logic.
 Parse.Cloud.afterSave('contracts_Document', DocumentAftersave);
@@ -142,3 +148,8 @@ Parse.Cloud.define('updateemailtemplates', updateEmailTemplates);
 Parse.Cloud.define('triggerevent', triggerEvent);
 Parse.Cloud.define('setwidgetpreferences', setWidgetPreferences);
 Parse.Cloud.define('createdocumentfromapp', createDocumentFromApp);
+// BetterSign desktop app: send a locally signed PDF, sign one locally and return it.
+Parse.Cloud.define('bsdesktopsend', bsDesktopSend);
+Parse.Cloud.define('bsdesktopinbox', bsDesktopInbox);
+Parse.Cloud.define('bsdesktopfetch', bsDesktopFetch);
+Parse.Cloud.define('bsdesktopreturn', bsDesktopReturn);
