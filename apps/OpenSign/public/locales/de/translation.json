@@ -1624,6 +1624,9 @@
     "feature-request-text": "ein Dokument an beliebige Personen senden, nacheinander oder an alle gleichzeitig",
     "feature-verify-title": "Überall prüfen",
     "feature-verify-text": "jedes abgeschlossene Dokument enthält seinen Prüfpfad",
-    "sign-in-button": "Mit BetterSign anmelden"
+    "sign-in-button": "Mit BetterSign anmelden",
+    "status-approve": "Bestätigen Sie auf Ihrem Smartphone…",
+    "status-signing-in": "Anmeldung läuft…",
+    "sign-in-denied": "Die Anmeldung wurde auf Ihrem Smartphone abgelehnt."
   }
 }

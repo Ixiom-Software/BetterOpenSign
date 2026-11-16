@@ -1625,6 +1625,9 @@
     "feature-request-text": "누구에게나 문서를 보내고, 순서대로 또는 한 번에 서명 받기",
     "feature-verify-title": "어디서나 검증",
     "feature-verify-text": "완료된 모든 문서에 감사 추적이 포함됨",
-    "sign-in-button": "BetterSign으로 로그인"
+    "sign-in-button": "BetterSign으로 로그인",
+    "status-approve": "휴대폰에서 승인하세요…",
+    "status-signing-in": "로그인 중…",
+    "sign-in-denied": "휴대폰에서 로그인이 거부되었습니다."
   }
 }

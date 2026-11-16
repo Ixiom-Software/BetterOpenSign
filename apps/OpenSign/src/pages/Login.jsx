@@ -20,13 +20,19 @@ import SelectLanguage from "../components/pdf/SelectLanguage";
 import { markBetterSignSession } from "../components/pdf/PhoneSign";
 import {
   BSID_CALLBACK_PATH,
-  startBsIdLogin,
+  signInWithBetterSign,
   takeBsIdCallback
 } from "../constant/bsid";
 import Box from "@mui/material/Box";
 import Paper from "@mui/material/Paper";
 import Button from "@mui/material/Button";
 import Typography from "@mui/material/Typography";
+
+// The vendored sign-in button reports progress in English; show it translated.
+const SIGN_IN_STATUS_KEYS = {
+  "Approve on your phone…": "home.status-approve",
+  "Signing in…": "home.status-signing-in"
+};
 
 function Login() {
   const appName =
@@ -46,6 +52,9 @@ function Login() {
   // A tenant's own logo (white-label); the default one is replaced by the brand mark.
   const isCustomLogo = image && image !== appInfo?.applogo;
   const [errMsg, setErrMsg] = useState();
+  // null when idle; while signing in, "" or what to show ("Approve on your
+  // phone…" while the extension path waits for the phone).
+  const [signInStatus, setSignInStatus] = useState(null);
   useEffect(() => {
     handleUserExist();
     // eslint-disable-next-line
@@ -84,6 +93,23 @@ function Login() {
     }
   };
 
+  // "Sign in with BetterSign": a tap on the phone if this browser is linked
+  // through the BetterSign extension, otherwise off to bs-id for the passkey.
+  const startBetterSignLogin = async () => {
+    setSignInStatus("");
+    const r = await signInWithBetterSign({ onStatus: setSignInStatus });
+    if (r.result === "redirecting") return;
+    setSignInStatus(null);
+    if (r.result === "ok") {
+      markBetterSignSession(r.value);
+      await thirdpartyLoginfn(r.value.sessionToken);
+    } else if (r.result === "denied") {
+      showToast("danger", t("home.sign-in-denied"));
+    } else {
+      console.error("BetterSign sign-in failed", r.error);
+      showToast("danger", r.error?.message || t("something-went-wrong-mssg"));
+    }
+  };
 
   const setLocalVar = (user) => {
     localStorage.setItem("accesstoken", user.sessionToken);
@@ -435,14 +461,25 @@ function Login() {
                     size="large"
                     fullWidth
                     sx={{ mt: 2.5 }}
-                    disabled={state.loading}
-                    onClick={() => startBsIdLogin()}
+                    disabled={state.loading || signInStatus !== null}
+                    onClick={startBetterSignLogin}
                     startIcon={
                       <i className="fa-light fa-fingerprint" aria-hidden="true"></i>
                     }
                   >
                     {t("home.sign-in-button")}
                   </Button>
+                  {signInStatus && (
+                    <Typography
+                      variant="body2"
+                      role="status"
+                      sx={{ color: "text.secondary", mt: 1.5, textAlign: "center" }}
+                    >
+                      {SIGN_IN_STATUS_KEYS[signInStatus]
+                        ? t(SIGN_IN_STATUS_KEYS[signInStatus])
+                        : signInStatus}
+                    </Typography>
+                  )}
                   <Typography
                     variant="body2"
                     sx={{ color: "text.secondary", mt: 2 }}

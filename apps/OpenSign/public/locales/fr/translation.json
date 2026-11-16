@@ -1626,6 +1626,9 @@
     "feature-request-text": "envoyez un document à qui vous voulez, dans un ordre défini ou à tous en même temps",
     "feature-verify-title": "Vérifiez partout",
     "feature-verify-text": "chaque document finalisé contient sa piste d'audit",
-    "sign-in-button": "Se connecter avec BetterSign"
+    "sign-in-button": "Se connecter avec BetterSign",
+    "status-approve": "Approuvez sur votre téléphone…",
+    "status-signing-in": "Connexion en cours…",
+    "sign-in-denied": "La connexion a été refusée sur votre téléphone."
   }
 }

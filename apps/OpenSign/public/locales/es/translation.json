@@ -1625,6 +1625,9 @@
     "feature-request-text": "envía un documento a quien quieras, en orden o a todos a la vez",
     "feature-verify-title": "Verifica en cualquier lugar",
     "feature-verify-text": "cada documento completado incluye su registro de auditoría",
-    "sign-in-button": "Iniciar sesión con BetterSign"
+    "sign-in-button": "Iniciar sesión con BetterSign",
+    "status-approve": "Apruébalo en tu teléfono…",
+    "status-signing-in": "Iniciando sesión…",
+    "sign-in-denied": "El inicio de sesión se rechazó en tu teléfono."
   }
 }
