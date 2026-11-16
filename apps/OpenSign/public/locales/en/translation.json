@@ -1656,5 +1656,21 @@
     "cancel": "Cancel",
     "close": "Close",
     "send-again": "Send again"
+  },
+  "home": {
+    "eyebrow": "Open BetterSign · Document signing",
+    "headline": "Sign documents with an identity you hold.",
+    "intro": "Send, sign and verify PDFs. Approve sign-in and signatures on your phone with BetterSign, so there is no password to steal.",
+    "feature-phone-title": "Sign on your phone",
+    "feature-phone-text": "approve each signature with a biometric",
+    "feature-request-title": "Request signatures",
+    "feature-request-text": "send a document to anyone, in order or all at once",
+    "feature-verify-title": "Verify anywhere",
+    "feature-verify-text": "every completed document carries its audit trail",
+    "sign-in-button": "Sign in with BetterSign",
+    "status-approve": "Approve on your phone…",
+    "status-signing-in": "Signing in…",
+    "sign-in-denied": "Sign-in was denied on your phone.",
+    "use-passkey-instead": "Use passkey instead"
   }
 }

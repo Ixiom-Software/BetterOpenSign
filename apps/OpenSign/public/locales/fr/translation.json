@@ -1614,5 +1614,22 @@
   "access-code-upgrade-msg": "Les codes d'accès sont disponibles uniquement dans les forfaits payants. Améliorez votre forfait pour ajouter des codes d'accès aux destinataires.",
   "show-access-code": "Afficher le code d’accès",
   "hide-access-code": "Masquer le code d’accès",
-  "already-copied-to-clipboard": "Déjà copié dans le presse-papiers"
+  "already-copied-to-clipboard": "Déjà copié dans le presse-papiers",
+  "signer-link-hint": "On vous a demandé de signer un document ? Ouvrez le lien figurant dans l'e-mail que vous avez reçu.",
+  "home": {
+    "eyebrow": "Open BetterSign · Signature de documents",
+    "headline": "Signez vos documents avec une identité qui vous appartient.",
+    "intro": "Envoyez, signez et vérifiez des PDF. Approuvez la connexion et les signatures sur votre téléphone avec BetterSign : aucun mot de passe à voler.",
+    "feature-phone-title": "Signez sur votre téléphone",
+    "feature-phone-text": "approuvez chaque signature par biométrie",
+    "feature-request-title": "Demandez des signatures",
+    "feature-request-text": "envoyez un document à qui vous voulez, dans un ordre défini ou à tous en même temps",
+    "feature-verify-title": "Vérifiez partout",
+    "feature-verify-text": "chaque document finalisé contient sa piste d'audit",
+    "sign-in-button": "Se connecter avec BetterSign",
+    "status-approve": "Approuvez sur votre téléphone…",
+    "status-signing-in": "Connexion en cours…",
+    "sign-in-denied": "La connexion a été refusée sur votre téléphone.",
+    "use-passkey-instead": "Utiliser plutôt une clé d'accès"
+  }
 }

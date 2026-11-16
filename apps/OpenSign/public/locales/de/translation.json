@@ -1612,5 +1612,22 @@
   "access-code-upgrade-msg": "Zugangscodes sind nur in kostenpflichtigen Tarifen verfügbar. Aktualisieren Sie Ihren Tarif, um Zugangscodes für Empfänger hinzuzufügen.",
   "show-access-code": "Zugangscode anzeigen",
   "hide-access-code": "Zugangscode ausblenden",
-  "already-copied-to-clipboard": "Bereits in die Zwischenablage kopiert"
+  "already-copied-to-clipboard": "Bereits in die Zwischenablage kopiert",
+  "signer-link-hint": "Sie wurden gebeten, ein Dokument zu unterschreiben? Öffnen Sie den Link in der E-Mail, die Sie erhalten haben.",
+  "home": {
+    "eyebrow": "Open BetterSign · Dokumente unterschreiben",
+    "headline": "Unterschreiben Sie Dokumente mit einer Identität, die Ihnen gehört.",
+    "intro": "PDFs senden, unterschreiben und prüfen. Bestätigen Sie Anmeldung und Unterschriften mit BetterSign auf Ihrem Smartphone – so gibt es kein Passwort, das gestohlen werden kann.",
+    "feature-phone-title": "Auf dem Smartphone unterschreiben",
+    "feature-phone-text": "jede Unterschrift biometrisch bestätigen",
+    "feature-request-title": "Unterschriften anfordern",
+    "feature-request-text": "ein Dokument an beliebige Personen senden, nacheinander oder an alle gleichzeitig",
+    "feature-verify-title": "Überall prüfen",
+    "feature-verify-text": "jedes abgeschlossene Dokument enthält seinen Prüfpfad",
+    "sign-in-button": "Mit BetterSign anmelden",
+    "status-approve": "Bestätigen Sie auf Ihrem Smartphone…",
+    "status-signing-in": "Anmeldung läuft…",
+    "sign-in-denied": "Die Anmeldung wurde auf Ihrem Smartphone abgelehnt.",
+    "use-passkey-instead": "Stattdessen Passkey verwenden"
+  }
 }

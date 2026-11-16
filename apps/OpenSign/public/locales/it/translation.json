@@ -1613,5 +1613,22 @@
   "access-code-upgrade-msg": "I codici di accesso sono disponibili solo nei piani a pagamento. Aggiorna il tuo piano per aggiungere codici di accesso per i destinatari.",
   "show-access-code": "Mostra codice di accesso",
   "hide-access-code": "Nascondi codice di accesso",
-  "already-copied-to-clipboard": "Già copiato negli appunti"
+  "already-copied-to-clipboard": "Già copiato negli appunti",
+  "signer-link-hint": "Ti è stato chiesto di firmare un documento? Apri il link nell'email che hai ricevuto.",
+  "home": {
+    "eyebrow": "Open BetterSign · Firma di documenti",
+    "headline": "Firma i documenti con un'identità che ti appartiene.",
+    "intro": "Invia, firma e verifica PDF. Approva l'accesso e le firme sul tuo telefono con BetterSign, così non c'è nessuna password da rubare.",
+    "feature-phone-title": "Firma sul telefono",
+    "feature-phone-text": "approva ogni firma con la biometria",
+    "feature-request-title": "Richiedi firme",
+    "feature-request-text": "invia un documento a chiunque, in sequenza o a tutti insieme",
+    "feature-verify-title": "Verifica ovunque",
+    "feature-verify-text": "ogni documento completato include la sua traccia di controllo",
+    "sign-in-button": "Accedi con BetterSign",
+    "status-approve": "Approva sul telefono…",
+    "status-signing-in": "Accesso in corso…",
+    "sign-in-denied": "L'accesso è stato rifiutato sul telefono.",
+    "use-passkey-instead": "Usa invece la passkey"
+  }
 }

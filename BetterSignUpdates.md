@@ -40,6 +40,32 @@ operations are covered in [DEPLOYMENT.md](DEPLOYMENT.md).
   ("Approve on your phone…", denied, refused) and a "Use passkey instead"
   link while the phone is being asked. Errors from the sign-in show under
   the button, not as a toast.
+- **Still translated.** The label comes from `home.sign-in-button`. The
+  button writes its status and passkey link in English, so
+  `BetterSignSignInButton` swaps them (its `texts` prop) for `home.status-*`,
+  `home.sign-in-denied` and the new `home.use-passkey-instead` (all seven
+  languages). Server errors (refused, not linked) stay as the server words them.
+
+### 2026-11-15: home page in every language; working language dropdown
+
+- **The home page is translated.** The hero text, the three feature lines, the
+  Sign in with BetterSign button and the signing-link hint now come from
+  `home.*` and `signer-link-hint` in all seven languages (en, es, fr, it, de, hi,
+  kr). They used to be English whatever language was picked. So are the
+  extension sign-in messages ("Approve on your phone…", "Signing in…", "denied
+  on your phone"): the vendored button reports them in English and `Login.jsx`
+  maps them to `home.status-*` / `home.sign-in-denied`. `Login.test.jsx` reads
+  its strings from the English locale file.
+- **The language dropdown shows the language in use.** `i18n.js` used
+  `whitelist`, an option i18next no longer reads, so a browser set to `de-DE`
+  ran as `de-DE` and the dropdown matched no option and showed blank. It now
+  uses `supportedLngs` (regional codes resolve to `en`, `de`, …), and
+  `SelectLanguage` reads the current language from i18n instead of a copy it
+  kept itself. A Korean browser (`ko`) now picks our `kr` translations.
+- **The dropdown is labelled.** It has a "Language" label (translated) and a
+  globe icon; the profile page keeps its own "Language:" text. "Española" is
+  now "Español".
+- **`<html lang>` follows the chosen language**, for screen readers and fonts.
 
 ### 2026-11-15: "Sign on phone" pushes to the BetterSign app
 
@@ -290,6 +316,10 @@ The home page (`apps/OpenSign/src/pages/Login.jsx`) has one way to sign in:
 document to open the link in their email.
 
 There is no email, password or code field on the home page.
+
+All home page text is translated (`home.*` in `public/locales/<lng>/translation.json`).
+The language dropdown under the sign-in card switches it straight away and the
+choice is remembered in the browser (`i18nextLng`).
 
 ### Sign in with BetterSign
 
@@ -627,7 +657,9 @@ changes:
 
 | File | What we changed | Since |
 |---|---|---|
-| `src/pages/Login.jsx` | BetterSign-only sign-in card (bs-id) with the shared `<bettersign-sign-in>` button; password form, code form and "additional info" modal removed; marks a Sign in with BetterSign session (`bsSession`) for Sign on phone | 2026-10-06 → 11-15 |
+| `src/pages/Login.jsx` | BetterSign-only sign-in card (bs-id) with the shared `<bettersign-sign-in>` button; password form, code form and "additional info" modal removed; marks a Sign in with BetterSign session (`bsSession`) for Sign on phone; hero text translated (`home.*`) | 2026-10-06 → 11-15 |
+| `src/i18n.js` | `supportedLngs` instead of the removed `whitelist`; `ko` → `kr`; sets `<html lang>` | 2026-11-15 |
+| `src/components/pdf/SelectLanguage.jsx` | Value read from i18n (no local copy); "Language" label and globe icon; "Español" spelling | 2026-11-15 |
 | `src/pages/GuestLogin.jsx` | 6-digit code input; sends `docId`; shows server errors | 2026-11-13 |
 | `src/pages/UserList.jsx` | Reset-password action removed; Edit user action; BetterSign identities section | 2026-11-13 → 11-15 |
 | `src/json/ReportJson.js` | `usersActions`: reset password removed, Edit added | 2026-11-13 → 11-15 |
@@ -639,7 +671,8 @@ changes:
 | `src/App.jsx` | `/auth/bettersign/callback` route; `/forgetpassword`, `/changepassword` removed | 2026-11-06 → 11-13 |
 | `src/components/Header.jsx`, `Footer.jsx`, `FullScreenButton.jsx`, `ThemeToggle.jsx`, `sidebar/Menu.jsx`, `Sidebar.jsx`, `SubMenu.jsx`, `src/layout/HomeLayout.jsx` | BetterSign brand (ink top bar, wordmark, green pills, brand footer); Change Password menu item removed | 2026-11-06 → 11-13 |
 | `src/index.css`, `src/styles/dark-theme-improvements.css`, `tailwind.config.js`, `index.html`, `public/manifest.json` | Brand colours and DaisyUI themes, theme-color | 2026-11-06 |
-| `public/locales/en/translation.json` | `signer-link-hint`, `bs-identities.*`, edit-user strings, `phone-sign.*` (English only; other languages fall back) | 2026-11-13 → 11-15 |
+| `public/locales/en/translation.json` | `signer-link-hint`, `bs-identities.*`, edit-user strings, `phone-sign.*` (English only; other languages fall back); `home.*` | 2026-11-13 → 11-15 |
+| `public/locales/{es,fr,it,de,hi,kr}/translation.json` | `signer-link-hint`, `home.*` (home page), appended at the end | 2026-11-15 |
 | `package.json`, `package-lock.json` | MUI v7, `@cantoo/pdf-lib`, `patch-package` postinstall | 2026-10-07 → 11-14 |
 
 Repo root: `README.md` (link to this file), `.gitignore`.
