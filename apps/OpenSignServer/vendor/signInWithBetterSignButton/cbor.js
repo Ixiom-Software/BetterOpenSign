@@ -1,4 +1,4 @@
-// Vendored from BetterSignApps server/signInWithBetterSignButton/src/cbor.js (commit fe4d432).
+// Vendored from BetterSignApps server/signInWithBetterSignButton/src/cbor.js (commit b4422dc).
 // Don't edit here: change it there and run
 //   node server/signInWithBetterSignButton/scripts/vendor.mjs <this folder> server
 // --- end of vendoring note ---

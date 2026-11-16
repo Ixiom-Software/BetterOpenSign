@@ -315,7 +315,15 @@ asks the extension first, and the user approves on their phone with one tap
   statement with the vendored `apps/OpenSignServer/vendor/signInWithBetterSignButton/server.js` and the
   signature through the verifier, then signs in the account the VLAD maps to, exactly
   as `bsidlogin` does (same `bs_Identity` rules, same BetterSign session).
-- Both functions are limited per IP (`BS_API_AUTH_RATE_PER_MIN`).
+- Both functions are limited per IP (`BS_API_AUTH_RATE_PER_MIN`), using Fly's
+  `Fly-Client-IP`. Hosting off Fly behind a proxy needs `PARSE_SERVER_TRUST_PROXY`,
+  or every client shares one limit: see DEPLOYMENT.md item 14, "Rate limit off Fly".
+- bs-id's redirect back is only used when its `state` matches the sign-in this tab
+  started (`takeBsIdCallback`). A crafted `?error=`/`?code=` link shows "expired"
+  and leaves a pending sign-in alone.
+- Tests: `spec/bsapi-integration/bsextlogin.spec.js` (server),
+  `src/constant/bsid.test.js` and `src/pages/Login.test.jsx` (frontend, `npm test`
+  in `apps/OpenSign`).
 - To update the vendored copies, run BetterSignApps
   `server/signInWithBetterSignButton/scripts/vendor.mjs` (see its README).
 

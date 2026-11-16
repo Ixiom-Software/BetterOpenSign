@@ -45,8 +45,15 @@ function config() {
 const log = (event, fields) => console.log(JSON.stringify({ event: `bsextlogin_${event}`, ...fields }));
 
 // Both functions are open to anyone, and each stores a row or calls the
-// verifier, so they're limited per IP (in memory, per machine). Fly-Client-IP
-// is set by Fly and can't be sent by the client; off Fly, Parse's request.ip.
+// verifier, so they're limited per IP (in memory, per machine). The IP is
+// Fly-Client-IP, which Fly sets and the client can't send.
+//
+// Off Fly there is no such header, and this falls back to Parse's request.ip:
+// Express's req.ip, with Parse's trustProxy (PARSE_SERVER_TRUST_PROXY, off by
+// default). With it off that's the socket address: right when clients connect
+// directly, but behind a proxy every client shares the proxy's address and
+// one limit, so a flood locks everyone out. Before running anywhere but Fly,
+// see DEPLOYMENT.md ("Through the extension").
 const limiters = new Map();
 async function rateLimit(request, route) {
   const points = Number(process.env.BS_API_AUTH_RATE_PER_MIN) || DEFAULT_PER_MIN;

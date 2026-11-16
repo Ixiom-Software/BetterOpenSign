@@ -1,4 +1,4 @@
-// Vendored from BetterSignApps server/signInWithBetterSignButton/src/browser.js (commit fe4d432).
+// Vendored from BetterSignApps server/signInWithBetterSignButton/src/browser.js (commit b4422dc).
 // Don't edit here: change it there and run
 //   node server/signInWithBetterSignButton/scripts/vendor.mjs <this folder> browser
 // --- end of vendoring note ---
@@ -42,7 +42,7 @@
  *   { result: "failed", error }         the server refused the sign-in
  *
  * Self-contained (no module-level references), so a server-rendered page can
- * inline it as `const extensionSignIn = ${extensionSignIn.toString()};`.
+ * inline it: see extensionSignInSource().
  */
 export async function extensionSignIn({
   rp, getChallenge, complete, onStatus = () => {}, helloTimeoutMs = 1500, requestTimeoutMs = 130000,
@@ -86,6 +86,21 @@ export async function extensionSignIn({
   } catch (error) {
     return { result: "failed", error };
   }
+}
+
+/**
+ * extensionSignIn() as script text, for a server-rendered page with a strict
+ * CSP (oauthService, apiDelegateService): put it inside the page's nonce'd
+ * <script> and call `extensionSignIn({...})` after it.
+ *
+ * Don't inline `extensionSignIn.toString()` yourself: in a bundled Worker the
+ * function's text isn't what's written here. esbuild (wrangler) keeps function
+ * names by wrapping them in calls to its own `__name` helper, which the page
+ * doesn't have, so the inlined code throws. This defines a do-nothing
+ * `__name` first.
+ */
+export function extensionSignInSource() {
+  return "const __name = (f) => f;\nconst extensionSignIn = " + extensionSignIn.toString() + ";";
 }
 
 // --- passkey (bs-id authorization code + PKCE) ------------------------------------
@@ -136,24 +151,26 @@ export function hasPendingPasskeySignIn() {
 }
 
 /**
- * Read bs-id's redirect back. Consumes the stored flow (single use) and checks
- * `state`, so a callback this browser didn't start is refused.
- * Returns { code, codeVerifier, nonce, redirectUri } or { error }.
+ * Read bs-id's redirect back. `state` must match the sign-in this tab started;
+ * only then is the stored flow used up (single use), whether bs-id returned a
+ * code or an error. A redirect that doesn't match, such as a crafted
+ * `?error=…&state=…` link, leaves a pending sign-in alone.
+ * Returns { code, codeVerifier, nonce, redirectUri }, { error }, or
+ * { error, foreign: true } when the redirect isn't this tab's sign-in.
  */
 export function takePasskeyCallback(search, { redirectUri }) {
   const q = new URLSearchParams(search);
-  const raw = sessionStorage.getItem(FLOW_KEY);
-  sessionStorage.removeItem(FLOW_KEY);
-  if (q.get("error")) return { error: q.get("error_description") || q.get("error") };
   let flow;
   try {
-    flow = JSON.parse(raw || "");
+    flow = JSON.parse(sessionStorage.getItem(FLOW_KEY) || "");
   } catch {
     flow = null;
   }
-  if (!flow || !q.get("state") || q.get("state") !== flow.state) {
-    return { error: "This sign-in link has expired. Please try again." };
+  if (!flow || !flow.state || q.get("state") !== flow.state) {
+    return { error: "This sign-in link has expired. Please try again.", foreign: true };
   }
+  sessionStorage.removeItem(FLOW_KEY);
+  if (q.get("error")) return { error: q.get("error_description") || q.get("error") };
   if (!q.get("code")) return { error: "BetterSign returned no sign-in code." };
   return { code: q.get("code"), codeVerifier: flow.verifier, nonce: flow.nonce, redirectUri };
 }
