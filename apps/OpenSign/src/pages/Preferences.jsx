@@ -34,6 +34,7 @@ import Checkbox from "@mui/material/Checkbox";
 import Radio from "@mui/material/Radio";
 import Switch from "@mui/material/Switch";
 import FormControlLabel from "@mui/material/FormControlLabel";
+import { APP_NAME } from "../constant/brand";
 
 const HelpIcon = () => (
   <Box
@@ -52,8 +53,7 @@ const HelpIcon = () => (
 );
 
 const Preferences = () => {
-  const appName =
-    "OpenSign™";
+  const appName = APP_NAME;
   const { t } = useTranslation();
   const dispatch = useDispatch();
   const { isLoader, isTopLoader, alertInfo } = useSelector(

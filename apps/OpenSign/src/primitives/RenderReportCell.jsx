@@ -3,6 +3,7 @@ import { formatDateToDdMmmYyyy } from "../constant/Utils";
 import SignerCell from "./SignerCell";
 import Link from "@mui/material/Link";
 import Box from "@mui/material/Box";
+import { APP_NAME } from "../constant/brand";
 
 function isValidDateString(str) {
   const date = new Date(str);
@@ -38,9 +39,8 @@ export const RenderReportCell = ({
   handleItemClick
 }) => {
   const { t } = useTranslation();
-  const appName =
-    "OpenSign™";
-  const drivename = appName === "OpenSign™" ? "OpenSign™" : "";
+  const appName = APP_NAME;
+  const drivename = appName;
   switch (col) {
     case "Sr.No":
       return (

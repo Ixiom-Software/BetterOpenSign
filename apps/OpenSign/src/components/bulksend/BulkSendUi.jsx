@@ -36,6 +36,7 @@ import PrefillWidgets from "./components/PrefillWidgets";
 import WizardHeader from "./components/WizardHeader";
 import ResponseTab from "./components/ResponseTab";
 import { steps } from "../../json/BulkSendSteps";
+import { APP_NAME } from "../../constant/brand";
 
 const EXCLUDED_PREFILL_TYPES = new Set(["image", "draw"]);
 const EXCLUDED_WIDGET_TYPES = new Set([
@@ -51,8 +52,7 @@ const ALL_EXCLUDED_TYPES = new Set([
 
 const BulkSendUi = (props) => {
   const { t } = useTranslation();
-  const appName =
-    "OpenSign™";
+  const appName = APP_NAME;
   const dispatch = useDispatch();
   const { isBulkLoader } = useSelector((state) => state.widget);
   const [forms, setForms] = useState([]);

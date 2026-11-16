@@ -54,13 +54,13 @@ import MenuItem from "@mui/material/MenuItem";
 import Chip from "@mui/material/Chip";
 import Card from "@mui/material/Card";
 import MuiLink from "@mui/material/Link";
+import { APP_NAME } from "../../constant/brand";
 
 const DocumentsReport = (props) => {
   const copyUrlRef = useRef(null);
   const titleRef = useRef(null);
   const titleElement = useElSize(titleRef);
-  const appName =
-    "OpenSign™";
+  const appName = APP_NAME;
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();

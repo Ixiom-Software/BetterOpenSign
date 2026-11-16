@@ -79,6 +79,7 @@ import {
 import { useScroll } from "../context/ScrollPdfContext";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
+import { APP_NAME } from "../constant/brand";
 //For signYourself inProgress section signer can add sign and complete doc sign.
 function SignYourSelf() {
   const { t } = useTranslation();
@@ -87,8 +88,7 @@ function SignYourSelf() {
   const windowSize = useWindowSize();
   const { scrollRef } = useScroll();
   const isShowModal = useSelector((state) => state.widget.isShowModal);
-  const appName =
-    "OpenSign™";
+  const appName = APP_NAME;
   const divRef = useRef(null);
   const nodeRef = useRef(null);
   const pdfRef = useRef();

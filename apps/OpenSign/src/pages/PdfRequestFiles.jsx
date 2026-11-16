@@ -77,6 +77,7 @@ import { useScroll } from "../context/ScrollPdfContext";
 import Button from "@mui/material/Button";
 import Box from "@mui/material/Box";
 import Divider from "@mui/material/Divider";
+import { APP_NAME } from "../constant/brand";
 
 function PdfRequestFiles(
 ) {
@@ -88,8 +89,7 @@ function PdfRequestFiles(
   const isShowModal = useSelector((state) => state.widget.isShowModal);
   const defaultSignImg = useSelector((state) => state.widget.defaultSignImg);
   const myInitial = useSelector((state) => state.widget.myInitial);
-  const appName =
-    "OpenSign™";
+  const appName = APP_NAME;
   const [pdfDetails, setPdfDetails] = useState([]);
   const [signedSigners, setSignedSigners] = useState([]);
   const [unsignedSigners, setUnSignedSigners] = useState([]);

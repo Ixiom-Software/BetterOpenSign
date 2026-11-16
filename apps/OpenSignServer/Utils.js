@@ -17,7 +17,28 @@ dotenv.config({ quiet: true });
 
 export const cloudServerUrl = 'http://localhost:8080/app';
 export const serverAppId = process.env.APP_ID || 'opensign';
-export const appName = 'OpenSign™';
+// Branding (BetterSignUpdates.md, "Branding"). Upstream says OpenSign™ and
+// points emails at opensignlabs.com; this deployment is BetterSign.
+export const appName = 'BetterSign';
+export const supportEmail = process.env.SUPPORT_EMAIL || 'contact@bettersign.ing';
+// Emails need an absolute URL: the frontend serves public/bettersign-logo.png.
+export const emailLogoUrl =
+  process.env.EMAIL_LOGO_URL || 'https://docsign.bettersign.ing/bettersign-logo.png';
+
+// The line under every email a user sends, so a recipient can report abuse.
+// It names the sender's account (extUserId) so we can find it.
+export const spamReportMsg = extUserId => {
+  const subject = encodeURIComponent(`Spam report for user ID ${extUserId}`);
+  const body = encodeURIComponent(
+    'Hello Support Team,\r\n\r\n' +
+      'I’m reporting spam activity coming from a sender using your platform.\r\n\r\n' +
+      `The messages I received appear unsolicited and suspicious. The user ID associated with the emails is: ${extUserId}. ` +
+      'Please investigate this account and take appropriate action to prevent further abuse.\r\n\r\n' +
+      'If you need additional details, I’m happy to provide the original email headers or screenshots.\r\n\r\n' +
+      'Thank you for looking into this.\r\n\r\nBest regards,\r\n[Your Name]'
+  );
+  return `<p style="font-size: 13px; color:grey; text-align: center;">If you think this email is inappropriate or spam, you may file a complaint with ${appName} <a href="mailto:${supportEmail}?subject=${subject}&body=${body}">here</a>.</p>`;
+};
 export const prefillDraftDocWidget = ['date', 'textbox', 'checkbox', 'radio button', 'image'];
 export const prefillDraftTemWidget = [
   'date',
@@ -669,7 +690,7 @@ export const mailTemplate = param => {
   const themeColor = '#47a3ad';
   const subject = `${param.senderName} has requested you to sign "${param.title}"`;
   const AppName = appName;
-  const logo = `<img src='https://qikinnovation.ams3.digitaloceanspaces.com/logo.png' height='50' />`;
+  const logo = `<img src='${emailLogoUrl}' height='50' />`;
 
   const body =
     "<html><head><meta http-equiv='Content-Type' content='text/html;charset=UTF-8' /></head><body><div style='background-color:#f5f5f5;padding:20px'><div style='background:white;padding-bottom:20px'><div style='padding:10px'>" +

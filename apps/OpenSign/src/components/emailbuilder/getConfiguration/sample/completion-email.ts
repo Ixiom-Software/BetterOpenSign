@@ -1,9 +1,9 @@
 import { TEditorConfiguration } from "../../documents/editor/core";
+import { APP_NAME, EMAIL_LOGO_URL } from "../../../../constant/brand";
 
 const getCompletionEmail = (
 ): TEditorConfiguration => {
-  const appName =
-    "OpenSign™";
+  const appName = APP_NAME;
 
   const logoBlock =
         {
@@ -16,7 +16,7 @@ const getCompletionEmail = (
               props: {
                 width: null,
                 height: 50,
-                url: "https://qikinnovation.ams3.digitaloceanspaces.com/logo.png",
+                url: EMAIL_LOGO_URL,
                 alt: "logo",
                 linkHref: null,
                 contentAlignment: "middle"

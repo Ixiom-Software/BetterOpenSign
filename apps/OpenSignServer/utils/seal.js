@@ -28,13 +28,13 @@ import { P12Signer } from '@signpdf/signer-p12';
 import { Placeholder } from '../cloud/parsefunction/pdf/Placeholder.js';
 import { extendsPdf, sealAppendOnly } from './appendOnlyPdf.js';
 import { parseUploadFile } from './fileUtils.js';
-import { getSecureUrl } from '../Utils.js';
+import { appName, getSecureUrl, supportEmail } from '../Utils.js';
 
 export const BS_SERVICE_IDENTITY = 'bs-service-identity';
 export const P12 = 'p12';
 
-const eSignName = 'OpenSign';
-const eSigncontact = 'hello@opensignlabs.com';
+const eSignName = appName;
+const eSigncontact = supportEmail;
 
 // The certificate to seal `doc` with on the p12 backend, and whether the
 // tenant chose it.
@@ -58,7 +58,7 @@ function serviceConfig() {
 // A field name no earlier field has: the service refuses '.' in a name, so
 // no milliseconds. `attempt` disambiguates a retry within the same second.
 export function sealFieldName(now = new Date(), attempt = 0) {
-  const base = `OpenSign seal ${now.toISOString().replace(/\.\d{3}Z$/, 'Z')}`;
+  const base = `${appName} seal ${now.toISOString().replace(/\.\d{3}Z$/, 'Z')}`;
   return attempt ? `${base} ${attempt + 1}` : base;
 }
 

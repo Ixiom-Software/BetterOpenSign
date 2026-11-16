@@ -43,6 +43,7 @@ import TableBody from "@mui/material/TableBody";
 import TableRow from "@mui/material/TableRow";
 import TableCell from "@mui/material/TableCell";
 import Divider from "@mui/material/Divider";
+import { APP_NAME } from "../../constant/brand";
 
 const isSignExist = (placeholders = []) => {
   const isSignature =
@@ -62,8 +63,7 @@ const TemplatesReport = (props) => {
   const dispatch = useDispatch();
   const titleElement = useElSize(titleRef);
   const { prefillImg, isBulkLoader } = useSelector((state) => state.widget);
-  const appName =
-    "OpenSign™";
+  const appName = APP_NAME;
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();

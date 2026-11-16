@@ -17,6 +17,7 @@ import * as cantoo from '@cantoo/pdf-lib';
 import { SignPdf } from '@signpdf/signpdf';
 import { Placeholder } from '../cloud/parsefunction/pdf/Placeholder.js';
 import getPresignedUrl from '../cloud/parsefunction/getSignedUrl.js';
+import { appName } from '../Utils.js';
 
 // A file URL without its query: contracts_Document's afterFind hands out
 // URL/SignedUrl presigned (a fresh token each read), so compare by path.
@@ -85,7 +86,7 @@ export async function sealAppendOnly({ pdfBytes, p12Signer, reason, name, contac
     contactInfo,
     signatureLength: 16000,
     // A name no earlier signature field can have.
-    fieldName: `OpenSign seal ${new Date().toISOString()}`,
+    fieldName: `${appName} seal ${new Date().toISOString()}`,
     lib: cantoo,
   });
   const withPlaceholder = Buffer.from(await pdfDoc.save());

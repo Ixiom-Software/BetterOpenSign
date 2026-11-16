@@ -10,6 +10,7 @@ operations are covered in [DEPLOYMENT.md](DEPLOYMENT.md).
   - [Recipients: the emailed signing link](#recipients-the-emailed-signing-link)
   - [No username/password sign-in](#no-usernamepassword-sign-in)
   - [Brand UI](#brand-ui)
+  - [Branding: name, logo and contacts](#branding-name-logo-and-contacts)
 - [One-time codes (OTC)](#one-time-codes-otc)
 - [API changes](#api-changes)
 - [Deploying the sign-in lockdown](#deploying-the-sign-in-lockdown-2026-11-13)
@@ -20,6 +21,29 @@ operations are covered in [DEPLOYMENT.md](DEPLOYMENT.md).
 ---
 
 ## Change log
+
+### 2026-11-16: BetterSign name and logo instead of OpenSign's
+
+- **Emails.** Subjects, bodies and the sender name say BetterSign. The logo is the
+  BetterSign wordmark from `https://docsign.bettersign.ing/bettersign-logo.png`,
+  not OpenSign's image on their CDN. The "report spam" line under every email
+  went to `complaints@opensignlabs.com`; it now goes to `contact@bettersign.ing`
+  (`SUPPORT_EMAIL` on the server).
+- **Web app.** BetterSign name, wordmark, favicon and manifest; "BetterSign Drive";
+  all seven languages. The sidebar's social links (OpenSign's GitHub, LinkedIn, X,
+  Discord) are now just our GitHub.
+- **Signed PDFs.** The seal's name is BetterSign, the field is
+  `BetterSign seal <time>`, the contact is `contact@bettersign.ing`, and the
+  completion certificate carries the BetterSign wordmark.
+- **AGPL source offer.** The footer now links to this repository's source and its
+  AGPL-3.0 license, and still says "Built on OpenSign". "All rights reserved" is
+  gone from the copyright line.
+- **Terms.** The first-admin sign-up page's "Terms of Service" link goes to
+  `https://www.bettersign.ing/sign/terms` (`TERMS_URL`), not OpenSign's terms.
+- **No more data to OpenSign Labs.** The first-admin sign-up page offered OpenSign's
+  newsletter and posted the admin's name and email to `app.opensignlabs.com`. The
+  option is gone and the `newsletter` cloud function does nothing.
+- Details: [Branding: name, logo and contacts](#branding-name-logo-and-contacts).
 
 ### 2026-11-15: the home page uses the shared Sign in with BetterSign button
 
@@ -216,7 +240,7 @@ operations are covered in [DEPLOYMENT.md](DEPLOYMENT.md).
 - The seal no longer carries a reason, location or contact. bs-sdk writes the
   signature itself and has no fields for them yet. The certificate's name is
   the service's `BS_SERVICE_SIGNER_NAME`, and the field is named
-  `OpenSign seal <time>`.
+  `OpenSign seal <time>` (`BetterSign seal <time>` since 2026-11-16).
 - Flattening and sealing a normal (not append-only) document are now two steps:
   `processPdf` only flattens, then the seal is added.
 
@@ -463,6 +487,36 @@ The web app is restyled to match the bettersign.ing sites (BetterSignApps
 - DaisyUI themes, global CSS, `theme-color` and the web manifest use the same brand
   palette.
 
+### Branding: name, logo and contacts
+
+OpenSign is AGPL-3.0. The license covers the code, not the OpenSign name or logo
+(§7(e) lets the authors keep their trademarks), and a changed version has to be
+marked as changed (§5(a)). So this deployment calls itself BetterSign and credits
+OpenSign. What we keep: OpenSign's copyright notices and `LICENSE`, "Built on
+OpenSign" in the footer, and a link to our source for everyone who uses the
+hosted app (§13).
+
+- **One place for the name.** Frontend: `apps/OpenSign/src/constant/brand.js`
+  (`APP_NAME`, `SUPPORT_EMAIL`, `WEBSITE_URL`, `TERMS_URL`, `EMAIL_LOGO_URL`,
+  `SOURCE_URL`, `UPSTREAM_URL`). Upstream hard-codes `"OpenSign™"` in about 30
+  files; ours import `APP_NAME` instead. Server: `appName`, `supportEmail`
+  (`SUPPORT_EMAIL`), `emailLogoUrl` (`EMAIL_LOGO_URL`) and `spamReportMsg` in
+  `apps/OpenSignServer/Utils.js`; the email templates in `files/` already use
+  `{{appName}}`.
+- **Logos.** `src/assets/images/logo.png` (header, sign-in), `public/bettersign-logo.png`
+  (emails; the frontend must be deployed for the image to load),
+  `public/logo192.png`, `logo512.png` (manifest), the favicon in
+  `src/constant/appinfo.js`, and `apps/OpenSignServer/images/logo.png`
+  (completion certificate). The wordmark is the BetterSign app icon plus the name
+  in brand ink (`#0f2b3d`).
+- **Translations.** Values in every `public/locales/*/translation.json` say
+  BetterSign and `contact@bettersign.ing`. Keys keep upstream's names
+  (`sidebar.OpenSign™ Drive`, `subscribe-to-opensign`) so upstream merges line up.
+- **Left as OpenSign, on purpose:** links to OpenSign's help docs
+  (`docs.opensignlabs.com`, still the right docs), the fonts on
+  `cdn.opensignlabs.com`, the SSO default in `auth/authadapter.js`, and
+  `public/openapi.json` (upstream's API description).
+
 ---
 
 ## One-time codes (OTC)
@@ -639,7 +693,13 @@ Server (`apps/OpenSignServer/`):
 | `index.js` | Public file uploads (`FILE_UPLOAD_PUBLIC`), `Content-Length` exposed cross-origin | 2026-10-07 |
 | `cloud/main.js` | Registers our cloud functions (`bettersignlogin`, `bsidlogin`, `bsidentity*`, `updateuserbyadmin`, `bsphonesign*`) and the `bs_Identity` save hook; `beforeLogin` hook blocking password sign-in | 2026-10-06 → 11-15 |
 | `cloud/customRoute/customApp.js` | Mounts the desktop API router (`bsapi`) at `/api/v1` | 2026-11-14 |
-| `cloud/parsefunction/pdf/PDF.js` | Append-only signing once a VLAD signed; signing commits as a compare-and-swap on `SignRevision`; the seal goes through `utils/seal.js` | 2026-11-14 → 11-15 |
+| `cloud/parsefunction/pdf/PDF.js` | Append-only signing once a VLAD signed; signing commits as a compare-and-swap on `SignRevision`; the seal goes through `utils/seal.js`; email logo is `emailLogoUrl` | 2026-11-14 → 11-16 |
+| `Utils.js` | `appName` is BetterSign; adds `supportEmail`, `emailLogoUrl`, `spamReportMsg`; `mailTemplate` logo | 2026-11-16 |
+| `cloud/parsefunction/sendMailv3.js`, `sendMailWithAttachment.js`, `sendSystemMail.js` | Spam-report footer from `spamReportMsg` (to `supportEmail`, not `complaints@opensignlabs.com`) | 2026-11-16 |
+| `cloud/parsefunction/declinedocument.js`, `ForwardDoc.js` | Email logo is `emailLogoUrl` | 2026-11-16 |
+| `cloud/parsefunction/Newsletter.js` | Does nothing (upstream posts to `app.opensignlabs.com`) | 2026-11-16 |
+| `cloud/customRoute/docxtopdf.js` | Error messages name `supportEmail` | 2026-11-16 |
+| `images/logo.png` | BetterSign wordmark (completion certificate) | 2026-11-16 |
 | `cloud/parsefunction/pdf/Placeholder.js` | Signature placeholder keeps indirect AcroForm `/Fields` and `/SigFlags` (needed for incremental updates) | 2026-11-14 |
 | `cloud/parsefunction/DocumentBeforesave.js` | `VladSignatures`, `SignRevision`, `Seal`, `CertificateSeal` writable only with the master key (creates checked with `has()`) | 2026-11-14 → 11-15 |
 | `cloud/parsefunction/generateCertificatebydocId.js` | Certificate sealed through `utils/seal.js` | 2026-11-15 |
@@ -667,12 +727,18 @@ changes:
 | `src/pages/SignyourselfPdf.jsx`, `src/components/pdf/VerifyEmail.jsx` | 6-digit codes; "code sent" only on success; `SignyourselfPdf` passes the document id to Sign on phone | 2026-11-13 → 11-15 |
 | `src/pages/PdfRequestFiles.jsx` | Append-only signing for documents a VLAD signed; passes the document id to Sign on phone | 2026-11-14 → 11-15 |
 | `src/components/pdf/WidgetsValueModal.jsx` | "Sign on phone" (PhoneSign), only for a Sign in with BetterSign session on a saved document | 2026-10-06 → 11-15 |
-| `src/constant/Utils.js` | `runPublicCloudFn`; `handleSendOTP` sends the session; keeps signature fields when flattening an append-only PDF | 2026-11-13 → 11-14 |
+| `src/constant/Utils.js` | `runPublicCloudFn`; `handleSendOTP` sends the session; keeps signature fields when flattening an append-only PDF; app name, email logo and support address from `brand.js` | 2026-11-13 → 11-16 |
+| Files that hard-coded `"OpenSign™"`: `src/components/Title.jsx`, `bulksend/BulkSendUi.jsx`, `pdf/EditTemplate.jsx`, `preferences/MailTemplateEditor.jsx`, `shared/fields/FolderModal.jsx`, `shared/fields/SelectFolder.jsx`, `emailbuilder/getConfiguration/sample/{request,completion}-email.ts`, `src/pages/Form.jsx`, `Opensigndrive.jsx`, `Preferences.jsx`, `UpdateExistUserAdmin.jsx`, `src/primitives/DownloadPdfZip.jsx`, `RenderReportCell.jsx`, `src/reports/document/DocumentsReport.jsx`, `src/reports/template/TemplatesReport.jsx` (also `Login.jsx`, `GuestLogin.jsx`, `SignyourselfPdf.jsx`, `PdfRequestFiles.jsx` and the brand files above) | Import `APP_NAME` from `src/constant/brand.js`; the email samples use `EMAIL_LOGO_URL`. On merge, any new `"OpenSign™"` from upstream becomes `APP_NAME` | 2026-11-16 |
+| `src/pages/AddAdmin.jsx` | Terms link is `TERMS_URL` (bettersign.ing/sign/terms); OpenSign newsletter opt-in removed | 2026-11-16 |
+| `src/components/pdf/AgreementContent.jsx` | Support link and address are bettersign.ing | 2026-11-16 |
+| `src/components/SocialMedia.jsx` | Only a GitHub link, to this repository | 2026-11-16 |
+| `src/constant/appinfo.js`, `src/assets/images/logo.png` | BetterSign favicon and wordmark | 2026-11-16 |
 | `src/App.jsx` | `/auth/bettersign/callback` route; `/forgetpassword`, `/changepassword` removed | 2026-11-06 → 11-13 |
-| `src/components/Header.jsx`, `Footer.jsx`, `FullScreenButton.jsx`, `ThemeToggle.jsx`, `sidebar/Menu.jsx`, `Sidebar.jsx`, `SubMenu.jsx`, `src/layout/HomeLayout.jsx` | BetterSign brand (ink top bar, wordmark, green pills, brand footer); Change Password menu item removed | 2026-11-06 → 11-13 |
-| `src/index.css`, `src/styles/dark-theme-improvements.css`, `tailwind.config.js`, `index.html`, `public/manifest.json` | Brand colours and DaisyUI themes, theme-color | 2026-11-06 |
+| `src/components/Header.jsx`, `Footer.jsx`, `FullScreenButton.jsx`, `ThemeToggle.jsx`, `sidebar/Menu.jsx`, `Sidebar.jsx`, `SubMenu.jsx`, `src/layout/HomeLayout.jsx` | BetterSign brand (ink top bar, wordmark, green pills, brand footer); Change Password menu item removed; footer links our source and AGPL-3.0 license, "Built on OpenSign" | 2026-11-06 → 11-16 |
+| `src/index.css`, `src/styles/dark-theme-improvements.css`, `tailwind.config.js`, `index.html`, `public/manifest.json` | Brand colours and DaisyUI themes, theme-color; manifest name BetterSign | 2026-11-06 → 11-16 |
 | `public/locales/en/translation.json` | `signer-link-hint`, `bs-identities.*`, edit-user strings, `phone-sign.*` (English only; other languages fall back); `home.*` | 2026-11-13 → 11-15 |
 | `public/locales/{es,fr,it,de,hi,kr}/translation.json` | `signer-link-hint`, `home.*` (home page), appended at the end | 2026-11-15 |
+| `public/locales/*/translation.json` (all seven) | Values say BetterSign instead of OpenSign / OpenSign™, and `contact@bettersign.ing` instead of `*@opensignlabs.com`; keys unchanged | 2026-11-16 |
 | `package.json`, `package-lock.json` | MUI v7, `@cantoo/pdf-lib`, `patch-package` postinstall | 2026-10-07 → 11-14 |
 
 Repo root: `README.md` (link to this file), `.gitignore`.
@@ -697,7 +763,9 @@ changes them, drop the change; if upstream adds new imports of them, remove thos
   `src/constant/bsid.js` (+ test), `src/components/BetterSignSignInButton.jsx`,
   `src/vendor/signInWithBetterSignButton/*` (vendored), `src/components/BrandHero.jsx`, `BsIdentities.jsx`,
   `EditUser.jsx` (both with `*.test.jsx`), `pdf/PhoneSign.jsx` (+ test), `src/utils/appendOnlyPdf.js` (+ test),
-  `src/assets/images/bettersign-icon.png`, `patches/parse+8.6.0.patch`,
+  `src/assets/images/bettersign-icon.png`, `src/constant/brand.js`,
+  `public/bettersign-logo.png`, `public/logo192.png`, `public/logo512.png`,
+  `patches/parse+8.6.0.patch`,
   `MD3_MIGRATION.md`.
 - **Tests and CI:** `apps/OpenSignServer/spec/bsapi/*`, `spec/bsapi-integration/*`,
   `spec/support/bsapi*.json`, `.github/workflows/bettersign-tests.yml`.
