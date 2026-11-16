@@ -1613,5 +1613,18 @@
   "access-code-upgrade-msg": "접속 코드는 유료 요금제에서만 사용할 수 있습니다. 수신자에게 접속 코드를 추가하려면 요금제를 업그레이드하세요.",
   "show-access-code": "액세스 코드 표시",
   "hide-access-code": "액세스 코드 숨기기",
-  "already-copied-to-clipboard": "이미 클립보드에 복사됨"
+  "already-copied-to-clipboard": "이미 클립보드에 복사됨",
+  "signer-link-hint": "문서 서명 요청을 받으셨나요? 받은 이메일의 링크를 여세요.",
+  "home": {
+    "eyebrow": "Open BetterSign · 문서 서명",
+    "headline": "내가 가진 신원으로 문서에 서명하세요.",
+    "intro": "PDF를 보내고, 서명하고, 검증하세요. BetterSign으로 휴대폰에서 로그인과 서명을 승인하므로 도난당할 비밀번호가 없습니다.",
+    "feature-phone-title": "휴대폰으로 서명",
+    "feature-phone-text": "생체 인증으로 모든 서명을 승인",
+    "feature-request-title": "서명 요청",
+    "feature-request-text": "누구에게나 문서를 보내고, 순서대로 또는 한 번에 서명 받기",
+    "feature-verify-title": "어디서나 검증",
+    "feature-verify-text": "완료된 모든 문서에 감사 추적이 포함됨",
+    "sign-in-button": "BetterSign으로 로그인"
+  }
 }

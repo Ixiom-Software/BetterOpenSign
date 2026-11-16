@@ -327,13 +327,14 @@ function Login() {
               }}
             >
               {width >= 768 && (
-                <Box>
+                // keep-all: wrap Korean at spaces, not mid-word.
+                <Box sx={{ wordBreak: "keep-all" }}>
                   <Typography
                     variant="overline"
                     component="p"
                     sx={{ color: bs.teal, letterSpacing: "0.22em", mb: 2.25 }}
                   >
-                    Open BetterSign &middot; Document signing
+                    {t("home.eyebrow")}
                   </Typography>
                   <Typography
                     variant="h1"
@@ -343,7 +344,7 @@ function Login() {
                       mb: 2.75
                     }}
                   >
-                    Sign documents with an identity you hold.
+                    {t("home.headline")}
                   </Typography>
                   <Typography
                     sx={{
@@ -354,19 +355,18 @@ function Login() {
                       mb: 3.25
                     }}
                   >
-                    Send, sign and verify PDFs. Approve sign-in and signatures
-                    on your phone with BetterSign, so there is no password to
-                    steal.
+                    {t("home.intro")}
                   </Typography>
                   <Box
                     component="ul"
                     sx={{ listStyle: "none", p: 0, m: 0, display: "grid", gap: 1.5 }}
                   >
-                    {[
-                      ["Sign on your phone", "approve each signature with a biometric"],
-                      ["Request signatures", "send a document to anyone, in order or all at once"],
-                      ["Verify anywhere", "every completed document carries its audit trail"]
-                    ].map(([title, text]) => (
+                    {["phone", "request", "verify"]
+                      .map((key) => [
+                        t(`home.feature-${key}-title`),
+                        t(`home.feature-${key}-text`)
+                      ])
+                      .map(([title, text]) => (
                       <Box
                         component="li"
                         key={title}
@@ -441,7 +441,7 @@ function Login() {
                       <i className="fa-light fa-fingerprint" aria-hidden="true"></i>
                     }
                   >
-                    Sign in with BetterSign
+                    {t("home.sign-in-button")}
                   </Button>
                   <Typography
                     variant="body2"
