@@ -16,7 +16,9 @@ i18n
       // Specifies the default language to fall back to if the detected language is not available.
       order: ["localStorage", "navigator"],
       // Defines where the detected language should be cached.
-      caches: ["localStorage"]
+      caches: ["localStorage"],
+      // Browsers report Korean as "ko"; our Korean locale folder is "kr".
+      convertDetectedLanguage: (lng) => (/^ko\b/i.test(lng) ? "kr" : lng)
     },
     ns: ["translation"], // default namespace
     defaultNS: "translation", // default namespace
@@ -25,7 +27,14 @@ i18n
     interpolation: {
       escapeValue: false // Not needed for react as it escapes by default
     },
-    whitelist: ["en", "es", "fr", "it", "de", "hi", "kr"] // List of allowed languages
+    // List of allowed languages; a regional code such as "en-US" resolves to
+    // "en", so the language dropdown always has a matching option.
+    supportedLngs: ["en", "es", "fr", "it", "de", "hi", "kr"]
   });
+
+// Keep <html lang> in step so screen readers and fonts follow the language.
+i18n.on("languageChanged", (lng) => {
+  document.documentElement.lang = lng === "kr" ? "ko" : lng;
+});
 
 export default i18n;

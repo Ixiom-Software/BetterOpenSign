@@ -14,9 +14,12 @@ vi.mock("react-router", () => ({
   useNavigate: () => vi.fn(),
   useLocation: () => ({ pathname: "/", search: "", state: null })
 }));
-vi.mock("react-i18next", () => ({
-  useTranslation: () => ({ t: (k) => k, i18n: { language: "en" } })
-}));
+// English strings from the real locale file, so the tests read like the page.
+vi.mock("react-i18next", async () => {
+  const en = (await import("../../public/locales/en/translation.json")).default;
+  const t = (k) => k.split(".").reduce((o, p) => o?.[p], en) ?? k;
+  return { useTranslation: () => ({ t, i18n: { language: "en" } }) };
+});
 vi.mock("../constant/Utils", () => ({
   getAppLogo: vi.fn(async () => ({ logo: "" })),
   saveLanguageInLocal: vi.fn(),

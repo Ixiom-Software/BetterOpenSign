@@ -1613,5 +1613,21 @@
   "access-code-upgrade-msg": "Los códigos de acceso solo están disponibles en planes de pago. Actualice su plan para agregar códigos de acceso a los destinatarios.",
   "show-access-code": "Mostrar código de acceso",
   "hide-access-code": "Ocultar código de acceso",
-  "already-copied-to-clipboard": "Ya copiado al portapapeles"
+  "already-copied-to-clipboard": "Ya copiado al portapapeles",
+  "signer-link-hint": "¿Te han pedido firmar un documento? Abre el enlace del correo electrónico que recibiste.",
+  "home": {
+    "eyebrow": "Open BetterSign · Firma de documentos",
+    "headline": "Firma documentos con una identidad que te pertenece.",
+    "intro": "Envía, firma y verifica archivos PDF. Aprueba el inicio de sesión y las firmas en tu teléfono con BetterSign, así no hay contraseña que robar.",
+    "feature-phone-title": "Firma en tu teléfono",
+    "feature-phone-text": "aprueba cada firma con tu huella o tu rostro",
+    "feature-request-title": "Solicita firmas",
+    "feature-request-text": "envía un documento a quien quieras, en orden o a todos a la vez",
+    "feature-verify-title": "Verifica en cualquier lugar",
+    "feature-verify-text": "cada documento completado incluye su registro de auditoría",
+    "sign-in-button": "Iniciar sesión con BetterSign",
+    "status-approve": "Apruébalo en tu teléfono…",
+    "status-signing-in": "Iniciando sesión…",
+    "sign-in-denied": "El inicio de sesión se rechazó en tu teléfono."
+  }
 }

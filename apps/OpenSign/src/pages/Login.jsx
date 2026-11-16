@@ -28,6 +28,12 @@ import Paper from "@mui/material/Paper";
 import Button from "@mui/material/Button";
 import Typography from "@mui/material/Typography";
 
+// The vendored sign-in button reports progress in English; show it translated.
+const SIGN_IN_STATUS_KEYS = {
+  "Approve on your phone…": "home.status-approve",
+  "Signing in…": "home.status-signing-in"
+};
+
 function Login() {
   const appName =
     "OpenSign™";
@@ -98,7 +104,7 @@ function Login() {
       markBetterSignSession(r.value);
       await thirdpartyLoginfn(r.value.sessionToken);
     } else if (r.result === "denied") {
-      showToast("danger", "Sign-in was denied on your phone.");
+      showToast("danger", t("home.sign-in-denied"));
     } else {
       console.error("BetterSign sign-in failed", r.error);
       showToast("danger", r.error?.message || t("something-went-wrong-mssg"));
@@ -347,13 +353,14 @@ function Login() {
               }}
             >
               {width >= 768 && (
-                <Box>
+                // keep-all: wrap Korean at spaces, not mid-word.
+                <Box sx={{ wordBreak: "keep-all" }}>
                   <Typography
                     variant="overline"
                     component="p"
                     sx={{ color: bs.teal, letterSpacing: "0.22em", mb: 2.25 }}
                   >
-                    Open BetterSign &middot; Document signing
+                    {t("home.eyebrow")}
                   </Typography>
                   <Typography
                     variant="h1"
@@ -363,7 +370,7 @@ function Login() {
                       mb: 2.75
                     }}
                   >
-                    Sign documents with an identity you hold.
+                    {t("home.headline")}
                   </Typography>
                   <Typography
                     sx={{
@@ -374,19 +381,18 @@ function Login() {
                       mb: 3.25
                     }}
                   >
-                    Send, sign and verify PDFs. Approve sign-in and signatures
-                    on your phone with BetterSign, so there is no password to
-                    steal.
+                    {t("home.intro")}
                   </Typography>
                   <Box
                     component="ul"
                     sx={{ listStyle: "none", p: 0, m: 0, display: "grid", gap: 1.5 }}
                   >
-                    {[
-                      ["Sign on your phone", "approve each signature with a biometric"],
-                      ["Request signatures", "send a document to anyone, in order or all at once"],
-                      ["Verify anywhere", "every completed document carries its audit trail"]
-                    ].map(([title, text]) => (
+                    {["phone", "request", "verify"]
+                      .map((key) => [
+                        t(`home.feature-${key}-title`),
+                        t(`home.feature-${key}-text`)
+                      ])
+                      .map(([title, text]) => (
                       <Box
                         component="li"
                         key={title}
@@ -461,7 +467,7 @@ function Login() {
                       <i className="fa-light fa-fingerprint" aria-hidden="true"></i>
                     }
                   >
-                    Sign in with BetterSign
+                    {t("home.sign-in-button")}
                   </Button>
                   {signInStatus && (
                     <Typography
@@ -469,7 +475,9 @@ function Login() {
                       role="status"
                       sx={{ color: "text.secondary", mt: 1.5, textAlign: "center" }}
                     >
-                      {signInStatus}
+                      {SIGN_IN_STATUS_KEYS[signInStatus]
+                        ? t(SIGN_IN_STATUS_KEYS[signInStatus])
+                        : signInStatus}
                     </Typography>
                   )}
                   <Typography
