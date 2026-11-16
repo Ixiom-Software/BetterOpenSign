@@ -38,6 +38,8 @@ operations are covered in [DEPLOYMENT.md](DEPLOYMENT.md).
 - **AGPL source offer.** The footer now links to this repository's source and its
   AGPL-3.0 license, and still says "Built on OpenSign". "All rights reserved" is
   gone from the copyright line.
+- **Terms.** The first-admin sign-up page's "Terms of Service" link goes to
+  `https://www.bettersign.ing/sign/terms` (`TERMS_URL`), not OpenSign's terms.
 - **No more data to OpenSign Labs.** The first-admin sign-up page offered OpenSign's
   newsletter and posted the admin's name and email to `app.opensignlabs.com`. The
   option is gone and the `newsletter` cloud function does nothing.
@@ -727,7 +729,7 @@ changes:
 | `src/components/pdf/WidgetsValueModal.jsx` | "Sign on phone" (PhoneSign), only for a Sign in with BetterSign session on a saved document | 2026-10-06 → 11-15 |
 | `src/constant/Utils.js` | `runPublicCloudFn`; `handleSendOTP` sends the session; keeps signature fields when flattening an append-only PDF; app name, email logo and support address from `brand.js` | 2026-11-13 → 11-16 |
 | Files that hard-coded `"OpenSign™"`: `src/components/Title.jsx`, `bulksend/BulkSendUi.jsx`, `pdf/EditTemplate.jsx`, `preferences/MailTemplateEditor.jsx`, `shared/fields/FolderModal.jsx`, `shared/fields/SelectFolder.jsx`, `emailbuilder/getConfiguration/sample/{request,completion}-email.ts`, `src/pages/Form.jsx`, `Opensigndrive.jsx`, `Preferences.jsx`, `UpdateExistUserAdmin.jsx`, `src/primitives/DownloadPdfZip.jsx`, `RenderReportCell.jsx`, `src/reports/document/DocumentsReport.jsx`, `src/reports/template/TemplatesReport.jsx` (also `Login.jsx`, `GuestLogin.jsx`, `SignyourselfPdf.jsx`, `PdfRequestFiles.jsx` and the brand files above) | Import `APP_NAME` from `src/constant/brand.js`; the email samples use `EMAIL_LOGO_URL`. On merge, any new `"OpenSign™"` from upstream becomes `APP_NAME` | 2026-11-16 |
-| `src/pages/AddAdmin.jsx` | Terms link is `TERMS_URL`; OpenSign newsletter opt-in removed | 2026-11-16 |
+| `src/pages/AddAdmin.jsx` | Terms link is `TERMS_URL` (bettersign.ing/sign/terms); OpenSign newsletter opt-in removed | 2026-11-16 |
 | `src/components/pdf/AgreementContent.jsx` | Support link and address are bettersign.ing | 2026-11-16 |
 | `src/components/SocialMedia.jsx` | Only a GitHub link, to this repository | 2026-11-16 |
 | `src/constant/appinfo.js`, `src/assets/images/logo.png` | BetterSign favicon and wordmark | 2026-11-16 |
@@ -799,9 +801,6 @@ changes them, drop the change; if upstream adds new imports of them, remove thos
 
 Known issues, found in review on 2026-11-15:
 
-- **No terms page (branding, 2026-11-16).** The first-admin sign-up page's "Terms
-  of Service" link goes to `TERMS_URL` in `src/constant/brand.js`, which is the
-  bettersign.ing privacy page for now. Point it at real terms once they exist.
 - **An org admin can sign in as the tenant admin (security, fix first).** The
   BetterSign identities functions (`cloud/parsefunction/bsIdentityAdmin.js`) let
   org admins in and offer every account in the tenant. So an org admin can link a

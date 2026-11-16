@@ -4,8 +4,7 @@
 export const APP_NAME = "BetterSign";
 export const SUPPORT_EMAIL = "contact@bettersign.ing";
 export const WEBSITE_URL = "https://www.bettersign.ing/";
-// No terms page on bettersign.ing yet; the privacy page stands in.
-export const TERMS_URL = "https://www.bettersign.ing/privacy/";
+export const TERMS_URL = "https://www.bettersign.ing/sign/terms";
 // Emails need an absolute URL. The file is public/bettersign-logo.png.
 export const EMAIL_LOGO_URL =
   "https://docsign.bettersign.ing/bettersign-logo.png";
