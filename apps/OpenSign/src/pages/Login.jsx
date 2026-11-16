@@ -18,20 +18,18 @@ import Loader from "../primitives/Loader";
 import { useTranslation } from "react-i18next";
 import SelectLanguage from "../components/pdf/SelectLanguage";
 import { markBetterSignSession } from "../components/pdf/PhoneSign";
-import {
-  BSID_CALLBACK_PATH,
-  signInWithBetterSign,
-  takeBsIdCallback
-} from "../constant/bsid";
+import { BSID_CALLBACK_PATH } from "../constant/bsid";
+import BetterSignSignInButton from "../components/BetterSignSignInButton";
 import Box from "@mui/material/Box";
 import Paper from "@mui/material/Paper";
-import Button from "@mui/material/Button";
 import Typography from "@mui/material/Typography";
 
-// The vendored sign-in button reports progress in English; show it translated.
-const SIGN_IN_STATUS_KEYS = {
+// The vendored sign-in button writes these in English; show them translated.
+const SIGN_IN_TEXT_KEYS = {
   "Approve on your phone…": "home.status-approve",
-  "Signing in…": "home.status-signing-in"
+  "Signing in…": "home.status-signing-in",
+  "Sign-in was denied on your phone.": "home.sign-in-denied",
+  "Use passkey instead": "home.use-passkey-instead"
 };
 
 function Login() {
@@ -52,64 +50,43 @@ function Login() {
   // A tenant's own logo (white-label); the default one is replaced by the brand mark.
   const isCustomLogo = image && image !== appInfo?.applogo;
   const [errMsg, setErrMsg] = useState();
-  // null when idle; while signing in, "" or what to show ("Approve on your
-  // phone…" while the extension path waits for the phone).
-  const [signInStatus, setSignInStatus] = useState(null);
   useEffect(() => {
-    handleUserExist();
+    checkUserExt();
     // eslint-disable-next-line
   }, []);
 
-  const handleUserExist = async () => {
-    await checkUserExt();
-    if (location.pathname === BSID_CALLBACK_PATH) {
-      await finishBsIdLogin();
+  // Back from bs-id the button has already dropped the code from the address
+  // bar; this leaves the callback path too, without remounting this page.
+  const leaveCallbackPath = () => {
+    if (window.location.pathname === BSID_CALLBACK_PATH) {
+      window.history.replaceState(null, "", "/");
     }
   };
 
-  // Back from bs-id ("Sign in with BetterSign"): trade the code for a session.
-  const finishBsIdLogin = async () => {
-    const cb = takeBsIdCallback(location.search);
-    // Drop the code from the address bar without remounting this page.
-    window.history.replaceState(null, "", "/");
-    if (cb.error) {
-      showToast("danger", cb.error);
-      return;
-    }
+  // "Sign in with BetterSign" (the button: a tap on the phone through the
+  // BetterSign extension, or the passkey at bs-id) gave us a session.
+  const onBetterSignSignedIn = async (value) => {
+    leaveCallbackPath();
     setState((prev) => ({ ...prev, loading: true }));
     try {
-      const res = await Parse.Cloud.run("bsidlogin", {
-        code: cb.code,
-        codeVerifier: cb.codeVerifier,
-        nonce: cb.nonce,
-        redirectUri: cb.redirectUri
-      });
       // Marks this session as a BetterSign one ("Sign on phone", PhoneSign.jsx).
-      markBetterSignSession(res);
-      await thirdpartyLoginfn(res.sessionToken);
+      markBetterSignSession(value);
+      await thirdpartyLoginfn(value.sessionToken);
     } catch (error) {
       console.error("BetterSign sign-in failed", error);
       showToast("danger", error?.message || t("something-went-wrong-mssg"));
     }
   };
 
-  // "Sign in with BetterSign": a tap on the phone if this browser is linked
-  // through the BetterSign extension, otherwise off to bs-id for the passkey.
-  const startBetterSignLogin = async () => {
-    setSignInStatus("");
-    const r = await signInWithBetterSign({ onStatus: setSignInStatus });
-    if (r.result === "redirecting") return;
-    setSignInStatus(null);
-    if (r.result === "ok") {
-      markBetterSignSession(r.value);
-      await thirdpartyLoginfn(r.value.sessionToken);
-    } else if (r.result === "denied") {
-      showToast("danger", t("home.sign-in-denied"));
-    } else {
-      console.error("BetterSign sign-in failed", r.error);
-      showToast("danger", r.error?.message || t("something-went-wrong-mssg"));
-    }
+  // The button shows the error itself.
+  const onBetterSignError = (error) => {
+    leaveCallbackPath();
+    console.error("BetterSign sign-in failed", error);
   };
+
+  const signInTexts = Object.fromEntries(
+    Object.entries(SIGN_IN_TEXT_KEYS).map(([en, key]) => [en, t(key)])
+  );
 
   const setLocalVar = (user) => {
     localStorage.setItem("accesstoken", user.sessionToken);
@@ -455,31 +432,15 @@ function Login() {
                   >
                     {t("Login-to-your-account")}
                   </Typography>
-                  <Button
-                    type="button"
-                    variant="contained"
-                    size="large"
-                    fullWidth
-                    sx={{ mt: 2.5 }}
-                    disabled={state.loading || signInStatus !== null}
-                    onClick={startBetterSignLogin}
-                    startIcon={
-                      <i className="fa-light fa-fingerprint" aria-hidden="true"></i>
-                    }
-                  >
-                    {t("home.sign-in-button")}
-                  </Button>
-                  {signInStatus && (
-                    <Typography
-                      variant="body2"
-                      role="status"
-                      sx={{ color: "text.secondary", mt: 1.5, textAlign: "center" }}
-                    >
-                      {SIGN_IN_STATUS_KEYS[signInStatus]
-                        ? t(SIGN_IN_STATUS_KEYS[signInStatus])
-                        : signInStatus}
-                    </Typography>
-                  )}
+                  <Box sx={{ mt: 2.5 }}>
+                    <BetterSignSignInButton
+                      disabled={state.loading}
+                      label={t("home.sign-in-button")}
+                      texts={signInTexts}
+                      onSignedIn={onBetterSignSignedIn}
+                      onError={onBetterSignError}
+                    />
+                  </Box>
                   <Typography
                     variant="body2"
                     sx={{ color: "text.secondary", mt: 2 }}

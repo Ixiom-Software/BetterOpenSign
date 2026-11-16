@@ -1627,6 +1627,7 @@
     "sign-in-button": "Mit BetterSign anmelden",
     "status-approve": "Bestätigen Sie auf Ihrem Smartphone…",
     "status-signing-in": "Anmeldung läuft…",
-    "sign-in-denied": "Die Anmeldung wurde auf Ihrem Smartphone abgelehnt."
+    "sign-in-denied": "Die Anmeldung wurde auf Ihrem Smartphone abgelehnt.",
+    "use-passkey-instead": "Stattdessen Passkey verwenden"
   }
 }

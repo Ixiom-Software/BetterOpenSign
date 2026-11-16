@@ -21,6 +21,31 @@ operations are covered in [DEPLOYMENT.md](DEPLOYMENT.md).
 
 ## Change log
 
+### 2026-11-15: the home page uses the shared Sign in with BetterSign button
+
+- **The real drop-in button.** The home page now shows `<bettersign-sign-in>`,
+  the custom element from BetterSignApps `server/signInWithBetterSignButton`
+  (`button.js`, vendored with `browser.js` into
+  `apps/OpenSign/src/vendor/signInWithBetterSignButton/`). Our own MUI button
+  and its status line are gone.
+- **Same server side.** `components/BetterSignSignInButton.jsx` mounts the
+  element with hooks that send each step to the existing cloud functions
+  (`bsextchallenge`, `bsextlogin`, `bsidlogin`) instead of the kit's
+  `/bettersign` routes. `constant/bsid.js` now gives those hooks and this
+  site's bs-id settings (`signInButtonOptions()`).
+- **The button finishes bs-id's redirect itself.** On
+  `/auth/bettersign/callback` it reads the code (checked against `state`) and
+  calls `bsidlogin`. `Login.jsx` only takes the session it returns.
+- **What users see:** the brand's green pill, a status line under it
+  ("Approve on your phone…", denied, refused) and a "Use passkey instead"
+  link while the phone is being asked. Errors from the sign-in show under
+  the button, not as a toast.
+- **Still translated.** The label comes from `home.sign-in-button`. The
+  button writes its status and passkey link in English, so
+  `BetterSignSignInButton` swaps them (its `texts` prop) for `home.status-*`,
+  `home.sign-in-denied` and the new `home.use-passkey-instead` (all seven
+  languages). Server errors (refused, not linked) stay as the server words them.
+
 ### 2026-11-15: home page in every language; working language dropdown
 
 - **The home page is translated.** The hero text, the three feature lines, the
@@ -302,12 +327,16 @@ Sign-in goes through **bs-id** (`https://id.bettersign.ing`), the BetterSign OID
 provider. The user approves with the passkey on their phone (QR scan, or the same
 device), so there is no password to steal.
 
-- The browser runs an authorization code + PKCE flow
-  (`apps/OpenSign/src/constant/bsid.js`). `startBsIdLogin()` keeps the state, nonce and
-  PKCE verifier in `sessionStorage` and redirects to bs-id.
-- bs-id returns to `/auth/bettersign/callback`. `Login.jsx` reads the result with
-  `takeBsIdCallback()`, removes the code from the address bar, and calls the
-  `bsidlogin` cloud function.
+- The button is the shared `<bettersign-sign-in>` element, vendored from
+  BetterSignApps (`apps/OpenSign/src/vendor/signInWithBetterSignButton/button.js`)
+  and mounted by `src/components/BetterSignSignInButton.jsx` with this site's
+  settings and hooks (`apps/OpenSign/src/constant/bsid.js`).
+- The browser runs an authorization code + PKCE flow. The button keeps the state,
+  nonce and PKCE verifier in `sessionStorage` and redirects to bs-id.
+- bs-id returns to `/auth/bettersign/callback`, which shows `Login.jsx` and so the
+  button. The button reads the result, removes the code from the address bar, and
+  calls the `bsidlogin` cloud function. `Login.jsx` then leaves the callback path
+  and finishes signing in with the session.
 - `bsidlogin` (`apps/OpenSignServer/cloud/parsefunction/bsidlogin.js`) exchanges the
   code at bs-id `/token`, verifies the ES256 `id_token` against bs-id `/jwks` (`iss`,
   `aud`, `nonce`, `exp`, `iat`) and returns a session for the account that the token's
@@ -329,10 +358,11 @@ That links the extension to this site. From then on, **Sign in with BetterSign**
 asks the extension first, and the user approves on their phone with one tap
 (BetterSignApps `docs/Technical/extension-login-design.md` §4.3):
 
-- The browser half is the shared kit vendored from BetterSignApps `server/signInWithBetterSignButton`
-  (`apps/OpenSign/src/vendor/signInWithBetterSignButton/browser.js`); `constant/bsid.js` gives it this
-  site's settings. If the extension isn't there, this browser isn't linked, or the
-  phone doesn't answer, it goes to bs-id's passkey page as before.
+- The browser half is the shared button vendored from BetterSignApps `server/signInWithBetterSignButton`
+  (`apps/OpenSign/src/vendor/signInWithBetterSignButton/button.js` and `browser.js`); `constant/bsid.js`
+  gives it this site's settings and points its hooks at the cloud functions below. If
+  the extension isn't there, this browser isn't linked, or the phone doesn't answer,
+  it goes to bs-id's passkey page as before ("Use passkey instead" skips the wait).
 - `bsextchallenge` issues a single-use challenge (`bs_LoginChallenge`, master key
   only, 3 minutes). The phone signs a bs-login statement naming this origin
   (`BS_API_ORIGIN`), the bs-id client (`BS_ID_CLIENT_ID`) and that challenge.
@@ -344,13 +374,16 @@ asks the extension first, and the user approves on their phone with one tap
   `Fly-Client-IP`. Hosting off Fly behind a proxy needs `PARSE_SERVER_TRUST_PROXY`,
   or every client shares one limit: see DEPLOYMENT.md item 14, "Rate limit off Fly".
 - bs-id's redirect back is only used when its `state` matches the sign-in this tab
-  started (`takeBsIdCallback`). A crafted `?error=`/`?code=` link shows "expired"
-  and leaves a pending sign-in alone.
+  started (the button's `takePasskeyCallback`). A crafted `?error=`/`?code=` link
+  is ignored: the page shows the button as usual and a pending sign-in is left alone.
 - Tests: `spec/bsapi-integration/bsextlogin.spec.js` (server),
   `src/constant/bsid.test.js` and `src/pages/Login.test.jsx` (frontend, `npm test`
   in `apps/OpenSign`).
 - To update the vendored copies, run BetterSignApps
-  `server/signInWithBetterSignButton/scripts/vendor.mjs` (see its README).
+  `server/signInWithBetterSignButton/scripts/vendor.mjs` (see its README): the
+  `button` set into `apps/OpenSign/src/vendor/signInWithBetterSignButton`, the
+  `server` set into `apps/OpenSignServer/vendor/signInWithBetterSignButton`.
+  `--check` reports copies that have fallen behind.
 
 - This replaced the earlier push-to-phone "Log in with BetterSign" button
   (`BetterSignLogin.jsx`, removed). The `bettersignlogin` cloud function stays for the
@@ -624,7 +657,7 @@ changes:
 
 | File | What we changed | Since |
 |---|---|---|
-| `src/pages/Login.jsx` | BetterSign-only sign-in card (bs-id); password form, code form and "additional info" modal removed; marks a Sign in with BetterSign session (`bsSession`) for Sign on phone; hero text translated (`home.*`) | 2026-10-06 → 11-15 |
+| `src/pages/Login.jsx` | BetterSign-only sign-in card (bs-id) with the shared `<bettersign-sign-in>` button; password form, code form and "additional info" modal removed; marks a Sign in with BetterSign session (`bsSession`) for Sign on phone; hero text translated (`home.*`) | 2026-10-06 → 11-15 |
 | `src/i18n.js` | `supportedLngs` instead of the removed `whitelist`; `ko` → `kr`; sets `<html lang>` | 2026-11-15 |
 | `src/components/pdf/SelectLanguage.jsx` | Value read from i18n (no local copy); "Language" label and globe icon; "Español" spelling | 2026-11-15 |
 | `src/pages/GuestLogin.jsx` | 6-digit code input; sends `docId`; shows server errors | 2026-11-13 |
@@ -661,7 +694,8 @@ changes them, drop the change; if upstream adds new imports of them, remove thos
 - **Sign-in and admin cloud functions:** `cloud/parsefunction/bsidlogin.js`,
   `bettersignlogin.js`, `emailOtp.js`, `bsIdentityAdmin.js`, `updateUserByAdmin.js`.
 - **Frontend:** `src/theme/md3Theme.js`, `src/theme/ThemeModeProvider.jsx`,
-  `src/constant/bsid.js`, `src/components/BrandHero.jsx`, `BsIdentities.jsx`,
+  `src/constant/bsid.js` (+ test), `src/components/BetterSignSignInButton.jsx`,
+  `src/vendor/signInWithBetterSignButton/*` (vendored), `src/components/BrandHero.jsx`, `BsIdentities.jsx`,
   `EditUser.jsx` (both with `*.test.jsx`), `pdf/PhoneSign.jsx` (+ test), `src/utils/appendOnlyPdf.js` (+ test),
   `src/assets/images/bettersign-icon.png`, `patches/parse+8.6.0.patch`,
   `MD3_MIGRATION.md`.

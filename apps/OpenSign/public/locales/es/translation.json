@@ -1628,6 +1628,7 @@
     "sign-in-button": "Iniciar sesión con BetterSign",
     "status-approve": "Apruébalo en tu teléfono…",
     "status-signing-in": "Iniciando sesión…",
-    "sign-in-denied": "El inicio de sesión se rechazó en tu teléfono."
+    "sign-in-denied": "El inicio de sesión se rechazó en tu teléfono.",
+    "use-passkey-instead": "Usar una llave de acceso"
   }
 }

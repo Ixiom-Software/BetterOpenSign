@@ -1628,6 +1628,7 @@
     "sign-in-button": "Accedi con BetterSign",
     "status-approve": "Approva sul telefono…",
     "status-signing-in": "Accesso in corso…",
-    "sign-in-denied": "L'accesso è stato rifiutato sul telefono."
+    "sign-in-denied": "L'accesso è stato rifiutato sul telefono.",
+    "use-passkey-instead": "Usa invece la passkey"
   }
 }

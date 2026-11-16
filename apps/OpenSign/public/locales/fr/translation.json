@@ -1629,6 +1629,7 @@
     "sign-in-button": "Se connecter avec BetterSign",
     "status-approve": "Approuvez sur votre téléphone…",
     "status-signing-in": "Connexion en cours…",
-    "sign-in-denied": "La connexion a été refusée sur votre téléphone."
+    "sign-in-denied": "La connexion a été refusée sur votre téléphone.",
+    "use-passkey-instead": "Utiliser plutôt une clé d'accès"
   }
 }

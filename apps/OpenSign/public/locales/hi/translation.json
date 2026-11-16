@@ -1628,6 +1628,7 @@
     "sign-in-button": "BetterSign से साइन इन करें",
     "status-approve": "अपने फ़ोन पर स्वीकृत करें…",
     "status-signing-in": "साइन इन हो रहा है…",
-    "sign-in-denied": "आपके फ़ोन पर साइन-इन अस्वीकार कर दिया गया।"
+    "sign-in-denied": "आपके फ़ोन पर साइन-इन अस्वीकार कर दिया गया।",
+    "use-passkey-instead": "इसके बजाय पासकी का उपयोग करें"
   }
 }

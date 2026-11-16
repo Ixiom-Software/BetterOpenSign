@@ -1628,6 +1628,7 @@
     "sign-in-button": "BetterSign으로 로그인",
     "status-approve": "휴대폰에서 승인하세요…",
     "status-signing-in": "로그인 중…",
-    "sign-in-denied": "휴대폰에서 로그인이 거부되었습니다."
+    "sign-in-denied": "휴대폰에서 로그인이 거부되었습니다.",
+    "use-passkey-instead": "대신 패스키 사용"
   }
 }
