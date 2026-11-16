@@ -8,8 +8,8 @@ import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import { openInNewTab } from "../constant/Utils";
 import { useTranslation } from "react-i18next";
 import { bs } from "../theme/md3Theme";
+import { SOURCE_URL, UPSTREAM_URL } from "../constant/brand";
 const Footer = () => {
-  const appName = "OpenSign™";
   const { t } = useTranslation();
   const [showButton, setShowButton] = useState(false);
   const [version, setVersion] = useState("");
@@ -47,7 +47,7 @@ const Footer = () => {
 
   const openUrl = () => {
     openInNewTab(
-      "https://github.com/OpenSignLabs/OpenSign/releases/tag/" + version
+      UPSTREAM_URL + "/releases/tag/" + version
     );
   };
   return (
@@ -74,8 +74,7 @@ const Footer = () => {
         }}
       >
         <Typography variant="body2" component="p" sx={{ fontSize: "inherit", m: 0 }}>
-          &copy; 2021&ndash;{new Date().getFullYear()} Cryptid Technologies, Inc.{" "}
-          {t("all-right")}
+          &copy; 2021&ndash;{new Date().getFullYear()} Cryptid Technologies, Inc.
           &nbsp;&middot;&nbsp;
           <a href="https://www.bettersign.ing/" target="_blank" rel="noreferrer">
             bettersign.ing
@@ -94,9 +93,19 @@ const Footer = () => {
         >
           Built on{" "}
           <Box component="span" className="footer-link" onClick={openUrl}>
-            {appName} ( {t("version")}:{" "}
+            OpenSign ( {t("version")}:{" "}
             {version ? version : `${Package.version} `})
           </Box>
+          &nbsp;&middot;&nbsp;
+          {/* AGPL-3.0 §13: offer users the source of what runs here. */}
+          <a href={SOURCE_URL} target="_blank" rel="noreferrer">
+            Source code
+          </a>{" "}
+          (
+          <a href={`${SOURCE_URL}/blob/staging/LICENSE`} target="_blank" rel="noreferrer">
+            AGPL-3.0
+          </a>
+          )
         </Typography>
       </Box>
       {showButton && (

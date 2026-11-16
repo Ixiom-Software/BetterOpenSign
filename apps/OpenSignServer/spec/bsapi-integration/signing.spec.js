@@ -457,7 +457,7 @@ describe('desktop signing', () => {
 
         const docCall = sealService.calls[0];
         expect(docCall.query.append_only).toBe('true');
-        expect(docCall.query.field_name).toMatch(/^OpenSign seal [^.]+Z$/);
+        expect(docCall.query.field_name).toMatch(/^BetterSign seal [^.]+Z$/);
 
         const row = await docRow(docId);
         expect(row.Seal).toEqual(

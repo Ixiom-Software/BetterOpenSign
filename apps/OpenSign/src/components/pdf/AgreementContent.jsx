@@ -6,11 +6,11 @@ import Typography from "@mui/material/Typography";
 import Divider from "@mui/material/Divider";
 import Button from "@mui/material/Button";
 import Link from "@mui/material/Link";
+import { APP_NAME, SUPPORT_EMAIL, WEBSITE_URL } from "../../constant/brand";
 
 function AgreementContent(props) {
   const { t } = useTranslation();
-  const appName =
-    "OpenSign™";
+  const appName = APP_NAME;
   const h2Sx = {
     color: "text.primary",
     fontWeight: 500,
@@ -142,17 +142,17 @@ function AgreementContent(props) {
             {t("term-cond-p29", { appName: appName })}
           </Box>
           <Link
-            href="www.opensignlabs.com"
+            href={WEBSITE_URL}
             target="_blank"
             sx={{ cursor: "pointer" }}
           >
-            www.opensignlabs.com
+            www.bettersign.ing
           </Link>
 
           <Box component="span">{t("term-cond-p30")}</Box>
           <Box component="span" sx={{ fontWeight: 500 }}>
             {" "}
-            support@opensignlabs.com{" "}
+            {SUPPORT_EMAIL}{" "}
           </Box>
           <Divider sx={{ my: 1.875 }} />
           <Box sx={{ mt: 3, display: "flex", justifyContent: "flex-start", gap: 1 }}>

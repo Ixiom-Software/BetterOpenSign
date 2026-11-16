@@ -9,12 +9,12 @@ import Button from "@mui/material/Button";
 import Divider from "@mui/material/Divider";
 import SaveIcon from "@mui/icons-material/Save";
 import AddBoxIcon from "@mui/icons-material/AddBox";
+import { APP_NAME } from "../../../constant/brand";
 
 const FolderModal = (props) => {
   const { t } = useTranslation();
-  const appName =
-    "OpenSign™";
-  const drivename = appName === "OpenSign™" ? "OpenSign™" : "";
+  const appName = APP_NAME;
+  const drivename = appName;
   const [clickFolder, setClickFolder] = useState("");
   const [folderList, setFolderList] = useState([]);
   const [tabList, setTabList] = useState([]);

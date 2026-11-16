@@ -23,6 +23,7 @@ import BetterSignSignInButton from "../components/BetterSignSignInButton";
 import Box from "@mui/material/Box";
 import Paper from "@mui/material/Paper";
 import Typography from "@mui/material/Typography";
+import { APP_NAME } from "../constant/brand";
 
 // The vendored sign-in button writes these in English; show them translated.
 const SIGN_IN_TEXT_KEYS = {
@@ -33,8 +34,7 @@ const SIGN_IN_TEXT_KEYS = {
 };
 
 function Login() {
-  const appName =
-    "OpenSign™";
+  const appName = APP_NAME;
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();

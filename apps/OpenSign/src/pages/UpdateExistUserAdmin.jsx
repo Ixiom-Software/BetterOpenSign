@@ -11,9 +11,9 @@ import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
 import TextField from "@mui/material/TextField";
 import Link from "@mui/material/Link";
+import { APP_NAME } from "../constant/brand";
 const UpdateExistUserAdmin = () => {
-  const appName =
-    "OpenSign™";
+  const appName = APP_NAME;
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [formdata, setFormdata] = useState({ email: "", masterkey: "" });

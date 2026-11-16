@@ -24,10 +24,10 @@ import IconButton from "@mui/material/IconButton";
 import InputAdornment from "@mui/material/InputAdornment";
 import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
+import { APP_NAME, TERMS_URL } from "../constant/brand";
 
 const AddAdmin = () => {
-  const appName =
-    "OpenSign™";
+  const appName = APP_NAME;
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -42,7 +42,6 @@ const AddAdmin = () => {
   const [caseDigitValid, setCaseDigitValid] = useState(false);
   const [specialCharValid, setSpecialCharValid] = useState(false);
   const [isAuthorize, setIsAuthorize] = useState(false);
-  const [isSubscribeNews, setIsSubscribeNews] = useState(false);
   const [errMsg, setErrMsg] = useState("");
   const [state, setState] = useState({
     loading: false,
@@ -138,9 +137,6 @@ const AddAdmin = () => {
             try {
               const usersignup = await Parse.Cloud.run("addadmin", params);
               if (usersignup) {
-                if (isSubscribeNews) {
-                  subscribeNewsletter();
-                }
                 handleNavigation(userRes.getSessionToken());
               }
             } catch (err) {
@@ -265,15 +261,6 @@ const AddAdmin = () => {
         /\d/.test(newPassword)
     );
     setSpecialCharValid(/[!@#$%^&*()\-_=+{};:,<.>]/.test(newPassword));
-  };
-  const subscribeNewsletter = async () => {
-    try {
-      const params = { name: name, email: email, domain: window.location.host };
-      await Parse.Cloud.run("newsletter", params);
-      // console.log("newsletter ", newsletter);
-    } catch (err) {
-      console.log("err in subscribeNewsletter", err);
-    }
   };
   return (
     <Box sx={{ height: "100vh", display: "flex", justifyContent: "center" }}>
@@ -569,39 +556,12 @@ const AddAdmin = () => {
                         underline="always"
                         sx={{ ml: 0.5, cursor: "pointer" }}
                         onClick={() =>
-                          openInNewTab(
-                            "https://www.opensignlabs.com/terms-and-conditions"
-                          )
+                          openInNewTab(TERMS_URL)
                         }
                       >
                         {t("term")}
                       </Link>
                       <Box component="span">.</Box>
-                    </Box>
-                    <Box
-                      sx={{
-                        mt: 1.25,
-                        ml: 0.5,
-                        display: "flex",
-                        flexDirection: "row",
-                        alignItems: "center"
-                      }}
-                    >
-                      <Checkbox
-                        id="subscribetoopensign"
-                        size="small"
-                        checked={isSubscribeNews}
-                        onChange={(e) => setIsSubscribeNews(e.target.checked)}
-                        sx={{ p: 0 }}
-                      />
-                      <Typography
-                        component="label"
-                        htmlFor="subscribetoopensign"
-                        variant="caption"
-                        sx={{ cursor: "pointer", ml: 0.5 }}
-                      >
-                        {t("subscribe-to-opensign")}
-                      </Typography>
                     </Box>
                   </Box>
                   <Box sx={{ mx: 2, textAlign: "center", mb: 1.5 }}>

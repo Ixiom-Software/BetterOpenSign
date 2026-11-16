@@ -13,13 +13,13 @@ import Button from "@mui/material/Button";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import Link from "@mui/material/Link";
+import { APP_NAME } from "../../constant/brand";
 
 const MailTemplateEditor = ({
   info,
   tenantId,
 }) => {
-  const appName =
-    "OpenSign™";
+  const appName = APP_NAME;
   const { t } = useTranslation();
   const dispatch = useDispatch();
   const [requestBody, setRequestBody] = useState({ basic: "", advanced: "" });

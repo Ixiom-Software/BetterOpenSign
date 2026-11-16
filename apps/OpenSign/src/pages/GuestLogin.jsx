@@ -21,6 +21,7 @@ import Paper from "@mui/material/Paper";
 import Button from "@mui/material/Button";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
+import { APP_NAME } from "../constant/brand";
 
 function GuestLogin() {
   const { t, i18n } = useTranslation();
@@ -86,10 +87,7 @@ function GuestLogin() {
 
     localStorage.clear(); // Clears everything
     localStorage.setItem("favicon", favicon);
-    localStorage.setItem(
-      "appname",
-        "OpenSign™"
-    );
+    localStorage.setItem("appname", APP_NAME);
     //save isGuestSigner true in local to handle login flow header in mobile view
     localStorage.setItem("isGuestSigner", true);
     saveLanguageInLocal(i18n);

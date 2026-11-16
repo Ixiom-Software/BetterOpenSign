@@ -3,7 +3,7 @@ import multer from 'multer';
 import libre from 'libreoffice-convert';
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import { cloudServerUrl, getSecureUrl, serverAppId } from '../../Utils.js';
+import { cloudServerUrl, getSecureUrl, serverAppId, supportEmail } from '../../Utils.js';
 
 const execAsync = promisify(exec);
 
@@ -205,14 +205,15 @@ export default async function docxtopdf(req, res) {
       err?.response?.data?.error || err?.response?.data || err?.message || 'Something went wrong.';
     // Friendly message to the client
     const message =
-      'We are currently experiencing some issues with processing DOCX files. Please upload the PDF version or contact us on support@opensignlabs.com';
+      'We are currently experiencing some issues with processing DOCX files. Please upload the PDF version or contact us on ' +
+      supportEmail;
 
     if (msg.includes('timed out')) {
       msg =
-        'Document conversion is taking too long. Please try a smaller file or contact support@opensignlabs.com';
+        'Document conversion is taking too long. Please try a smaller file or contact ' +
+        supportEmail;
     } else if (msg.includes('too large') || msg.includes('size')) {
-      msg =
-        'File is too large to process. Please reduce the file size or contact support@opensignlabs.com';
+      msg = 'File is too large to process. Please reduce the file size or contact ' + supportEmail;
     } else {
       msg = message;
     }

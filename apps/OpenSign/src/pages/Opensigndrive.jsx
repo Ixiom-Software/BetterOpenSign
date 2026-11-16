@@ -19,6 +19,7 @@ import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
+import { APP_NAME } from "../constant/brand";
 
 const DriveBody = lazyWithRetry(
   () => import("../components/opensigndrive/DriveBody")
@@ -33,9 +34,8 @@ const AppLoader = () => {
   );
 };
 function Opensigndrive() {
-  const appName =
-    "OpenSign™";
-  const drivename = appName === "OpenSign™" ? "OpenSign™" : "";
+  const appName = APP_NAME;
+  const drivename = appName;
   const { t } = useTranslation();
   const navigate = useNavigate();
   const scrollRef = useRef(null);

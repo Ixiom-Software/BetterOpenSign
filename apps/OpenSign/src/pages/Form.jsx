@@ -42,6 +42,7 @@ import Radio from "@mui/material/Radio";
 import Checkbox from "@mui/material/Checkbox";
 import Link from "@mui/material/Link";
 import Box from "@mui/material/Box";
+import { APP_NAME } from "../constant/brand";
 
 // `Form` render all type of Form on this basis of their provided in path
 function Form() {
@@ -56,8 +57,7 @@ function Form() {
 }
 
 const Forms = (props) => {
-  const appName =
-    "OpenSign™";
+  const appName = APP_NAME;
   const { t } = useTranslation();
   const abortController = new AbortController();
   const inputFileRef = useRef(null);

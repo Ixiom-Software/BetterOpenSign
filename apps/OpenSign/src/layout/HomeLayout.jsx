@@ -18,10 +18,10 @@ import { sessionStatus } from "../redux/reducers/userReducer";
 import SessionExpiredModal from "../primitives/SessionExpiredModal";
 import Box from "@mui/material/Box";
 import Link from "@mui/material/Link";
+import { APP_NAME } from "../constant/brand";
 
 const HomeLayout = () => {
-  const appName =
-    "OpenSign™";
+  const appName = APP_NAME;
   const { t, i18n } = useTranslation();
   const dispatch = useDispatch();
   const tourArr = useSelector((state) => state.TourSteps);

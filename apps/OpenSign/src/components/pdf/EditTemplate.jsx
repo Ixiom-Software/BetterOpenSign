@@ -25,6 +25,7 @@ import TextField from "@mui/material/TextField";
 import Radio from "@mui/material/Radio";
 import Checkbox from "@mui/material/Checkbox";
 import FormControlLabel from "@mui/material/FormControlLabel";
+import { APP_NAME } from "../../constant/brand";
 
 const EditTemplate = ({
   title,
@@ -36,8 +37,7 @@ const EditTemplate = ({
   setPdfBase64Url,
   isAddYourSelfCheckbox,
 }) => {
-  const appName =
-    "OpenSign™";
+  const appName = APP_NAME;
   const { t } = useTranslation();
   const inputFileRef = useRef(null);
   const [formData, setFormData] = useState({
