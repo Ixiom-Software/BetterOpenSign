@@ -1,6 +1,6 @@
-// Vendored from BetterSignApps server/signInWithBetterSignButton/src/browser.js (commit b4422dc).
+// Vendored from BetterSignApps server/signInWithBetterSignButton/src/browser.js (commit f7aeadb).
 // Don't edit here: change it there and run
-//   node server/signInWithBetterSignButton/scripts/vendor.mjs <this folder> browser
+//   node server/signInWithBetterSignButton/scripts/vendor.mjs <this folder> button
 // --- end of vendoring note ---
 // The browser half of "Sign in with BetterSign": try the BetterSign extension
 // (a tap on the phone, no QR), and fall back to the passkey at bs-id.
