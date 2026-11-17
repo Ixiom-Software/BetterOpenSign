@@ -97,6 +97,9 @@ beforeAll(async () => {
   await require('../../../databases/migrations/20261116120000-create_bs_phonesignpdf_classes.cjs').up(
     Parse
   );
+  await require('../../../databases/migrations/20261117120000-create_bs_publishedcert.cjs').up(
+    Parse
+  );
 }, 180000);
 
 afterAll(async () => {

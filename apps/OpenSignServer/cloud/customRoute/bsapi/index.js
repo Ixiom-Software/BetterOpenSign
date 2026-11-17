@@ -11,6 +11,7 @@ import { me, listDocuments, getDocument, getDocumentFile } from './documents.js'
 import { uploadSignature } from './signatures.js';
 import { phoneSignFile } from '../../parsefunction/bsPhoneSignPdf.js';
 import { authRateLimit } from './rateLimit.js';
+import { getCert, getIdentityCerts } from './certs.js';
 
 export const router = express.Router();
 
@@ -22,6 +23,10 @@ router.get('/relay-key', async (req, res) => {
   const key = await relayKey();
   res.json({ pub: key.pub.toString('base64url'), origin: config().origin });
 });
+
+// Published certificates, public (certs.js, docs/PublishedCertificates.md).
+router.get('/certs/:name', getCert);
+router.get('/identities/:vlad/certs', getIdentityCerts);
 
 router.use(requireToken);
 router.post('/auth/logout', logout);

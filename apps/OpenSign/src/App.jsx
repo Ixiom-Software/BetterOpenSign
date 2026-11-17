@@ -34,6 +34,7 @@ const Preferences = lazyWithRetry(() => import("./pages/Preferences"));
 const Login = lazyWithRetry(() => import("./pages/Login"));
 const VerifyDocument = lazyWithRetry(() => import("./pages/VerifyDocument"));
 const EmailBuilder = lazyWithRetry(() => import("./pages/EmailBuilder"));
+const PublishedCerts = lazyWithRetry(() => import("./pages/PublishedCerts"));
 
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/legacy/build/pdf.worker.min.mjs`;
 const AppLoader = () => {
@@ -133,6 +134,11 @@ function App() {
               />
             </Route>
             <Route path="/success" element={<DocSuccessPage />} />
+            {/* published certificates: public, no sign-in */}
+            <Route
+              path="/certs/:id"
+              element={<Lazy Page={PublishedCerts} />}
+            />
             <Route path="/emailbuilder" element={<EmailBuilder />} />
             <Route path="*" element={<PageNotFound />} />
           </Routes>

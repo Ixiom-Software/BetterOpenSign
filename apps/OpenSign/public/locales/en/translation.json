@@ -1691,5 +1691,31 @@
     "status-signing-in": "Signing in…",
     "sign-in-denied": "Sign-in was denied on your phone.",
     "use-passkey-instead": "Use passkey instead"
+  },
+  "published-certs": {
+    "title": "Certificates of a BetterSign identity",
+    "title-one": "Certificate",
+    "intro": "These certificates signed documents completed on this site. A PDF reader such as Adobe Acrobat shows these signatures as valid once you trust the root certificate.",
+    "identity": "BetterSign identity (VLAD)",
+    "roots": "Root certificates",
+    "leaves": "Signing certificates",
+    "issuer": "Its root",
+    "name": "Name",
+    "issued-by": "Issued by",
+    "fingerprint": "SHA-256 fingerprint",
+    "valid": "Valid",
+    "valid-range": "{{from}} to {{to}}",
+    "download": "Download certificate (.cer)",
+    "acrobat-title": "Trust a root certificate in Adobe Acrobat",
+    "acrobat-1": "Download the root certificate above.",
+    "acrobat-2": "In Acrobat, open Settings › Signatures › Identities & Trusted Certificates › More…",
+    "acrobat-3": "Select Trusted Certificates, then Import, and choose the downloaded .cer file.",
+    "acrobat-4": "Select the imported certificate, then Edit Trust, and tick \"Use this certificate as a trusted root\". Check that its SHA-256 fingerprint matches the one shown here.",
+    "acrobat-5": "Reopen the document: its signatures now show as valid.",
+    "privacy": "Anyone with this link can see these certificates, including the name and BetterSign identity they carry. Only certificates that appeared in completed documents are listed.",
+    "loading": "Loading…",
+    "not-found": "No published certificates here.",
+    "invalid": "This isn't a certificate or identity link.",
+    "failed": "Couldn't load the certificates. Try again later."
   }
 }
