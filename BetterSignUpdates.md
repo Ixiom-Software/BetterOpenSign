@@ -22,6 +22,17 @@ operations are covered in [DEPLOYMENT.md](DEPLOYMENT.md).
 
 ## Change log
 
+### 2026-11-17: upstream's Docker Hub workflow is turned off
+
+- The `ci` workflow (`.github/workflows/Docker.yml`, from upstream) failed on every
+  push to `staging`. It logs in to Docker Hub with `DOCKERHUB_USERNAME` and
+  `DOCKERHUB_TOKEN`, which this repo doesn't have, then pushes to upstream's
+  `opensign/opensign` and `opensign/opensignserver` images, which we can't push to.
+- It's turned off in GitHub (`gh workflow disable Docker.yml`); the file is
+  unchanged. Nothing we deploy uses those images: Fly builds the server from
+  `apps/OpenSignServer/Dockerfile`, and the frontend goes out with wrangler.
+- When to turn it back on: see [Follow-ups](#follow-ups).
+
 ### 2026-11-16: BetterSign name and logo instead of OpenSign's
 
 - **Emails.** Subjects, bodies and the sender name say BetterSign. The logo is the
@@ -743,6 +754,10 @@ changes:
 
 Repo root: `README.md` (link to this file), `.gitignore`.
 
+Not changed but turned off: `.github/workflows/Docker.yml` is disabled in GitHub
+(2026-11-17). Upstream changes to it merge cleanly and it stays off; see
+[Follow-ups](#follow-ups) before turning it back on.
+
 ### Upstream files we deleted
 
 `apps/OpenSign/src/pages/ForgetPassword.jsx`, `src/pages/ChangePassword.jsx`,
@@ -859,6 +874,19 @@ Other follow-ups:
   `--resolve-plugins-relative-to .`, a copy of its config without
   `react-hooks`, and `--rule react/react-in-jsx-scope:off` (the app uses the
   automatic JSX runtime).
+- **Docker images of BetterSign aren't published.** Upstream's `ci` workflow
+  (`.github/workflows/Docker.yml`) is turned off in GitHub, since it pushes to
+  upstream's Docker Hub images. The repo-root `docker-compose.yml` still pulls
+  those images, so it runs plain OpenSign, not BetterSign. Turn the workflow back
+  on once we want BetterSign images, e.g. to offer one-command self-hosting or to
+  deploy from a prebuilt image instead of building on Fly. First:
+  - point `matrix.image` at our own registry, e.g. `ghcr.io/ixiom-software/…`
+    (GitHub's registry: log in with `GITHUB_TOKEN` and add `packages: write`, so
+    no new secrets), or add Docker Hub secrets for our own account;
+  - check `apps/OpenSign/Dockerhubfile` and `apps/OpenSignServer/Dockerhubfile`
+    build BetterSign as we deploy it (Fly uses `apps/OpenSignServer/Dockerfile`);
+  - point `docker-compose.yml` at the new images;
+  - then `gh workflow enable Docker.yml --repo Ixiom-Software/BetterOpenSign`.
 - **The new `signer-link-hint` text is English only.** Other languages fall back to
   English.
 - **"Sign on phone" needs the BetterSign app to handle it.** The app has to
