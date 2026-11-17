@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import dotenv from 'dotenv';
 import GenerateCertificate from './pdf/GenerateCertificate.js';
+import { signaturesForCertificate } from '../customRoute/bsapi/certs.js';
 import { getSecureUrl } from '../../Utils.js';
 import { parseUploadFile } from '../../utils/fileUtils.js';
 import { sealPdf, storeSeal } from '../../utils/seal.js';
@@ -54,7 +55,8 @@ export default async function generateCertificatebydocId(req) {
       const lastObj = [...filteredaudit].reverse().find(obj => obj.hasOwnProperty('SignedOn'));
       const completedAt = lastObj.SignedOn;
       const doc = { ..._docRes, completedAt: completedAt };
-      const certificate = await GenerateCertificate(doc);
+      const signatures = await signaturesForCertificate(doc);
+      const certificate = await GenerateCertificate(doc, { signatures });
       // Sealed like the one made at completion (utils/seal.js), with the
       // tenant's certificate if it has one.
       const sealed = await sealPdf({

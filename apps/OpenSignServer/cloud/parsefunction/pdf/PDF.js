@@ -12,6 +12,7 @@ import {
   serverAppId,
 } from '../../../Utils.js';
 import GenerateCertificate from './GenerateCertificate.js';
+import { signaturesForCertificate } from '../../customRoute/bsapi/certs.js';
 import {
   extendsPdf,
   fileKey,
@@ -389,7 +390,10 @@ async function sendCompletedMail(obj) {
 
 // `sendMailsaveCertifcate` is used send completion mail and update complete status of document
 async function sendMailsaveCertifcate(doc, isCustomMail, mailProvider, filename) {
-  const certificate = await GenerateCertificate(doc);
+  // The signed PDF's digital signatures and their published certificates
+  // (bsapi/certs.js); null, and no such section, if the service can't say.
+  const signatures = await signaturesForCertificate(doc);
+  const certificate = await GenerateCertificate(doc, { signatures });
   const sealed = await sealPdf({
     pdfBytes: Buffer.from(certificate),
     doc,

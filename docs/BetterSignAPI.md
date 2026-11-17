@@ -144,6 +144,7 @@ Errors are `{ "error": "<code>", "message": "…" }`.
 | `GET /documents/:id/file?version=current\|original` | the PDF. `X-Content-SHA256` is its hash |
 | `POST /documents/:id/signatures` | your desktop-signed PDF (section 5). `201` + `Document` + `signedSha256`; `409` with `stale_base`, `locked` (someone is signing it on their phone), `already_signed`, `not_your_turn`, `not_a_signer`, `completed`, `expired`…; `400 not_appended`/`no_signature`; `401 access_denied`; `502 verifier_misconfigured`; `503 verifier_unavailable` |
 | `GET /phone-sign/:reqId/file` | Sign on phone v2: the base PDF for an approve request, the prepared PDF for a sign request, with `X-Content-SHA256`; only to the identity it was sent to, while it runs; else `404` ([BetterSignPhoneSignV2.md](./BetterSignPhoneSignV2.md)) |
+| `GET /certs/:sha256.cer`, `GET /certs/:sha256`, `GET /identities/:vlad/certs` | Published certificates: public, no token. The DER, its summary, an identity's roots and leaves ([PublishedCertificates.md](./PublishedCertificates.md)) |
 
 ```jsonc
 // Document
