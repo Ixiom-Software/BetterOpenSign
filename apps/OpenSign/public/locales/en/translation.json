@@ -1657,6 +1657,24 @@
     "close": "Close",
     "send-again": "Send again"
   },
+  "phone-sign-pdf": {
+    "button": "Sign with your BetterSign phone",
+    "title": "Sign with your BetterSign phone",
+    "preparing": "Preparing the document…",
+    "waiting": "Approve on your phone.",
+    "expires-in": "The request expires in {{time}}.",
+    "signing": "Signing…",
+    "retrying": "Connection lost, retrying…",
+    "signed": "Signed",
+    "send-failed": "Couldn't send the document to your phone.",
+    "denied": "You declined on your phone. The document isn't signed.",
+    "error": "Your phone couldn't sign the document. It isn't signed.",
+    "expired": "The request expired. The document isn't signed.",
+    "build-failed": "Couldn't prepare the document for your phone.",
+    "cancel": "Cancel",
+    "close": "Close",
+    "try-again": "Try again"
+  },
   "home": {
     "eyebrow": "Open BetterSign · Document signing",
     "headline": "Sign documents with an identity you hold.",
