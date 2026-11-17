@@ -1534,7 +1534,25 @@ function WidgetsValueModal(props) {
                 <Box sx={{ height: "100%", mt: 1.5 }}>
                   {Tabs.find((t) => t.id === isTab)?.render()}
                 </Box>
-                {canSignOnPhone(docId, type) && (
+                {type === "signature" && props?.phoneSignPdf ? (
+                  // The page offers the phone's own signature over the whole
+                  // document (PhoneSignPdf, v2): that's what this button does
+                  // then, not just the phone's drawing of it (PhoneSign, v1).
+                  <Box sx={{ mx: 1.5, my: 1 }}>
+                    <Button
+                      type="button"
+                      variant="outlined"
+                      size="small"
+                      fullWidth
+                      onClick={() => {
+                        props.setCurrWidgetsDetails({});
+                        props.phoneSignPdf();
+                      }}
+                    >
+                      {t("phone-sign-pdf.button")}
+                    </Button>
+                  </Box>
+                ) : canSignOnPhone(docId, type) && (
                   <Box sx={{ mx: 1.5, my: 1 }}>
                     <Button
                       type="button"

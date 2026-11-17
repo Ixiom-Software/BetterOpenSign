@@ -1657,6 +1657,11 @@ function SignYourSelf() {
           isSave={true}
           signatureTypes={signatureTypes}
           docId={pdfDetails?.[0]?.objectId}
+          phoneSignPdf={
+            canSignPdfOnPhone(documentId, xyPosition)
+              ? handlePhoneSignPdf
+              : undefined
+          }
         />
       )}
       <WidgetNameModal

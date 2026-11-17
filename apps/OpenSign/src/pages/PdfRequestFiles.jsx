@@ -2479,6 +2479,11 @@ function PdfRequestFiles(
               allowCellResize={false}
               penColors={pdfDetails?.[0]?.PenColors}
               docId={pdfDetails?.[0]?.objectId}
+              phoneSignPdf={
+                canSignPdfOnPhone(documentId, currentSignerWidgets())
+                  ? handlePhoneSignPdf
+                  : undefined
+              }
             />
           )}
           <PhoneSignPdf
