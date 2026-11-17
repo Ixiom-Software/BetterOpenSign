@@ -5,6 +5,9 @@ instead of drawing it. This replaced the phone-number box, which went through a
 separate coordinator Worker (`bs-opensign-sign`, `REACT_APP_BS_SIGN_URL`) whose
 phone-number registry no longer exists.
 
+**v2**, where the phone's own key signs the whole PDF as a PAdES signature, is
+in [BetterSignPhoneSignV2.md](./BetterSignPhoneSignV2.md). This document is v1.
+
 - [Rules](#1-rules)
 - [How a request reaches the phone](#2-how-a-request-reaches-the-phone)
 - [The flow](#3-the-flow)

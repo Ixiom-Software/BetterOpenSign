@@ -5,7 +5,16 @@ import { setDocumentCount } from '../../utils/CountUtils.js';
 // document append-only; a client that could clear it could get a desktop
 // signature rewritten away. SignRevision orders concurrent signings. Seal and
 // CertificateSeal record how OpenSign sealed the files (utils/seal.js).
-const SERVER_ONLY_FIELDS = ['VladSignatures', 'SignRevision', 'Seal', 'CertificateSeal'];
+// PhoneSignLock* holds the document for a signer signing on their phone
+// (parsefunction/bsPhoneSignPdf.js).
+const SERVER_ONLY_FIELDS = [
+  'VladSignatures',
+  'SignRevision',
+  'Seal',
+  'CertificateSeal',
+  'PhoneSignLockId',
+  'PhoneSignLockUntil',
+];
 
 async function DocumentBeforesave(request) {
   if (!request.master) {

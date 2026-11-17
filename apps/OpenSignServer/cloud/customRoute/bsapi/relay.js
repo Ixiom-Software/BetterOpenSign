@@ -25,6 +25,9 @@ import { decodeCbor } from './statement.js';
 
 export const REQUEST_CT = 'application/vnd.bettersign.docsign-sign-request+cbor';
 export const RESPONSE_CT = 'application/vnd.bettersign.docsign-sign-response+cbor';
+// Sign on phone v2 (parsefunction/bsPhoneSignPdf.js): the same envelopes.
+export const PDF_REQUEST_CT = 'application/vnd.bettersign.docsign-pdf-request+cbor';
+export const PDF_RESPONSE_CT = 'application/vnd.bettersign.docsign-pdf-response+cbor';
 export const REQUEST_ENV_DOMAIN = 'bs-docsign/v1/env\n';
 export const RESPONSE_ENV_DOMAIN = 'bs-fill/v1/env\n';
 export const RELAY_AUTH_DOMAIN = 'bs-fill/v1.1/relay\n';
@@ -206,10 +209,19 @@ const bytes = (v, len, what) => {
 // docs/BetterSignPhoneSign.md). Signed by docsign's relay key.
 //   { header: { v, ct, to, from, reqId, iat, exp }, body: CBOR(request), sig }
 //   sig = Ed25519("bs-docsign/v1/env\n" ‖ CBOR(header) ‖ sha256(body))
-export function buildRequestEnvelope({ key, to, reqId, iat, exp, request }) {
-  const header = { v: 1, ct: REQUEST_CT, to, from: key.pub, reqId, iat, exp };
+// v2 passes its own `ct` and a `body` already encoded (by bs-service-identity).
+export function buildRequestEnvelope({
+  key,
+  to,
+  reqId,
+  iat,
+  exp,
+  request,
+  ct = REQUEST_CT,
+  body = encodeCbor(request),
+}) {
+  const header = { v: 1, ct, to, from: key.pub, reqId, iat, exp };
   const headerCbor = encodeCbor(header);
-  const body = encodeCbor(request);
   const sig = ed25519Sign(
     key.privateKey,
     Buffer.concat([Buffer.from(REQUEST_ENV_DOMAIN), headerCbor, sha256(body)])

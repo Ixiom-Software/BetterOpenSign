@@ -80,6 +80,14 @@ import { useScroll } from "../context/ScrollPdfContext";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import { APP_NAME } from "../constant/brand";
+import {
+  buildPhoneSignBase,
+  phoneSignatureWidget,
+  withoutWidget
+} from "../utils/phoneSignBase";
+import PhoneSignPdf, {
+  canSignPdfOnPhone
+} from "../components/pdf/PhoneSignPdf";
 //For signYourself inProgress section signer can add sign and complete doc sign.
 function SignYourSelf() {
   const { t } = useTranslation();
@@ -155,6 +163,7 @@ function SignYourSelf() {
   const [unSignedWidgetId, setUnSignedWidgetId] = useState("");
   const [widgetsTour, setWidgetsTour] = useState(false);
   const [owner, setOwner] = useState({});
+  const [isPhoneSignPdf, setIsPhoneSignPdf] = useState(false);
   // Memoize the xyPosition index for the widget modal to avoid recomputing on every render
   const widgetModalIndex = useMemo(
     () =>
@@ -614,6 +623,123 @@ function SignYourSelf() {
       alert(t("something-went-wrong-mssg"));
     }
   };
+  // `findUnfilledWidget` finds the first widget (other than checkboxes)
+  // without a value, for the tour to point at.
+  const findUnfilledWidget = (positions) => {
+    let showAlert = false,
+      widgetKey,
+      tourPageNumber;
+    for (let i = 0; i < positions?.length; i++) {
+      tourPageNumber = positions[i]?.pageNumber;
+      const requiredWidgets = positions[i].pos.filter(
+        (position) => position.type !== "checkbox"
+      );
+      if (requiredWidgets && requiredWidgets?.length > 0) {
+        let checkSigned;
+        for (let i = 0; i < requiredWidgets?.length; i++) {
+          checkSigned = requiredWidgets[i]?.options?.response;
+          if (isEmptyValue(checkSigned)) {
+            const checkSignUrl = requiredWidgets[i]?.SignUrl;
+            let checkDefaultSigned = requiredWidgets[i]?.options?.defaultValue;
+            if (
+              !checkSignUrl &&
+              isEmptyValue(checkDefaultSigned) &&
+              !showAlert
+            ) {
+              showAlert = true;
+              widgetKey = requiredWidgets[i]?.key;
+            }
+          }
+        }
+      }
+      if (showAlert) {
+        break;
+      }
+    }
+    return { showAlert, widgetKey, tourPageNumber };
+  };
+
+  // Sign with your BetterSign phone (v2): checks the other widgets as Finish
+  // does, then opens PhoneSignPdf, which builds the base and sends it.
+  const handlePhoneSignPdf = () => {
+    const signature = phoneSignatureWidget(xyPosition);
+    if (!signature) return;
+    const { showAlert, widgetKey, tourPageNumber } = findUnfilledWidget(
+      withoutWidget(xyPosition, signature.position.key)
+    );
+    if (showAlert) {
+      setUnSignedWidgetId(widgetKey);
+      setPageNumber(tourPageNumber);
+      setWidgetsTour(true);
+      return;
+    }
+    setIsPhoneSignPdf(true);
+  };
+
+  // The base: the document's current file (saved first, so the server has
+  // these widgets and any page edits) with an incremental update, built with
+  // loadPdfForSigning(bytes, true) rather than plain pdf-lib; then the request
+  // to the phone. Throws with a message for PhoneSignPdf to show.
+  const startPhoneSignPdf = async () => {
+    await autosavedetails();
+    const documentData = await contractDocument(documentId);
+    const doc = Array.isArray(documentData) ? documentData[0] : null;
+    const url = doc?.SignedUrl || doc?.URL;
+    if (!url) throw new Error(t("something-went-wrong-mssg"));
+    const bytes = await convertPdfArrayBuffer(url);
+    if (bytes === "Error") throw new Error(t("something-went-wrong-mssg"));
+    let res;
+    try {
+      res = await buildPhoneSignBase({
+        bytes,
+        widgets: xyPosition,
+        scale,
+        signyourself: true,
+        beforeDraw: async (pdfDoc) => {
+          //embed document's object id to all pages in pdf document
+          if (!pdfDetails[0].ExtUserPtr?.HeaderDocId) {
+            await embedDocId(pdfOriginalWH, pdfDoc, documentId);
+          }
+        }
+      });
+    } catch (err) {
+      console.log("err in phone sign base", err);
+      throw new Error(
+        err?.message?.includes("is encrypted.") ||
+          err?.message?.includes("password")
+          ? t("encrypted-pdf-alert")
+          : t("phone-sign-pdf.build-failed")
+      );
+    }
+    if (res?.error) {
+      throw new Error(t("pdf-uncompatible", { appName: appName }));
+    }
+    return Parse.Cloud.run("bsphonesignpdfstart", {
+      docId: documentId,
+      fieldName: res.fieldName,
+      base: res.base
+    });
+  };
+
+  // The server committed the phone's signature (and, the self-signer being
+  // the last signer, sealed the document): continue as after Finish.
+  const handlePhoneSignedPdf = async () => {
+    setIsPhoneSignPdf(false);
+    setIsUiLoading(true);
+    try {
+      dispatch(setTypedSignFont("Fasthand"));
+      await getDocumentDetails(false);
+      setIsUiLoading(false);
+    } catch (err) {
+      console.log("err after phone signing", err);
+      setIsUiLoading(false);
+      setIsAlert({
+        isShow: true,
+        alertMessage: t("something-went-wrong-mssg")
+      });
+    }
+  };
+
   //function for send placeholder's co-ordinate(x,y) position embed signature url or stamp url
   async function embedWidgetsData() {
     //check current user email is verified or not
@@ -640,9 +766,6 @@ function SignYourSelf() {
       }
     }
     if (!isEnableOTP || isEmailVerified) {
-      let showAlert = false,
-        widgetKey,
-        tourPageNumber;
       try {
         const isSignatureExist = xyPosition?.some((p) =>
           p?.pos?.some((x) => x?.type === "signature")
@@ -656,34 +779,8 @@ function SignYourSelf() {
           return;
         }
 
-        for (let i = 0; i < xyPosition?.length; i++) {
-          tourPageNumber = xyPosition[i]?.pageNumber;
-          const requiredWidgets = xyPosition[i].pos.filter(
-            (position) => position.type !== "checkbox"
-          );
-          if (requiredWidgets && requiredWidgets?.length > 0) {
-            let checkSigned;
-            for (let i = 0; i < requiredWidgets?.length; i++) {
-              checkSigned = requiredWidgets[i]?.options?.response;
-              if (isEmptyValue(checkSigned)) {
-                const checkSignUrl = requiredWidgets[i]?.SignUrl;
-                let checkDefaultSigned =
-                  requiredWidgets[i]?.options?.defaultValue;
-                if (
-                  !checkSignUrl &&
-                  isEmptyValue(checkDefaultSigned) &&
-                  !showAlert
-                ) {
-                  showAlert = true;
-                  widgetKey = requiredWidgets[i]?.key;
-                }
-              }
-            }
-          }
-          if (showAlert) {
-            break;
-          }
-        }
+        const { showAlert, widgetKey, tourPageNumber } =
+          findUnfilledWidget(xyPosition);
         if (showAlert) {
           setUnSignedWidgetId(widgetKey);
           setPageNumber(tourPageNumber);
@@ -1451,6 +1548,11 @@ function SignYourSelf() {
                   allPages={allPages}
                   changePage={changePage}
                   embedWidgetsData={embedWidgetsData}
+                  phoneSignPdf={
+                    canSignPdfOnPhone(documentId, xyPosition)
+                      ? handlePhoneSignPdf
+                      : undefined
+                  }
                   pdfDetails={pdfDetails}
                   isShowHeader={true}
                   currentSigner={true}
@@ -1544,6 +1646,12 @@ function SignYourSelf() {
           </Box>
         </div>
       )}
+      <PhoneSignPdf
+        isOpen={isPhoneSignPdf}
+        onClose={() => setIsPhoneSignPdf(false)}
+        start={startPhoneSignPdf}
+        onSigned={handlePhoneSignedPdf}
+      />
       {!isCheckbox && isShowModal[currWidgetsDetails?.key] && (
         <WidgetsValueModal
           key={currWidgetsDetails?.key}
@@ -1558,6 +1666,11 @@ function SignYourSelf() {
           isSave={true}
           signatureTypes={signatureTypes}
           docId={pdfDetails?.[0]?.objectId}
+          phoneSignPdf={
+            canSignPdfOnPhone(documentId, xyPosition)
+              ? handlePhoneSignPdf
+              : undefined
+          }
         />
       )}
       <WidgetNameModal

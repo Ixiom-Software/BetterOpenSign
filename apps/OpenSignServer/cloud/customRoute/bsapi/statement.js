@@ -211,6 +211,9 @@ export const MESSAGE_CONTENT_TYPES = {
   'bs-login': 'application/vnd.bettersign.login+cbor',
   'bs-docsign': 'application/vnd.bettersign.docsign+cbor',
   'bs-docsign-field': 'application/vnd.bettersign.docsign-field+cbor',
+  // Sign on phone v2 (parsefunction/bsPhoneSignPdf.js): bs-service-identity
+  // decodes and checks this statement; docsign checks the signature over it.
+  'bs-docsign-pdf': 'application/vnd.bettersign.docsign-pdf+cbor',
 };
 
 export function varint(n) {

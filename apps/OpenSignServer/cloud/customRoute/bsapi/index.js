@@ -9,7 +9,9 @@ import { config, createChallenge, issueToken, logout, requireToken, apiError } f
 import { relayKey } from './relay.js';
 import { me, listDocuments, getDocument, getDocumentFile } from './documents.js';
 import { uploadSignature } from './signatures.js';
+import { phoneSignFile } from '../../parsefunction/bsPhoneSignPdf.js';
 import { authRateLimit } from './rateLimit.js';
+import { getCert, getIdentityCerts } from './certs.js';
 
 export const router = express.Router();
 
@@ -22,6 +24,10 @@ router.get('/relay-key', async (req, res) => {
   res.json({ pub: key.pub.toString('base64url'), origin: config().origin });
 });
 
+// Published certificates, public (certs.js, docs/PublishedCertificates.md).
+router.get('/certs/:name', getCert);
+router.get('/identities/:vlad/certs', getIdentityCerts);
+
 router.use(requireToken);
 router.post('/auth/logout', logout);
 router.get('/me', me);
@@ -29,6 +35,8 @@ router.get('/documents', listDocuments);
 router.get('/documents/:id', getDocument);
 router.get('/documents/:id/file', getDocumentFile);
 router.post('/documents/:id/signatures', uploadSignature);
+// Sign on phone v2: the PDFs the phone checks and signs (docs/BetterSignPhoneSignV2.md).
+router.get('/phone-sign/:reqId/file', phoneSignFile);
 
 router.use((req, res) => apiError(res, 404, 'not_found', 'No such endpoint.'));
 // eslint-disable-next-line no-unused-vars

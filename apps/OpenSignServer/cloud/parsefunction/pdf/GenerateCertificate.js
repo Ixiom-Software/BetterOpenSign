@@ -1,7 +1,8 @@
-import { PDFDocument, rgb } from 'pdf-lib';
+import { PDFDocument, PDFString, rgb } from 'pdf-lib';
 import fs from 'node:fs';
 import fontkit from '@pdf-lib/fontkit';
 import { formatDateTime } from '../../../Utils.js';
+import { fingerprint } from '../../customRoute/bsapi/certs.js';
 
 const formatDateStr = (dateStr, DateFormat, timezone, Is12Hr) => {
   if (!dateStr) return '';
@@ -10,7 +11,52 @@ const formatDateStr = (dateStr, DateFormat, timezone, Is12Hr) => {
   return formatDateTime(date, DateFormat, timezone, Is12Hr);
 };
 
-export default async function GenerateCertificate(docDetails) {
+// A VLAD shortened for display: its start and end.
+const shortVlad = vlad => (vlad.length > 24 ? `${vlad.slice(0, 12)}...${vlad.slice(-8)}` : vlad);
+
+// Lines of `str` at most `maxWidth` wide: broken at spaces, and inside a word
+// (a fingerprint, a URL) only when the word alone is too wide.
+export function wrapText(str, font, size, maxWidth) {
+  const fits = t => font.widthOfTextAtSize(t, size) <= maxWidth;
+  const lines = [];
+  let line = '';
+  for (const word of String(str).split(' ')) {
+    const next = line ? `${line} ${word}` : word;
+    if (fits(next)) {
+      line = next;
+      continue;
+    }
+    if (line) lines.push(line);
+    line = '';
+    let rest = word;
+    while (!fits(rest)) {
+      // The longest prefix that fits (at least one character), by bisection.
+      let lo = 1;
+      let hi = rest.length - 1;
+      while (lo < hi) {
+        const mid = Math.ceil((lo + hi) / 2);
+        if (fits(rest.slice(0, mid))) lo = mid;
+        else hi = mid - 1;
+      }
+      lines.push(rest.slice(0, lo));
+      rest = rest.slice(lo);
+    }
+    line = rest;
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+
+/**
+ * The completion certificate.
+ *
+ * @param {object} docDetails - the completed contracts_Document (JSON)
+ * @param {object} [opts]
+ * @param {object[]|null} [opts.signatures] - the signed PDF's digital
+ *   signatures (bsapi/certs.js signaturesForCertificate); when present, a
+ *   "Digital signatures" section lists them
+ */
+export default async function GenerateCertificate(docDetails, { signatures } = {}) {
   const timezone = docDetails?.ExtUserPtr?.Timezone || '';
   const Is12Hr = docDetails?.ExtUserPtr?.Is12HourTime || false;
   const DateFormat = docDetails?.ExtUserPtr?.DateFormat || 'MM/DD/YYYY';
@@ -507,6 +553,142 @@ export default async function GenerateCertificate(docDetails) {
     yPosition6 = yPosition5 - 20;
     yPosition7 = yPosition6 - 20;
     yPosition8 = yPosition8 - 174;
+  }
+
+  // The signed PDF's digital signatures, as bs-service-identity read them
+  // (bsapi/certs.js), with links to the published root certificates.
+  if (Array.isArray(signatures) && signatures.length > 0) {
+    const keyX = 30;
+    const valueX = 60;
+    const lineGap = 14;
+    const smallText = 10;
+    const maxWidth = width - 30 - valueX;
+    let y = yPosition1;
+    // Room for `h` more points on this page, or a new page.
+    const ensure = h => {
+      if (y - h < minY) {
+        currentPage = startNewPage();
+        y = yPosition1;
+      }
+    };
+    const link = (lineText, size, x, url) => {
+      const w = timesRomanFont.widthOfTextAtSize(lineText, size);
+      const annot = pdfDoc.context.register(
+        pdfDoc.context.obj({
+          Type: 'Annot',
+          Subtype: 'Link',
+          Rect: [x, y - 2, x + w, y + size],
+          Border: [0, 0, 0],
+          A: { Type: 'Action', S: 'URI', URI: PDFString.of(url) },
+        })
+      );
+      currentPage.node.addAnnot(annot);
+    };
+    // "Label :" then its value, wrapped under it when it doesn't fit beside it.
+    const field = (label, value, { url, size = timeText } = {}) => {
+      const key = `${label} :`;
+      const besideX = keyX + timesRomanFont.widthOfTextAtSize(key, timeText) + 5;
+      const beside = wrapText(value, timesRomanFont, size, width - 30 - besideX);
+      const lines = beside.length === 1 ? beside : wrapText(value, timesRomanFont, size, maxWidth);
+      ensure(lineGap * (lines.length + (beside.length === 1 ? 0 : 1)));
+      currentPage.drawText(key, {
+        x: keyX,
+        y,
+        size: timeText,
+        font: timesRomanFont,
+        color: textKeyColor,
+      });
+      if (beside.length !== 1) y -= lineGap;
+      const x = beside.length === 1 ? besideX : valueX;
+      for (const l of lines) {
+        const color = url ? titleColor : textValueColor;
+        currentPage.drawText(l, { x, y, size, font: timesRomanFont, color });
+        if (url) link(l, size, x, url);
+        y -= lineGap;
+      }
+    };
+    const separator = () => {
+      ensure(12);
+      currentPage.drawLine({
+        start: { x: keyX, y: y + 6 },
+        end: { x: width - 30, y: y + 6 },
+        color: rgb(0.12, 0.12, 0.12),
+        thickness: 0.5,
+      });
+      y -= 12;
+    };
+    const dateOf = d => (d ? formatDateStr(d, DateFormat, timezone, Is12Hr) : 'not stated');
+    // `intact`: the CMS digest matches the bytes it covers. The signature
+    // value isn't checked here, so this never says "verified".
+    const status = s => {
+      if (!s.intact) return 'Not confirmed unchanged since signing';
+      return s.coversWholeFile
+        ? 'Unchanged since signing; covers the whole document'
+        : 'Unchanged since signing; later revisions (other signatures, the seal) came after it';
+    };
+
+    ensure(50);
+    currentPage.drawText('Digital signatures', {
+      x: keyX,
+      y,
+      size: subtitle,
+      font: timesRomanFont,
+      color: titleColor,
+    });
+    y -= 16;
+    for (const l of wrapText(
+      'Read from the signed document. A PDF reader shows a signature as valid once it trusts ' +
+        'its root certificate: download it below and follow the steps on its page.',
+      timesRomanFont,
+      smallText,
+      width - 60
+    )) {
+      currentPage.drawText(l, {
+        x: keyX,
+        y,
+        size: smallText,
+        font: timesRomanFont,
+        color: textValueColor,
+      });
+      y -= 13;
+    }
+    y -= 8;
+
+    signatures.forEach((s, i) => {
+      ensure(60);
+      const name = s.certificateIncluded === false ? 'Signer unknown' : s.signerName;
+      currentPage.drawText(`${i + 1}. ${name || 'Unnamed signer'}`, {
+        x: keyX,
+        y,
+        size: signertext + 1,
+        font: timesRomanFont,
+        color: titleColor,
+      });
+      y -= lineGap + 2;
+      if (s.certificateIncluded === false) {
+        field('Certificate', 'not included in the signature', { size: smallText });
+        field('Signed at', dateOf(s.signingTime), { size: smallText });
+        field('Status', status(s), { size: smallText });
+        separator();
+        return;
+      }
+      field('Issued by', s.rootName || 'unknown');
+      field('Signer certificate SHA-256', fingerprint(s.signerSha256), { size: smallText });
+      if (s.rootSha256 && s.rootSha256 !== s.signerSha256) {
+        field('Root certificate SHA-256', fingerprint(s.rootSha256), { size: smallText });
+      }
+      field('Valid', `${dateOf(s.notBefore)} to ${dateOf(s.notAfter)}`, { size: smallText });
+      field('Signed at', dateOf(s.signingTime), { size: smallText });
+      field('Status', status(s), { size: smallText });
+      if (s.vlad) field('BetterSign identity (VLAD)', shortVlad(s.vlad), { size: smallText });
+      if (s.rootDownloadUrl) {
+        field('Root certificate', s.rootDownloadUrl, { url: s.rootDownloadUrl, size: smallText });
+      }
+      if (s.pageUrl) {
+        field('Trust it in Acrobat', s.pageUrl, { url: s.pageUrl, size: smallText });
+      }
+      separator();
+    });
   }
 
   const pdfBytes = await pdfDoc.save();
