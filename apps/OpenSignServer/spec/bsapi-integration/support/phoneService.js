@@ -2,14 +2,16 @@
 // for cloud/parsefunction/bsPhoneSignPdf.js. Checks the bearer token and
 // answers like the service, with stand-in bytes:
 //   - a request body is the canonical CBOR of the request in camelCase (the
-//     real service encodes bs_docsign's PdfRequest);
+//     real service encodes bs_docsign's PdfRequest); approve must carry a
+//     WinAnsi caption, certify and sign none;
 //   - an answer is opened with docsign's own envelope code, and its
 //     statement and P-256 signatures checked as the contract says;
 //   - a "certificate" is its TBS ‖ the root key's signature;
 //   - the prepared PDF is the base signed by a test PKCS#12 (so the final
 //     file carries a signature covering it), and complete returns it once the
 //     phone's signature over signedAttrsFor(prepared) verifies.
-// Specs switch it to 503 and read the calls.
+// Specs switch it to 503, read the calls, have /v1/phone/pades/base rewrite
+// the PDF, and run `onCall` before a route answers (while docsign waits).
 import crypto from 'node:crypto';
 import http from 'node:http';
 import {
@@ -24,6 +26,11 @@ import { desktopSign } from './lib.js';
 export const phoneService = {
   token: 'bsapi-test-phone-token-0123456789abcdef',
   mode: 'ok', // 'ok' | '503'
+  // /v1/phone/pades/base: 'ok' (as is) | 'rewrite' | 'warn-rewrite' (rewrites
+  // and says it left the PDF as is)
+  base: 'ok',
+  // async (path, body) => {}, before the route answers.
+  onCall: null,
   calls: [],
   p12: null,
   prepared: new Map(), // prepared sha256 hex -> PDF
@@ -70,7 +77,19 @@ const tbsOf = (kind, inputs) => {
   return Buffer.concat([Buffer.from(`TBS-${kind}:`), sha(JSON.stringify(rest))]);
 };
 
+// bs_core pdf_field::win_ansi: what the caption may contain.
+const WIN_ANSI_EXTRAS = '€‚ƒ„…†‡ˆ‰Š‹ŒŽ‘’“”•–—˜™š›œžŸ';
+const winAnsi = s =>
+  [...s].every(
+    c => (c >= ' ' && c <= '~') || (c >= '\u00a0' && c <= '\u00ff') || WIN_ANSI_EXTRAS.includes(c)
+  );
+
 function requestBody(r) {
+  if (r.step === 'approve') {
+    if (typeof r.caption !== 'string' || !winAnsi(r.caption)) throw new Error('caption');
+  } else if (r.caption !== undefined) {
+    throw new Error('caption only in approve');
+  }
   const opt = (k, v) => (r[k] === undefined ? undefined : v(r[k]));
   return encodeCbor({
     v: 1,
@@ -87,6 +106,7 @@ function requestBody(r) {
     exp: r.exp,
     baseSha256: Buffer.from(r.base_sha256, 'hex'),
     baseLen: r.base_len,
+    caption: r.caption,
     approveReqId: opt('approve_req_id', unb64),
     tbs: opt('tbs', unb64),
     purpose: r.purpose,
@@ -130,6 +150,9 @@ function openAnswer(body) {
   if (r.step === 'approve') {
     const image = Buffer.from(a.get('image'));
     if (!same('imageHash', sha(image))) throw new Error('imageHash');
+    if (!s.get('captionSha256') || !same('captionSha256', sha(Buffer.from(r.caption, 'utf8')))) {
+      throw new Error('captionSha256');
+    }
     out.image = b64(image);
     out.doc_key = b64(a.get('docKey'));
     out.root_key = b64(a.get('rootKey'));
@@ -159,10 +182,17 @@ const routes = {
   },
   // The real route re-saves PDFs with compressed cross-references; the
   // fixtures here already use a classic table, so it hands them back.
-  '/v1/phone/pades/base': async b => ({
-    pdf: b.pdf,
-    base_sha256: crypto.createHash('sha256').update(Buffer.from(b.pdf, 'base64')).digest('hex'),
-  }),
+  '/v1/phone/pades/base': async b => {
+    let pdf = unb64(b.pdf);
+    if (phoneService.base !== 'ok') {
+      pdf = Buffer.concat([Buffer.from('%PDF-1.7\n%rewritten\n'), pdf.subarray(9)]);
+    }
+    return {
+      pdf: b64(pdf),
+      base_sha256: sha(pdf).toString('hex'),
+      ...(phoneService.base === 'warn-rewrite' && { warning: 'already signed' }),
+    };
+  },
   '/v1/phone/pades/prepare': async b => {
     const pdf = await desktopSign(unb64(b.base), 'phone', phoneService.p12);
     const h = sha(pdf).toString('hex');
@@ -198,6 +228,7 @@ export function startPhoneService() {
       const body = JSON.parse(Buffer.concat(chunks).toString());
       phoneService.calls.push({ path: req.url, body });
       try {
+        if (phoneService.onCall) await phoneService.onCall(req.url, body);
         return send(200, await route(body));
       } catch (e) {
         return send(422, { code: 'bad_request', error: e.message });

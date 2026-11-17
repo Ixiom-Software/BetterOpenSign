@@ -33,6 +33,9 @@ export function canSignPdfOnPhone(docId, widgets) {
 }
 
 const RETRY_MS = 1500;
+// A poll normally waits on the server for the phone; one that comes back at
+// once (the relay or a service is down) isn't repeated sooner than this.
+const MIN_POLL_MS = 1000;
 const FAILED = ["denied", "error", "expired", "cancelled"];
 
 // expiresAt as epoch milliseconds: accepts milliseconds, seconds or a date
@@ -44,6 +47,9 @@ export function expiryMs(expiresAt) {
   const ms = Date.parse(expiresAt);
   return Number.isNaN(ms) ? null : ms;
 }
+
+const pause = (ms) =>
+  ms > 0 ? new Promise((r) => setTimeout(r, ms)) : Promise.resolve();
 
 const countdown = (ms) => {
   const s = Math.max(0, Math.ceil(ms / 1000));
@@ -78,25 +84,35 @@ export default function PhoneSignPdf({ isOpen, onClose, start, onSigned }) {
     setMessage("");
     setExpiresAt(null);
     let reqId;
+    let expires;
     try {
       const res = await start();
       reqId = res.reqId;
-      reqRef.current = reqId;
-      setExpiresAt(expiryMs(res.expiresAt));
+      expires = res.expiresAt;
     } catch (e) {
       if (live()) fail("error", e?.message || t("phone-sign-pdf.send-failed"));
       return;
     }
-    if (!live()) return;
+    if (!live()) {
+      // Closed while it started: end the attempt it started, so the document
+      // isn't held until the request expires.
+      if (reqId) {
+        Parse.Cloud.run("bsphonesignpdfcancel", { reqId }).catch(() => {});
+      }
+      return;
+    }
+    reqRef.current = reqId;
+    setExpiresAt(expiryMs(expires));
     setStep("waiting");
     while (live()) {
+      const began = Date.now();
       let res;
       try {
         res = await Parse.Cloud.run("bsphonesignpdfpoll", { reqId });
       } catch {
         if (!live()) return;
         setStep("retrying");
-        await new Promise((r) => setTimeout(r, RETRY_MS));
+        await pause(RETRY_MS);
         continue;
       }
       if (!live()) return;
@@ -113,9 +129,10 @@ export default function PhoneSignPdf({ isOpen, onClose, start, onSigned }) {
       }
       if (["waiting", "approved", "signing"].includes(status)) {
         setStep(status);
+        await pause(MIN_POLL_MS - (Date.now() - began));
       } else {
         // Unknown status: don't spin on it.
-        await new Promise((r) => setTimeout(r, RETRY_MS));
+        await pause(RETRY_MS);
       }
     }
   }

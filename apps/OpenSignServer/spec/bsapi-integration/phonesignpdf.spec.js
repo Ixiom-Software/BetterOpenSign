@@ -55,6 +55,8 @@ const PNG = Buffer.from(
 );
 const PDF_CT = 'application/vnd.bettersign.docsign-pdf+cbor';
 const nowSec = () => Math.floor(Date.now() / 1000);
+const today = () => new Date().toISOString().slice(0, 10);
+const BUSY = 'Your earlier signing on your phone is still finishing. Try again in a moment.';
 
 async function bsSession(id, userId) {
   const r = await req('POST', `${PARSE}/loginAs`, { headers: MASTER, body: { userId } });
@@ -87,7 +89,12 @@ function answer(id, ph, { rec = relay.last, result = 'ok', reason, over = {}, si
   let st = {};
   if (result === 'ok' && step === 'approve') {
     fields = { image: PNG, docKey: rawP256(ph.doc.publicKey), rootKey: rawP256(ph.root.publicKey) };
-    st = { imageHash: sha(PNG), docKey: fields.docKey, rootKey: fields.rootKey };
+    st = {
+      imageHash: sha(PNG),
+      docKey: fields.docKey,
+      rootKey: fields.rootKey,
+      captionSha256: sha(Buffer.from(r.get('caption'), 'utf8')),
+    };
   } else if (result === 'ok' && step === 'certify') {
     const t = Buffer.from(r.get('tbs'));
     fields = { signature: crypto.sign('sha256', t, ph.root.privateKey) };
@@ -159,6 +166,22 @@ function answer(id, ph, { rec = relay.last, result = 'ok', reason, over = {}, si
 const fileOf = (auth, reqId) =>
   req('GET', `${API}/api/v1/phone-sign/${reqId}/file`, { headers: auth });
 
+// The attempt's bs_PhoneSignPdf row, and a master-key change to it.
+async function attempt(reqId) {
+  const hex = Buffer.from(reqId, 'base64url').toString('hex');
+  const where = encodeURIComponent(JSON.stringify({ ApproveReqId: hex }));
+  const r = await req('GET', `${PARSE}/classes/bs_PhoneSignPdf?where=${where}`, {
+    headers: MASTER,
+  });
+  return r.json.results[0];
+}
+async function setAttempt(reqId, body) {
+  const row = await attempt(reqId);
+  await req('PUT', `${PARSE}/classes/bs_PhoneSignPdf/${row.objectId}`, { headers: MASTER, body });
+}
+const dateIn = s => ({ __type: 'Date', iso: new Date(Date.now() + s * 1000).toISOString() });
+const serviceCalls = path => phoneService.calls.filter(c => c.path === path);
+
 describe('sign on phone v2 (PAdES)', () => {
   let stopService;
   let owner;
@@ -169,8 +192,16 @@ describe('sign on phone v2 (PAdES)', () => {
   let token;
   let B;
   let bobPhone;
+  // Uploads of signed PDFs to fail next (finishSigning's upload).
+  let failSignedUploads = 0;
 
   beforeAll(async () => {
+    Parse.Cloud.beforeSave(Parse.File, r => {
+      if (failSignedUploads > 0 && /signed_/.test(r.file.name())) {
+        failSignedUploads--;
+        throw new Error('storage unavailable');
+      }
+    });
     phoneService.p12 = shared.p12;
     const s = await startPhoneService();
     stopService = s.stop;
@@ -200,6 +231,9 @@ describe('sign on phone v2 (PAdES)', () => {
     relay.onRequest = null;
     relay.rateLimitNext = 0;
     phoneService.mode = 'ok';
+    phoneService.base = 'ok';
+    phoneService.onCall = null;
+    failSignedUploads = 0;
   });
 
   const currentFile = async docId => {
@@ -250,6 +284,9 @@ describe('sign on phone v2 (PAdES)', () => {
     expect(r.get('step')).toBe('approve');
     expect(r.get('fieldId')).toBe('bs-phone-1234');
     expect(Buffer.from(r.get('baseSha256')).equals(sha(base))).toBeTrue();
+    // The caption the phone binds at approval.
+    const caption = `Digitally signed by Bob · ${today()}`;
+    expect(r.get('caption')).toBe(caption);
 
     // The phone downloads the base; no one else can.
     const f = await fileOf(B, reqId);
@@ -271,6 +308,7 @@ describe('sign on phone v2 (PAdES)', () => {
     expect(root.get('purpose')).toBe('root');
     expect(Buffer.from(root.get('approveReqId')).toString('base64url')).toBe(reqId);
     expect(Buffer.from(root.get('challenge')).equals(Buffer.from(r.get('challenge')))).toBeTrue();
+    expect(root.get('caption')).toBeUndefined();
     expect(relay.last.reqId).not.toBe(reqId);
     // The app answers certify and sign without a screen: quiet requests.
     expect(relay.last.quiet).toBeTrue();
@@ -287,6 +325,7 @@ describe('sign on phone v2 (PAdES)', () => {
     expect(sr.get('step')).toBe('sign');
     expect(sr.get('certificate')).toBeTruthy();
     expect(sr.get('root')).toBeTruthy();
+    expect(sr.get('caption')).toBeUndefined();
 
     // The prepared PDF for the sign request's id.
     const p = await fileOf(B, signReq.reqId);
@@ -300,6 +339,9 @@ describe('sign on phone v2 (PAdES)', () => {
     expect(await status(reqId)).toEqual({ status: 'signed' });
     expect(await status(reqId)).toEqual({ status: 'signed' });
     expect((await fileOf(B, reqId)).status).toBe(404);
+    // Prepare and complete drew the very caption the phone approved.
+    expect(serviceCalls('/v1/phone/pades/prepare').at(-1).body.caption).toBe(caption);
+    expect(serviceCalls('/v1/phone/pades/complete').at(-1).body.caption).toBe(caption);
 
     // Committed like a desktop signature, and the document is free again.
     const d = await docRow(docId);
@@ -377,6 +419,13 @@ describe('sign on phone v2 (PAdES)', () => {
     expect((await status(s.json.result.reqId)).status).toBe('signing');
     answer(bob, bobPhone);
     expect((await status(s.json.result.reqId)).status).toBe('signed');
+    // Each statement records its own step; a purpose only for certify.
+    const statements = (await attempt(s.json.result.reqId)).Statements;
+    expect(statements.map(x => [x.step, x.purpose])).toEqual([
+      ['approve', undefined],
+      ['certify', 'leaf'],
+      ['sign', undefined],
+    ]);
   });
 
   it('lets the owner sign a document they sign themselves, sealed in the same step', async () => {
@@ -463,6 +512,172 @@ describe('sign on phone v2 (PAdES)', () => {
     const p = await status(first.json.result.reqId);
     expect(p.status).toBe('error');
     expect(p.reason).toBe('replaced');
+  });
+
+  it("doesn't replace an earlier attempt a poll is committing", async () => {
+    const docId = await mkDoc(owner, [bobC]);
+    const first = await start(docId, await baseFor(docId));
+    answer(bob, bobPhone);
+    expect((await status(first.json.result.reqId)).status).toBe('signing');
+    let again;
+    phoneService.onCall = async path => {
+      if (path !== '/v1/phone/pades/complete') return;
+      phoneService.onCall = null;
+      again = await start(docId, await baseFor(docId));
+    };
+    answer(bob, bobPhone);
+    expect((await status(first.json.result.reqId)).status).toBe('signed');
+    expect(again.json.code).toBe(119);
+    expect(again.json.error).toBe(BUSY);
+    expect((await docRow(docId)).VladSignatures.length).toBe(1);
+  });
+
+  it('cancels when asked while a poll is preparing: nothing more is sent', async () => {
+    const docId = await mkDoc(owner, [bobC]);
+    const s = await start(docId, await baseFor(docId));
+    const { reqId } = s.json.result;
+    let c;
+    phoneService.onCall = async path => {
+      if (path !== '/v1/phone/pades/prepare') return;
+      phoneService.onCall = null;
+      c = await call('bsphonesignpdfcancel', token, { reqId });
+    };
+    answer(bob, bobPhone);
+    const approveRec = relay.last;
+    expect((await status(reqId)).status).toBe('cancelled');
+    // The poll held the attempt; the cancel was recorded, not lost.
+    expect(c.json.result.status).not.toBe('cancelled');
+    expect(relay.last).toBe(approveRec);
+    expect((await docRow(docId)).PhoneSignLockId).toBeUndefined();
+  });
+
+  it('cancels when asked while a poll is embedding the signature: nothing is committed', async () => {
+    const docId = await mkDoc(owner, [bobC]);
+    const s = await start(docId, await baseFor(docId));
+    const { reqId } = s.json.result;
+    answer(bob, bobPhone);
+    expect((await status(reqId)).status).toBe('signing');
+    phoneService.onCall = async path => {
+      if (path !== '/v1/phone/pades/complete') return;
+      phoneService.onCall = null;
+      await call('bsphonesignpdfcancel', token, { reqId });
+    };
+    answer(bob, bobPhone);
+    expect((await status(reqId)).status).toBe('cancelled');
+    const d = await docRow(docId);
+    expect(d.VladSignatures).toBeUndefined();
+    expect(d.PhoneSignLockId).toBeUndefined();
+  });
+
+  it('only releases a lease it still holds', async () => {
+    const docId = await mkDoc(owner, [bobC]);
+    const s = await start(docId, await baseFor(docId));
+    const { reqId } = s.json.result;
+    // While the poll prepares, its lease is taken over (as if it had lapsed).
+    phoneService.onCall = async path => {
+      if (path !== '/v1/phone/pades/prepare') return;
+      phoneService.onCall = null;
+      await setAttempt(reqId, { LeaseId: 'another-poll', LeaseUntil: Date.now() + 60000 });
+    };
+    answer(bob, bobPhone);
+    expect((await status(reqId)).status).toBe('signing');
+    const row = await attempt(reqId);
+    expect(row.LeaseId).toBe('another-poll');
+    expect(row.LeaseUntil).toBeGreaterThan(Date.now());
+  });
+
+  it('commits on a later poll when storing the signed PDF fails', async () => {
+    const docId = await mkDoc(owner, [bobC, daveC]);
+    const s = await start(docId, await baseFor(docId));
+    const { reqId } = s.json.result;
+    answer(bob, bobPhone);
+    expect((await status(reqId)).status).toBe('signing');
+    failSignedUploads = 1;
+    answer(bob, bobPhone);
+    expect((await status(reqId)).status).toBe('signing');
+    expect(failSignedUploads).toBe(0);
+    let d = await docRow(docId);
+    expect(d.VladSignatures).toBeUndefined();
+    expect(d.PhoneSignLockId).toBeTruthy();
+    expect(await status(reqId)).toEqual({ status: 'signed' });
+    d = await docRow(docId);
+    expect(d.VladSignatures.length).toBe(1);
+    expect((await currentFile(docId)).equals(phoneService.completed)).toBeTrue();
+  });
+
+  it('takes an answer the phone sent in time, even if the poll comes late', async () => {
+    const docId = await mkDoc(owner, [bobC]);
+    const s = await start(docId, await baseFor(docId));
+    const { reqId } = s.json.result;
+    // The request ran from 200 s to 90 s ago; the phone answered 120 s ago.
+    await setAttempt(reqId, { StepIssuedAt: dateIn(-200), StepExpiresAt: dateIn(-90) });
+    answer(bob, bobPhone, { over: { iat: nowSec() - 120 } });
+    expect((await status(reqId)).status).toBe('signing');
+  });
+
+  it('expires a request the phone never answered once its time is up', async () => {
+    const docId = await mkDoc(owner, [bobC]);
+    const s = await start(docId, await baseFor(docId));
+    await setAttempt(s.json.result.reqId, { StepExpiresAt: dateIn(-90) });
+    expect((await status(s.json.result.reqId)).status).toBe('expired');
+    expect((await docRow(docId)).PhoneSignLockId).toBeUndefined();
+  });
+
+  it('refuses an Acrobat-ready base that rewrote a signed document', async () => {
+    const docId = await mkDoc(owner, [bobC], {
+      extra: { VladSignatures: [{ vlad: bob.vlad, reqId: 'earlier' }] },
+    });
+    phoneService.base = 'rewrite';
+    const s = await start(docId, await baseFor(docId));
+    expect(s.json.code).toBe(100);
+    expect((await docRow(docId)).PhoneSignLockId).toBeUndefined();
+  });
+
+  it('refuses a base the service changed while warning it left it as is', async () => {
+    const docId = await mkDoc(owner, [bobC]);
+    phoneService.base = 'warn-rewrite';
+    expect((await start(docId, await baseFor(docId))).json.code).toBe(100);
+    // An unsigned document may be re-saved.
+    phoneService.base = 'rewrite';
+    const s = await start(docId, await baseFor(docId));
+    expect(s.status).toBe(200);
+    await call('bsphonesignpdfcancel', token, { reqId: s.json.result.reqId });
+  });
+
+  it('leaves out of the default caption a name WinAnsi cannot draw', async () => {
+    const cases = [
+      ['Łucja Ñúñez-Őry', `Digitally signed by Lucja Ñúñez-Ory · ${today()}`],
+      ['李雷', `Digitally signed · ${today()}`],
+    ];
+    for (const [name, caption] of cases) {
+      const contact = await mkContact(owner.userId, name, `bob-${tag()}@example.com`, bobId);
+      const docId = await mkDoc(owner, [contact]);
+      const s = await start(docId, await baseFor(docId));
+      expect(s.status).toBe(200);
+      expect(requestBody(relay.last).get('caption')).toBe(caption);
+      await call('bsphonesignpdfcancel', token, { reqId: s.json.result.reqId });
+    }
+  });
+
+  it('takes a caption of Latin text, and refuses any other', async () => {
+    const docId = await mkDoc(owner, [bobC]);
+    const base = await baseFor(docId);
+    expect((await start(docId, base, { caption: 'Signé ✓' })).json.code).toBe(102);
+    expect((await start(docId, base, { caption: 'Signed\nby Bob' })).json.code).toBe(102);
+    expect((await start(docId, base, { caption: 'x'.repeat(201) })).json.code).toBe(102);
+    const s = await start(docId, base, { caption: 'Signé — Bob' });
+    expect(s.status).toBe(200);
+    expect(requestBody(relay.last).get('caption')).toBe('Signé — Bob');
+    await call('bsphonesignpdfcancel', token, { reqId: s.json.result.reqId });
+  });
+
+  it("ends an attempt whose approval doesn't bind the caption", async () => {
+    const docId = await mkDoc(owner, [bobC]);
+    const s = await start(docId, await baseFor(docId));
+    answer(bob, bobPhone, { over: { captionSha256: sha(Buffer.from('Something else')) } });
+    const p = await status(s.json.result.reqId);
+    expect(p.status).toBe('error');
+    expect(p.reason).toBe('unverified');
   });
 
   it("refuses a revision that isn't the current file with bytes appended", async () => {

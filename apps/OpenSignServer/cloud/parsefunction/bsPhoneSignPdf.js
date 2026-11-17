@@ -23,6 +23,8 @@
 //                   | expired | cancelled, reason?, message? }
 //   3. bsphonesignpdfcancel { reqId }   (the signer closed the dialog)
 //      Ends the attempt and frees the document.  -> { status: 'cancelled' }
+//      If a poll is mid-step, that poll ends it at its next check, before it
+//      sends the phone anything or commits.
 //
 // On `signed` the browser carries on as after a normal Finish, including the
 // next signer's email, so nothing here sends one (unlike the desktop path).
@@ -46,7 +48,9 @@ import axios from 'axios';
 import {
   appendedSignatureCoveringFile,
   extendsPdf,
+  isAppendOnly,
   readDocumentPdf,
+  signatureByteRanges,
 } from '../../utils/appendOnlyPdf.js';
 import { parseUploadFile } from '../../utils/fileUtils.js';
 import { getSecureUrl } from '../../Utils.js';
@@ -89,8 +93,11 @@ const CLOCK_SKEW_S = 60;
 const LOCK_GRACE_S = 60;
 // Once the phone has signed: time to embed the signature and commit.
 const COMPLETE_S = 300;
-// One poll at a time moves an attempt on (claim).
-const LEASE_MS = 180 * 1000;
+// One poll at a time moves an attempt on (claim). The poll renews its lease
+// while it works, so a slow step (prepare or complete take up to two minutes,
+// then the seal and the upload) keeps it; one that dies lets it lapse.
+const LEASE_MS = 120 * 1000;
+const LEASE_RENEW_MS = 30 * 1000;
 // Unfinished attempts are expired this long after their hold ends.
 const SWEEP_AFTER_MS = 10 * 60 * 1000;
 // As the desktop app's: a ten-year root issues a one-year signing certificate.
@@ -122,6 +129,9 @@ const REASON_MESSAGES = {
 };
 const NOT_VERIFIED = "Your phone's answer couldn't be verified.";
 const FAILED = "Couldn't sign the document on your phone. Try again.";
+const BUSY =
+  'Your earlier signing on your phone is still finishing. Try again in a moment.';
+const PREPARE_FAILED = "Couldn't prepare the document for your phone. Try again.";
 
 const b64 = b => Buffer.from(b).toString('base64');
 const b64u = b => Buffer.from(b).toString('base64url');
@@ -135,6 +145,43 @@ const err = (code, msg) => new Parse.Error(code, msg);
 const userError = message => Object.assign(new Error(message), { userMessage: message });
 // A failure worth trying again on the next poll.
 const transient = message => Object.assign(new Error(message), { transient: true });
+
+// --- the caption ---------------------------------------------------------------
+
+// The caption the appearance draws next to the signature. The phone binds it
+// at approval (captionSha256) and refuses an appearance with any other text,
+// so it must be text the standard Helvetica draws with WinAnsiEncoding
+// (bs_core pdf_field::win_ansi): printable ASCII, Latin-1 and WinAnsi's
+// typographic extras, no control characters.
+const WIN_ANSI_EXTRAS = '€‚ƒ„…†‡ˆ‰Š‹ŒŽ‘’“”•–—˜™š›œžŸ';
+const drawable = ch =>
+  (ch >= ' ' && ch <= '~') || (ch >= '\u00a0' && ch <= '\u00ff') || WIN_ANSI_EXTRAS.includes(ch);
+const isDrawable = s => [...s].every(drawable);
+// Latin letters NFKD doesn't take apart.
+const LATIN_BASE = { Ł: 'L', ł: 'l', Đ: 'D', đ: 'd', Ħ: 'H', ħ: 'h', ı: 'i', Ŧ: 'T', ŧ: 't' };
+
+// The signer's name as WinAnsi text: accented Latin letters outside Latin-1
+// lose their accents (Ő -> O, Ł -> L); a name with anything else (another
+// script) gives '' rather than a mangled name.
+function drawableName(name) {
+  const chars = [...String(name || '').replace(/\s+/g, ' ').trim()].map(ch => {
+    if (drawable(ch)) return ch;
+    if (LATIN_BASE[ch]) return LATIN_BASE[ch];
+    const bare = ch.normalize('NFKD').replace(/[\u0300-\u036f]/g, '');
+    return bare && isDrawable(bare) ? bare : null;
+  });
+  return chars.includes(null) ? '' : chars.join('');
+}
+
+// "Digitally signed by <name> · YYYY-MM-DD", or without the name if it can't
+// be drawn; at most MAX_CAPTION characters (the name is cut).
+function defaultCaption(name, now = new Date()) {
+  const day = now.toISOString().slice(0, 10);
+  const drawn = drawableName(name);
+  if (!drawn) return `Digitally signed · ${day}`;
+  const room = MAX_CAPTION - `Digitally signed by  · ${day}`.length;
+  return `Digitally signed by ${drawn.slice(0, room).trim()} · ${day}`;
+}
 
 function log(event, fields) {
   console.log(JSON.stringify({ event: `bsphonesignpdf_${event}`, ...fields }));
@@ -240,9 +287,12 @@ async function releaseLock(docId, lockId) {
 
 // Polls overlap (a retry, a second tab), and the relay hands every one of them
 // the same answer. Only the poll that claims the attempt, at the step it saw,
-// acts on it; the others report the status.
+// acts on it; the others report the status. The claim is a lease with its own
+// id (LeaseId): only its holder renews or releases it. Returns the id, or
+// null if another poll holds the attempt.
 async function claim(row) {
   const now = Date.now();
+  const leaseId = crypto.randomBytes(8).toString('hex');
   try {
     await Parse.Server.database.update(
       CLASS,
@@ -251,26 +301,56 @@ async function claim(row) {
         StepReqId: row.get('StepReqId'),
         $or: [{ LeaseUntil: { $exists: false } }, { LeaseUntil: { $lt: now } }],
       },
-      { LeaseUntil: now + LEASE_MS },
+      { LeaseUntil: now + LEASE_MS, LeaseId: leaseId },
       {}
     );
   } catch (e) {
-    if (e?.code === Parse.Error.OBJECT_NOT_FOUND) return false;
+    if (e?.code === Parse.Error.OBJECT_NOT_FOUND) return null;
     throw e;
   }
   await row.fetch({ useMasterKey: true });
-  return true;
+  return leaseId;
 }
 
+// Change the lease only if it is still `leaseId`.
+const updateLease = (row, leaseId, update) =>
+  Parse.Server.database
+    .update(CLASS, { objectId: row.id, LeaseId: leaseId }, update, {})
+    .catch(() => {});
+
+// Whether the signer has asked to cancel since `row` was read.
+async function cancelRequested(row) {
+  const fresh = await new Parse.Query(CLASS)
+    .select('CancelRequested')
+    .get(row.id, { useMasterKey: true });
+  return !!fresh.get('CancelRequested');
+}
+
+const cancelled = row => finishRow(row, 'cancelled', { reason: 'user' });
+
 async function withClaim(row, fn) {
-  if (!(await claim(row))) return result(row);
+  const leaseId = await claim(row);
+  if (!leaseId) return result(row);
+  const renew = setInterval(
+    () => updateLease(row, leaseId, { LeaseUntil: Date.now() + LEASE_MS }),
+    LEASE_RENEW_MS
+  );
+  renew.unref?.();
   try {
     if (!LIVE.includes(row.get('Status'))) return result(row);
-    return await fn();
+    if (row.get('CancelRequested')) return await cancelled(row);
+    const out = await fn();
+    // A cancel that came in while this poll worked.
+    if (LIVE.includes(row.get('Status')) && (await cancelRequested(row))) {
+      return await cancelled(row);
+    }
+    return out;
   } finally {
-    await Parse.Server.database
-      .update(CLASS, { objectId: row.id }, { LeaseUntil: { __op: 'Delete' } }, {})
-      .catch(() => {});
+    clearInterval(renew);
+    await updateLease(row, leaseId, {
+      LeaseUntil: { __op: 'Delete' },
+      LeaseId: { __op: 'Delete' },
+    });
   }
 }
 
@@ -309,6 +389,8 @@ async function buildStep(row, step, extra = {}) {
     exp,
     base_sha256: row.get('BaseSha256'),
     base_len: row.get('BaseLen'),
+    // The phone binds the caption at approval and remembers it.
+    ...(step === 'approve' && { caption: row.get('Caption') }),
     ...(step !== 'approve' && { approve_req_id: b64(Buffer.from(row.get('ApproveReqId'), 'hex')) }),
     ...extra,
   };
@@ -404,13 +486,15 @@ async function postRequest(row, { key, env, to, reqId, exp }) {
   );
 }
 
-// The next request of a running attempt: saved, the hold extended, sent.
+// The next request of a running attempt: saved, the hold extended, sent,
+// unless the signer cancelled meanwhile.
 async function continueWith(row, step, extra) {
   const sent = await buildStep(row, step, extra);
   await row.save(null, { useMasterKey: true });
   if (!(await holdLock(row, sec(row.get('LockUntil'))))) {
     throw userError('The document changed while you were signing. Reload it and sign again.');
   }
+  if (await cancelRequested(row)) return cancelled(row);
   try {
     await postRequest(row, sent);
   } catch (e) {
@@ -449,8 +533,14 @@ export async function bsphonesignpdfstart(request) {
   if (typeof base !== 'string' || !B64_RE.test(base)) {
     throw err(Parse.Error.INVALID_QUERY, 'The document to sign is missing.');
   }
-  if (caption != null && (typeof caption !== 'string' || caption.length > MAX_CAPTION)) {
-    throw err(Parse.Error.INVALID_QUERY, `The caption can be at most ${MAX_CAPTION} characters.`);
+  if (
+    caption != null &&
+    (typeof caption !== 'string' || caption.length > MAX_CAPTION || !isDrawable(caption))
+  ) {
+    throw err(
+      Parse.Error.INVALID_QUERY,
+      `The caption can be at most ${MAX_CAPTION} characters of Latin text.`
+    );
   }
   let baseBytes = Buffer.from(base, 'base64');
   if (baseBytes.length > MAX_PDF_BYTES) {
@@ -475,7 +565,8 @@ export async function bsphonesignpdfstart(request) {
   sweep();
 
   // Someone else's attempt holds the document. Your own earlier one (another
-  // tab, a retry) gives way to this one.
+  // tab, a retry) gives way to this one, unless a poll is moving it on right
+  // now (it may be committing): then try again in a moment.
   const held = phoneSignLockOf(doc);
   if (held) {
     const holder = await new Parse.Query(CLASS)
@@ -485,10 +576,13 @@ export async function bsphonesignpdfstart(request) {
       throw err(Parse.Error.OPERATION_FORBIDDEN, PHONE_LOCKED_MESSAGE);
     }
     if (holder && LIVE.includes(holder.get('Status'))) {
-      await finishRow(holder, 'error', {
-        reason: 'replaced',
-        message: 'You started signing this document again.',
-      });
+      await withClaim(holder, () =>
+        finishRow(holder, 'error', {
+          reason: 'replaced',
+          message: 'You started signing this document again.',
+        })
+      );
+      if (LIVE.includes(holder.get('Status'))) throw err(Parse.Error.OPERATION_FORBIDDEN, BUSY);
     }
   }
 
@@ -506,18 +600,31 @@ export async function bsphonesignpdfstart(request) {
   // with compressed cross-references (pdf-lib's default) is re-saved with a
   // classic table, or Acrobat calls the phone's signature invalid ("errors in
   // the formatting"; the signing revision always appends a classic table).
-  // The content is unchanged. One already signed is left as is (a warning).
+  // The content is unchanged. One already signed is left as is (a warning):
+  // re-saving it would break its signatures, so for a signed document we
+  // insist on the current file with bytes appended, as above.
+  let n;
   try {
-    const n = await service('/v1/phone/pades/base', { pdf: baseBytes.toString('base64') }, 120000);
-    baseBytes = Buffer.from(n.pdf, 'base64');
-    if (n.warning) log('base_warning', { docId, warning: n.warning });
+    n = await service('/v1/phone/pades/base', { pdf: baseBytes.toString('base64') }, 120000);
   } catch (e) {
     log('base_failed', { docId, error: e.message });
-    throw err(
-      Parse.Error.CONNECTION_FAILED,
-      "Couldn't prepare the document for your phone. Try again."
-    );
+    throw err(Parse.Error.CONNECTION_FAILED, PREPARE_FAILED);
   }
+  const normalized = Buffer.from(typeof n.pdf === 'string' ? n.pdf : '', 'base64');
+  const signedBefore = isAppendOnly(doc) || signatureByteRanges(current).length > 0;
+  const refused = !normalized.length
+    ? 'empty'
+    : n.warning && !normalized.equals(baseBytes)
+      ? 'changed_despite_warning'
+      : signedBefore && !extendsPdf(current, normalized)
+        ? 'rewrote_signed'
+        : null;
+  if (n.warning) log('base_warning', { docId, warning: n.warning });
+  if (refused) {
+    log('base_refused', { docId, why: refused });
+    throw err(Parse.Error.CONNECTION_FAILED, PREPARE_FAILED);
+  }
+  baseBytes = normalized;
 
   const baseSha256 = sha256(baseBytes).toString('hex');
   const row = new Parse.Object(CLASS);
@@ -528,10 +635,7 @@ export async function bsphonesignpdfstart(request) {
   row.set('SignerId', signer.id);
   row.set('SignerClass', signer.className);
   row.set('SignerName', signer.name);
-  row.set(
-    'Caption',
-    caption || `Digitally signed by ${signer.name} · ${new Date().toISOString().slice(0, 10)}`
-  );
+  row.set('Caption', caption || defaultCaption(signer.name));
   row.set('Challenge', crypto.randomBytes(32).toString('hex'));
   row.set('BaseSha256', baseSha256);
   row.set('BaseLen', baseBytes.length);
@@ -594,11 +698,25 @@ async function ownRow(request) {
 
 // bsphonesignpdfcancel { reqId }: the signer closed the dialog. Ends the
 // attempt and frees the document at once. -> { status: 'cancelled' }, or the
-// final status if it had already ended (or a poll is committing it right now).
+// final status if it had already ended. If a poll is moving the attempt on,
+// the request is recorded (CancelRequested) and that poll ends it before it
+// sends the phone anything more or commits; the answer is the status then.
 export async function bsphonesignpdfcancel(request) {
   const row = await ownRow(request);
   if (!LIVE.includes(row.get('Status'))) return result(row);
-  return withClaim(row, () => finishRow(row, 'cancelled', { reason: 'user' }));
+  try {
+    await Parse.Server.database.update(
+      CLASS,
+      { objectId: row.id, Status: { $in: LIVE } },
+      { CancelRequested: true },
+      {}
+    );
+  } catch (e) {
+    if (e?.code !== Parse.Error.OBJECT_NOT_FOUND) throw e;
+    await row.fetch({ useMasterKey: true });
+    return result(row);
+  }
+  return withClaim(row, () => cancelled(row));
 }
 
 // --- poll -------------------------------------------------------------------------------
@@ -606,10 +724,14 @@ export async function bsphonesignpdfcancel(request) {
 export async function bsphonesignpdfpoll(request) {
   const row = await ownRow(request);
   if (!LIVE.includes(row.get('Status'))) return result(row);
+  if (row.get('CancelRequested')) return withClaim(row, () => cancelled(row));
   if (row.get('Answered')) return withClaim(row, () => advance(row));
-  if (sec(row.get('StepExpiresAt')) + CLOCK_SKEW_S < nowSec()) {
-    return withClaim(row, () => finishRow(row, 'expired'));
-  }
+  // Only once the relay has no answer: one the phone sent in time counts even
+  // if this poll comes late (checkStatement bounds its iat).
+  const unanswered = () =>
+    sec(row.get('StepExpiresAt')) + CLOCK_SKEW_S < nowSec()
+      ? withClaim(row, () => finishRow(row, 'expired'))
+      : result(row);
 
   const key = await relayKey();
   let res;
@@ -624,13 +746,13 @@ export async function bsphonesignpdfpoll(request) {
       }
     );
   } catch {
-    return result(row);
+    return unanswered();
   }
-  if (res.status === 202 || res.status === 204) return result(row);
+  if (res.status === 202 || res.status === 204) return unanswered();
   if (res.status === 410) return withClaim(row, () => finishRow(row, 'expired'));
   if (res.status !== 200 || typeof res.body.env !== 'string') {
     log('relay_poll_failed', { status: res.status, error: res.body.error });
-    return result(row);
+    return unanswered();
   }
   const env = res.body.env;
   // Another poll may have taken this answer already; then carry on from there.
@@ -720,7 +842,7 @@ async function answer(row, env) {
   }
   row.add('Statements', {
     step,
-    purpose: row.get('Purpose'),
+    ...(step === 'certify' && { purpose: row.get('Purpose') }),
     reqId: reqIdHex,
     statement: a.statement,
     vladSig: a.vlad_sig,
@@ -758,6 +880,10 @@ function checkStatement(row, a, c) {
     challenge: bytesHex('challenge') === row.get('Challenge'),
     reqId: bytesHex('reqId') === row.get('StepReqId'),
     baseSha256: bytesHex('baseSha256') === row.get('BaseSha256'),
+    // The caption the appearance may draw, bound at approval.
+    caption:
+      row.get('Step') !== 'approve' ||
+      bytesHex('captionSha256') === sha256(Buffer.from(row.get('Caption'), 'utf8')).toString('hex'),
     iat:
       typeof iat === 'number' &&
       iat >= sec(row.get('StepIssuedAt')) - CLOCK_SKEW_S &&
@@ -964,6 +1090,8 @@ async function complete(row) {
   if (committed(doc)) return done();
   const why = cannotSign(doc, row.get('UserId').id);
   if (why) throw userError(why);
+  // The last point a cancel can take effect.
+  if (await cancelRequested(row)) return cancelled(row);
 
   const vlad = row.get('vlad');
   const _resDoc = doc.toJSON();
@@ -983,8 +1111,9 @@ async function complete(row) {
     signedAt: new Date().toISOString(),
     signedWith: 'BetterSign phone',
   };
+  let res;
   try {
-    await finishSigning({
+    res = await finishSigning({
       docId: doc.id,
       _resDoc,
       signUser,
@@ -1013,6 +1142,13 @@ async function complete(row) {
     }
     throw transient(`finishSigning: ${e?.message}`);
   }
+  // finishSigning answers nothing when the upload failed: then nothing was
+  // committed, and the next poll tries again with the same inputs.
+  if (res?.status !== 'success') {
+    const now = await loadForSigning(doc.id).catch(() => null);
+    if (committed(now)) return done();
+    throw transient('finishSigning: nothing was stored');
+  }
   return done();
 }
 
@@ -1027,6 +1163,7 @@ async function finishRow(row, status, { reason, message } = {}) {
   row.set('FinishedAt', new Date());
   row.unset('EphSecret');
   row.unset('LeaseUntil');
+  row.unset('LeaseId');
   await row.save(null, { useMasterKey: true });
   await releaseLock(row.get('DocId'), row.get('ApproveReqId'));
   await Promise.all(

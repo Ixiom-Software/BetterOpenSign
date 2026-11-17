@@ -34,6 +34,8 @@ exports.up = async Parse => {
     s.addDate('ApprovalUntil');
     s.addDate('LockUntil');
     s.addNumber('LeaseUntil');
+    s.addString('LeaseId');
+    s.addBoolean('CancelRequested');
     // The current step and its relay request.
     s.addString('Step');
     s.addString('Status');

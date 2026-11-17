@@ -51,15 +51,20 @@ browser                docsign                      bs-service-identity     rela
    (`/v1/phone/pades/base`): an unsigned PDF with compressed cross-references
    (pdf-lib's default) is re-saved with a classic table, content unchanged,
    because the signing revision always appends a classic table and Acrobat
-   calls a signature over the mix invalid. That result is the base the phone
+   calls a signature over the mix invalid. A document already signed is left
+   as is (the service's `warning`); docsign refuses a result that changed it
+   anyway, or that isn't the current file with bytes appended when the
+   document has signatures (`VladSignatures`, or any `/ByteRange` in the
+   file): re-saving it would break them. That result is the base the phone
    approves; docsign stores it and holds the document (§6).
-2. **approve.** The phone downloads the base (§3), checks it and the blank
-   field, shows it, and on approval answers with the signature PNG and its two
-   public keys (document key, root key).
+2. **approve.** The request carries the caption (§2). The phone downloads the
+   base (§3), checks it and the blank field, shows it with the caption, and on
+   approval answers with the signature PNG and its two public keys (document
+   key, root key); its statement binds the caption (`captionSha256`).
 3. **certify**, only when needed (§5): the root key signs a TBS for its root,
    then for the signing certificate the root issues.
-4. **sign.** bs-service-identity prepares the PDF (the PNG as the field's
-   appearance, a `/Contents` placeholder). The phone downloads it, checks it
+4. **sign.** bs-service-identity prepares the PDF (the PNG and the approved
+   caption as the field's appearance, a `/Contents` placeholder). The phone downloads it, checks it
    is the base plus only the signature, builds the CMS signed attributes
    itself and signs them with the document key.
 5. **Complete.** bs-service-identity rebuilds the prepared PDF from the same
@@ -69,14 +74,17 @@ browser                docsign                      bs-service-identity     rela
    entry with `Vlad`, `SignedWith: 'BetterSign phone'` and `SignedSha256`, and
    a `VladSignatures` entry. From then on the document is append-only: later
    signers and OpenSign's seal append. A document you sign yourself completes
-   in that same call, so the seal is appended there too.
+   in that same call, so the seal is appended there too. If storing the file
+   fails, nothing is committed and the next poll tries again with the same
+   inputs (until the hold's five minutes are up).
 
 Every step is its own relay request: its own `reqId` and one-time X25519 key
 (kept sealed as in v1 §5), `exp − iat` at most 180 s, and never past the
 phone's approval window (600 s from the approve request). The `challenge`,
 `docId`, `fieldId` (= `fieldName`) and base hash stay the same, and certify
-and sign carry `approveReqId`. The phone refuses a certify or sign that
-doesn't continue an approval it gave (`unknown-approval`).
+and sign carry `approveReqId`. Only approve carries `caption`; the phone
+remembers it. The phone refuses a certify or sign that doesn't continue an
+approval it gave (`unknown-approval`).
 
 Request bodies are built by bs-service-identity (`POST /v1/phone/request`,
 the deterministic CBOR of `bs_docsign::pdf::PdfRequest`). docsign wraps them in
@@ -90,14 +98,23 @@ Answers are relay envelopes with
 |---|---|---|
 | `bsphonesignpdfstart` | `{ docId, fieldName, base, caption? }` | `{ reqId, expiresAt }` |
 | `bsphonesignpdfpoll` | `{ reqId }` | `{ status, reason?, message? }` |
-| `bsphonesignpdfcancel` | `{ reqId }` | `{ status: "cancelled" }` (or the final status, if it had already ended) |
+| `bsphonesignpdfcancel` | `{ reqId }` | `{ status: "cancelled" }`, the final status if it had already ended, or the live status if a poll is moving it on (it then ends it) |
 
 - `base`: base64 of the signer's revision (§1). At most 50 MB decoded; Parse
   accepts request bodies up to 100 MB (`maxUploadSize`).
 - `fieldName`: `bs-phone-` and then 1 to 91 of `A–Z a–z 0–9 _ : -` (so no
   `.`, at most 100 characters).
-- `caption`: at most 200 characters; default `Digitally signed by <name> ·
-  <YYYY-MM-DD>`.
+- `caption`: the text the signature's appearance draws next to the PNG. At
+  most 200 characters, and only what the standard Helvetica draws with
+  WinAnsiEncoding (bs_core `pdf_field::win_ansi`): printable ASCII, Latin-1
+  (U+00A0–U+00FF) and WinAnsi's extras (`€ ‚ ƒ „ … † ‡ ˆ ‰ Š ‹ Œ Ž ‘ ’ “ ” • –
+  — ˜ ™ š › œ ž Ÿ`); anything else, control characters included, is a `102`.
+  Default `Digitally signed by <name> · <YYYY-MM-DD>` (UTC date), with the
+  signer's name made drawable: Latin letters outside Latin-1 lose their
+  accents (`Ő` → `O`, `Ł` → `L`); a name with any other character (another
+  script) is left out: `Digitally signed · <YYYY-MM-DD>`. A long name is cut
+  to fit 200. docsign sends it in the approve request and passes the same
+  text to `/v1/phone/pades/prepare` and `/complete`.
 - `reqId`: base64url of the approve request's id. It names the attempt
   whichever step is running.
 - `expiresAt`: when the approve request expires, epoch milliseconds.
@@ -108,7 +125,17 @@ Answers are relay envelopes with
   the phone: `user`, `locked`, …), `error` (`reason` `mismatch`,
   `unknown-approval`, `no-signature`, `unverified`, `replaced`, …),
   `expired`, `cancelled`. `message`, when present, is for the signer as is.
-- A poll waits up to 20 s for the phone.
+- A poll waits up to 20 s for the phone. A step expires only when the relay
+  has no answer for it: an answer the phone sent in time counts even if the
+  poll comes late (its statement's `iat` must still fall within the request).
+- Cancel while a poll is moving the attempt on is recorded
+  (`CancelRequested`): that poll ends it as `cancelled` before it sends the
+  phone the next request or commits the signed PDF. Once committed, it's
+  `signed`.
+- The browser polls again at once after a long poll, but no sooner than a
+  second after a poll that came back at once (the relay or a service down);
+  closing the dialog while start is still running cancels the attempt start
+  returns.
 
 `bsphonesignpdfstart` errors (`Parse.Error`, message shown as is):
 
@@ -119,7 +146,7 @@ Answers are relay envelopes with
 | `119` | Not a BetterSign session; not the signer's turn (as v1); or another signer is signing it on their phone (§6) |
 | `141` | `base` isn't the current file with bytes appended, or the document changed meanwhile |
 | `155` | The relay's rate limit |
-| `100` | The relay or the document's file can't be reached; the request couldn't be built |
+| `100` | The relay or the document's file can't be reached; the request couldn't be built; bs-service-identity couldn't make the base Acrobat-ready, or rewrote a signed document |
 | `1` | bs-service-identity isn't configured |
 
 ## 3. The phone's download
@@ -150,7 +177,13 @@ On each answer:
 If bs-service-identity or the verifier is down, the poll reports the current
 status and tries again next time; the relay keeps the answer until the request
 expires. Two polls at once (a retry, a second tab) don't both act on an
-answer: the one that claims the attempt does (`LeaseUntil`).
+answer: the one that claims the attempt does. The claim is a lease
+(`LeaseUntil`, two minutes) with its own id (`LeaseId`); its poll renews it
+every 30 s while it works (prepare and complete can take minutes) and
+releases it only if it still holds it. A poll that dies lets it lapse.
+
+The approve statement must also carry `captionSha256`, the SHA-256 of the
+caption's UTF-8; docsign checks it as well as bs-service-identity.
 
 ## 5. Certificates
 
@@ -179,7 +212,9 @@ checked before it can't commit. While it is live:
 - the desktop upload answers `409 locked`;
 - another signer's `bsphonesignpdfstart` refuses with the same `119`. The same
   signer starting again ends their earlier attempt (`error`, reason
-  `replaced`).
+  `replaced`), claiming it first; if a poll is moving it on right now (it may
+  be committing), start refuses with `119` "Your earlier signing on your
+  phone is still finishing…".
 
 It is released on every final status, and simply lapses if no one polls.
 Attempts nobody polled to the end are marked `expired` ten minutes after their
@@ -196,12 +231,13 @@ key only:
   `Caption`, `Challenge`, the base (`BaseUrl`, `BaseSha256`, `BaseLen`,
   `BaseRevision`), the current step (`Step`, `Status`, `Answered`,
   `StepReqId`, `StepRequest`, `EphSecret`, `StepIssuedAt`, `StepExpiresAt`),
-  `ApprovalUntil`, `LockUntil`, `LeaseUntil`, the approval (`Image`,
+  `ApprovalUntil`, `LockUntil`, `LeaseUntil`, `LeaseId`, `CancelRequested`,
+  the approval (`Image`,
   `DocKey`, `RootKey`), certify state (`Purpose`, `CertifyInputs`,
   `CertifyIssuer`, `CertifySignature`), signing state (`Certificate`, `Root`,
   `SigningTime`, `PreparedUrl`, `PreparedSha256`, `PreparedLen`,
-  `SignedAttributes`, `Signature`), every step's `Statements` (statement and
-  VLAD signature), and the outcome (`Reason`, `Message`, `SignedSha256`,
+  `SignedAttributes`, `Signature`), every step's `Statements` (step,
+  certify's `purpose`, statement and VLAD signature), and the outcome (`Reason`, `Message`, `SignedSha256`,
   `SignedAt`, `FinishedAt`). The base and prepared files are deleted when the
   attempt ends; the row and its statements stay.
 - `bs_PhoneSignCert`: `vlad`, `Kind` (`root` | `leaf`), `PublicKey`,

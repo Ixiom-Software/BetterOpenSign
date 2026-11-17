@@ -90,10 +90,13 @@ describe("PhoneSignPdf", () => {
       await screen.findByText("phone-sign-pdf.waiting")
     ).toBeInTheDocument();
     expect(screen.getByText("phone-sign-pdf.expires-in")).toBeInTheDocument();
+    // Polls at most once a second when the server answers at once.
     expect(
-      await screen.findByText("phone-sign-pdf.signing")
+      await screen.findByText("phone-sign-pdf.signing", {}, { timeout: 3000 })
     ).toBeInTheDocument();
-    await waitFor(() => expect(onSigned).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(onSigned).toHaveBeenCalledTimes(1), {
+      timeout: 3000
+    });
     expect(run).toHaveBeenCalledWith("bsphonesignpdfpoll", { reqId: "rq" });
     expect(start).toHaveBeenCalledTimes(1);
   });
@@ -131,6 +134,33 @@ describe("PhoneSignPdf", () => {
     fireEvent.click(screen.getByText("phone-sign-pdf.cancel"));
     expect(run).toHaveBeenCalledWith("bsphonesignpdfcancel", { reqId: "rq" });
     expect(onClose).toHaveBeenCalled();
+  });
+
+  it("cancels the attempt it started when closed while starting", async () => {
+    const start = vi.fn(() => later({ reqId: "rq", expiresAt: 0 }, 50));
+    run.mockImplementation(() => Promise.resolve({ status: "cancelled" }));
+    render(<PhoneSignPdf isOpen start={start} onSigned={vi.fn()} />);
+    fireEvent.click(screen.getByText("phone-sign-pdf.cancel"));
+    expect(run).not.toHaveBeenCalled();
+    await waitFor(() =>
+      expect(run).toHaveBeenCalledWith("bsphonesignpdfcancel", { reqId: "rq" })
+    );
+    expect(run).not.toHaveBeenCalledWith(
+      "bsphonesignpdfpoll",
+      expect.anything()
+    );
+  });
+
+  it("doesn't poll again at once when the server answers at once", async () => {
+    const start = vi.fn(async () => ({ reqId: "rq", expiresAt: 0 }));
+    run.mockImplementation(() => Promise.resolve({ status: "waiting" }));
+    render(<PhoneSignPdf isOpen start={start} onSigned={vi.fn()} />);
+    await screen.findByText("phone-sign-pdf.waiting");
+    await later(null, 500);
+    expect(run).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(run).toHaveBeenCalledTimes(2), {
+      timeout: 1500
+    });
   });
 
   it("doesn't cancel once it has ended", async () => {

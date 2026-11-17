@@ -726,9 +726,18 @@ function SignYourSelf() {
   const handlePhoneSignedPdf = async () => {
     setIsPhoneSignPdf(false);
     setIsUiLoading(true);
-    dispatch(setTypedSignFont("Fasthand"));
-    await getDocumentDetails(false);
-    setIsUiLoading(false);
+    try {
+      dispatch(setTypedSignFont("Fasthand"));
+      await getDocumentDetails(false);
+      setIsUiLoading(false);
+    } catch (err) {
+      console.log("err after phone signing", err);
+      setIsUiLoading(false);
+      setIsAlert({
+        isShow: true,
+        alertMessage: t("something-went-wrong-mssg")
+      });
+    }
   };
 
   //function for send placeholder's co-ordinate(x,y) position embed signature url or stamp url
