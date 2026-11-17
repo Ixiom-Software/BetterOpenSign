@@ -88,7 +88,7 @@ export function openEphSecret(sealed, reqIdHex) {
   return Buffer.concat([d.update(b.subarray(12, b.length - 16)), d.final()]);
 }
 
-async function signerVlad(request) {
+export async function signerVlad(request) {
   if (!request.user) throw err(Parse.Error.INVALID_SESSION_TOKEN, 'Please sign in again.');
   const vlad = await bsIdSessionVlad(request);
   if (!vlad) {
@@ -100,7 +100,7 @@ async function signerVlad(request) {
   return vlad;
 }
 
-async function siteConfig() {
+export async function siteConfig() {
   await ensureReceiverVlad();
   const c = config();
   if (!c.receiverVlad) {

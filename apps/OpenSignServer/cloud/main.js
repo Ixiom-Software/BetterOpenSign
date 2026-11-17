@@ -58,6 +58,11 @@ import bettersignlogin from './parsefunction/bettersignlogin.js';
 import bsidlogin from './parsefunction/bsidlogin.js';
 import { bsextchallenge, bsextlogin } from './parsefunction/bsextlogin.js';
 import { bsphonesignstart, bsphonesignpoll } from './parsefunction/bsPhoneSign.js';
+import {
+  bsphonesignpdfstart,
+  bsphonesignpdfpoll,
+  bsphonesignpdfcancel,
+} from './parsefunction/bsPhoneSignPdf.js';
 import updateUserByAdmin from './parsefunction/updateUserByAdmin.js';
 import {
   deleteBsIdentity,
@@ -155,6 +160,9 @@ Parse.Cloud.define('bsextchallenge', bsextchallenge);
 Parse.Cloud.define('bsextlogin', bsextlogin);
 Parse.Cloud.define('bsphonesignstart', bsphonesignstart);
 Parse.Cloud.define('bsphonesignpoll', bsphonesignpoll);
+Parse.Cloud.define('bsphonesignpdfstart', bsphonesignpdfstart);
+Parse.Cloud.define('bsphonesignpdfpoll', bsphonesignpdfpoll);
+Parse.Cloud.define('bsphonesignpdfcancel', bsphonesignpdfcancel);
 Parse.Cloud.define('bsidentitylist', listBsIdentities);
 Parse.Cloud.define('bsidentitysave', saveBsIdentity);
 Parse.Cloud.define('bsidentitydelete', deleteBsIdentity);

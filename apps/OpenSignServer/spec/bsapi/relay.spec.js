@@ -13,6 +13,7 @@ import {
   HPKE_INFO_PREFIX,
   newX25519,
   openEnvelope,
+  PDF_REQUEST_CT,
   relayAuthMessage,
   relayKey,
   REQUEST_CT,
@@ -173,6 +174,25 @@ describe('relay envelopes: docsign round trip', () => {
     ]);
     expect(ed25519Verify(key.pub, signed, Buffer.from(env.get('sig')))).toBeTrue();
     expect(decodeCbor(body).get('fieldId')).toBe('field-1');
+  });
+
+  it('wraps a v2 body as given, under its own content type', () => {
+    const key = ed25519FromSeed(crypto.randomBytes(32));
+    const to = sha256(Buffer.from('8724' + 'cd'.repeat(40), 'hex'));
+    // Built by bs-service-identity; carried byte for byte.
+    const body = encodeCbor({ v: 1, step: 'approve', reqId });
+    const env = decodeCbor(
+      buildRequestEnvelope({ key, to, reqId, iat: now, exp: now + 180, ct: PDF_REQUEST_CT, body })
+    );
+    const header = env.get('header');
+    expect(header.get('ct')).toBe(PDF_REQUEST_CT);
+    expect(Buffer.from(env.get('body')).equals(body)).toBeTrue();
+    const signed = Buffer.concat([
+      Buffer.from(REQUEST_ENV_DOMAIN),
+      encodeCbor(header),
+      sha256(body),
+    ]);
+    expect(ed25519Verify(key.pub, signed, Buffer.from(env.get('sig')))).toBeTrue();
   });
 });
 

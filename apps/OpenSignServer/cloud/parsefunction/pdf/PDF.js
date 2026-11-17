@@ -118,8 +118,22 @@ export async function signRevisionOf(docId) {
 const staleDocument = () =>
   Object.assign(new Parse.Error(STALE_DOCUMENT, STALE_MESSAGE), { stale: true });
 
+// A signer signing on their phone (parsefunction/bsPhoneSignPdf.js) holds the
+// document until their signature is in or the attempt ends, so no one else's
+// commit wastes it. The id of the hold if one is live, else null. Taking it
+// bumps SignRevision, so a signing checked before it can't commit either.
+export function phoneSignLockOf(doc, now = new Date()) {
+  const get = k => (typeof doc?.get === 'function' ? doc.get(k) : doc?.[k]);
+  const id = get('PhoneSignLockId');
+  const until = get('PhoneSignLockUntil');
+  const untilDate = until instanceof Date ? until : until?.iso ? new Date(until.iso) : null;
+  return id && untilDate && untilDate > now ? id : null;
+}
+export const PHONE_LOCKED_MESSAGE =
+  'Someone is signing this document on their phone right now. Try again in a few minutes.';
+
 // Best effort: remove an uploaded file a lost commit no longer needs.
-async function deleteUploadedFile(url) {
+export async function deleteUploadedFile(url) {
   const name = decodeURIComponent(fileKey(url).split('/').pop() || '');
   if (!name) return;
   try {
@@ -434,6 +448,8 @@ export const STALE_MESSAGE = 'This document changed since you opened it. Reload 
  *   nothing is stored and a stale error (`.stale`) is thrown.
  * @param {object} [auditExtra] - extra fields for this signer's audit entry
  * @param {object} [docExtra] - extra fields for the document update
+ * @param {string} [phoneSignLock] - the phone signing that holds the document
+ *   (phoneSignLockOf), if this is it; anyone else is refused while it holds it
  */
 export async function finishSigning({
   docId,
@@ -450,7 +466,12 @@ export async function finishSigning({
   baseRevision,
   auditExtra,
   docExtra,
+  phoneSignLock,
 }) {
+  const lock = phoneSignLockOf(_resDoc);
+  if (lock && lock !== phoneSignLock) {
+    throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, PHONE_LOCKED_MESSAGE);
+  }
   const randomNumber = Math.floor(Math.random() * 5000);
   const auditActivity = 'Signed';
   const username = signUser.Name;

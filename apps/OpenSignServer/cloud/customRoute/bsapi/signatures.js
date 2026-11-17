@@ -19,7 +19,11 @@ import {
   extendsPdf,
   readDocumentPdf,
 } from '../../../utils/appendOnlyPdf.js';
-import { finishSigning } from '../../parsefunction/pdf/PDF.js';
+import {
+  finishSigning,
+  PHONE_LOCKED_MESSAGE,
+  phoneSignLockOf,
+} from '../../parsefunction/pdf/PDF.js';
 import { notifyNextSigner } from './notify.js';
 import { apiError, checkSignedFields, config, notConfigured } from './auth.js';
 import { findAccessibleDocument, signerState, toPublicDocument } from './documents.js';
@@ -60,6 +64,7 @@ export async function uploadSignature(req, res) {
   const doc = await loadForSigning(found.id);
   const state = signerState(doc, user.id);
   if (!state.canSign) return apiError(res, 409, state.reason, state.message);
+  if (phoneSignLockOf(doc)) return apiError(res, 409, 'locked', PHONE_LOCKED_MESSAGE);
 
   // 2. The statement: this identity, this site, this document, these bytes.
   // Signed as the canonical message from this identity to us.
@@ -192,6 +197,10 @@ export async function uploadSignature(req, res) {
       docExtra: { VladSignatures: { __op: 'Add', objects: [entry] } },
     });
   } catch (e) {
+    // Someone started signing on their phone since the check above.
+    if (e?.code === Parse.Error.OPERATION_FORBIDDEN && e.message === PHONE_LOCKED_MESSAGE) {
+      return apiError(res, 409, 'locked', PHONE_LOCKED_MESSAGE);
+    }
     if (e?.stale) {
       return apiError(
         res,
@@ -213,7 +222,7 @@ export async function uploadSignature(req, res) {
 }
 
 // The document with everything finishSigning needs (as signPdf loads it).
-async function loadForSigning(id) {
+export async function loadForSigning(id) {
   const q = new Parse.Query('contracts_Document');
   q.include('ExtUserPtr,Signers,ExtUserPtr.TenantId,Bcc,Cc,CreatedBy');
   return q.get(id, { useMasterKey: true });

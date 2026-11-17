@@ -142,7 +142,8 @@ Errors are `{ "error": "<code>", "message": "…" }`.
 | `GET /documents?role=owner\|signer&status=…&limit=&skip=` | `{results: [Document], limit, skip}`. `status`: `draft`, `in_progress`, `completed`, `declined`, `expired`. `limit` ≤ 100 |
 | `GET /documents/:id` | `Document` if you own it or are a signer, else 404 |
 | `GET /documents/:id/file?version=current\|original` | the PDF. `X-Content-SHA256` is its hash |
-| `POST /documents/:id/signatures` | your desktop-signed PDF (section 5). `201` + `Document` + `signedSha256`; `409` with `stale_base`, `already_signed`, `not_your_turn`, `not_a_signer`, `completed`, `expired`…; `400 not_appended`/`no_signature`; `401 access_denied`; `502 verifier_misconfigured`; `503 verifier_unavailable` |
+| `POST /documents/:id/signatures` | your desktop-signed PDF (section 5). `201` + `Document` + `signedSha256`; `409` with `stale_base`, `locked` (someone is signing it on their phone), `already_signed`, `not_your_turn`, `not_a_signer`, `completed`, `expired`…; `400 not_appended`/`no_signature`; `401 access_denied`; `502 verifier_misconfigured`; `503 verifier_unavailable` |
+| `GET /phone-sign/:reqId/file` | Sign on phone v2: the base PDF for an approve request, the prepared PDF for a sign request, with `X-Content-SHA256`; only to the identity it was sent to, while it runs; else `404` ([BetterSignPhoneSignV2.md](./BetterSignPhoneSignV2.md)) |
 
 ```jsonc
 // Document

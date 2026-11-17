@@ -9,6 +9,7 @@ import { config, createChallenge, issueToken, logout, requireToken, apiError } f
 import { relayKey } from './relay.js';
 import { me, listDocuments, getDocument, getDocumentFile } from './documents.js';
 import { uploadSignature } from './signatures.js';
+import { phoneSignFile } from '../../parsefunction/bsPhoneSignPdf.js';
 import { authRateLimit } from './rateLimit.js';
 
 export const router = express.Router();
@@ -29,6 +30,8 @@ router.get('/documents', listDocuments);
 router.get('/documents/:id', getDocument);
 router.get('/documents/:id/file', getDocumentFile);
 router.post('/documents/:id/signatures', uploadSignature);
+// Sign on phone v2: the PDFs the phone checks and signs (docs/BetterSignPhoneSignV2.md).
+router.get('/phone-sign/:reqId/file', phoneSignFile);
 
 router.use((req, res) => apiError(res, 404, 'not_found', 'No such endpoint.'));
 // eslint-disable-next-line no-unused-vars
