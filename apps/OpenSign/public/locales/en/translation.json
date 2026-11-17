@@ -1669,6 +1669,7 @@
     "send-failed": "Couldn't send the document to your phone.",
     "denied": "You declined on your phone. The document isn't signed.",
     "error": "Your phone couldn't sign the document. It isn't signed.",
+    "cancelled": "Cancelled. The document isn't signed.",
     "expired": "The request expired. The document isn't signed.",
     "build-failed": "Couldn't prepare the document for your phone.",
     "cancel": "Cancel",

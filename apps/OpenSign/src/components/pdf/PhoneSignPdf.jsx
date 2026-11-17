@@ -12,6 +12,8 @@
 // Server side: apps/OpenSignServer/cloud/parsefunction (Sign on phone v2)
 //   bsphonesignpdfstart { docId, fieldName, base, caption? } -> { reqId, expiresAt }
 //   bsphonesignpdfpoll  { reqId } -> { status, reason?, message? }
+//   bsphonesignpdfcancel { reqId } -> { status }: closing the modal while it
+//     runs, so the document isn't held locked until the request expires.
 
 import { useEffect, useRef, useState } from "react";
 import Parse from "parse";
@@ -31,7 +33,7 @@ export function canSignPdfOnPhone(docId, widgets) {
 }
 
 const RETRY_MS = 1500;
-const FAILED = ["denied", "error", "expired"];
+const FAILED = ["denied", "error", "expired", "cancelled"];
 
 // expiresAt as epoch milliseconds: accepts milliseconds, seconds or a date
 // string.
@@ -58,6 +60,8 @@ export default function PhoneSignPdf({ isOpen, onClose, start, onSigned }) {
   const [expiresAt, setExpiresAt] = useState(null);
   const [now, setNow] = useState(Date.now());
   const runRef = useRef(0);
+  // The running attempt's reqId, to cancel it on close.
+  const reqRef = useRef(null);
 
   const isError = FAILED.includes(step);
   const busy = !!step && !isError && step !== "signed";
@@ -77,6 +81,7 @@ export default function PhoneSignPdf({ isOpen, onClose, start, onSigned }) {
     try {
       const res = await start();
       reqId = res.reqId;
+      reqRef.current = reqId;
       setExpiresAt(expiryMs(res.expiresAt));
     } catch (e) {
       if (live()) fail("error", e?.message || t("phone-sign-pdf.send-failed"));
@@ -97,11 +102,15 @@ export default function PhoneSignPdf({ isOpen, onClose, start, onSigned }) {
       if (!live()) return;
       const status = res?.status;
       if (status === "signed") {
+        reqRef.current = null;
         setStep("signed");
         onSigned && onSigned();
         return;
       }
-      if (FAILED.includes(status)) return fail(status, res.message);
+      if (FAILED.includes(status)) {
+        reqRef.current = null;
+        return fail(status, res.message);
+      }
       if (["waiting", "approved", "signing"].includes(status)) {
         setStep(status);
       } else {
@@ -130,6 +139,12 @@ export default function PhoneSignPdf({ isOpen, onClose, start, onSigned }) {
 
   function close() {
     runRef.current++;
+    const reqId = reqRef.current;
+    reqRef.current = null;
+    if (reqId) {
+      // Best effort: the lock lapses on its own at the request's expiry.
+      Parse.Cloud.run("bsphonesignpdfcancel", { reqId }).catch(() => {});
+    }
     setStep("");
     setMessage("");
     onClose && onClose();

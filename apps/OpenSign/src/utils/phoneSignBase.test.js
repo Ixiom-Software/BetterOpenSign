@@ -105,10 +105,15 @@ const sigFields = (doc) =>
     .filter((f) => f instanceof PDFSignature);
 
 describe("phoneSignFieldName", () => {
-  it("is bs-phone-<key>, without dots, at most 100 characters", () => {
+  it("is bs-phone-<key> as the server takes it", () => {
+    // The server's check (bsPhoneSignPdf.js FIELD_RE).
+    const ok = (n) => /^bs-phone-[A-Za-z0-9_:-]{1,91}$/.test(n);
     expect(phoneSignFieldName(SIG_KEY)).toBe(`bs-phone-${SIG_KEY}`);
-    expect(phoneSignFieldName("a.b")).toBe("bs-phone-a-b");
+    expect(phoneSignFieldName("a.b c/é")).toBe("bs-phone-a-b-c--");
     expect(phoneSignFieldName("x".repeat(200))).toHaveLength(100);
+    for (const key of [SIG_KEY, "a.b c/é", "x".repeat(200), 12345678]) {
+      expect(ok(phoneSignFieldName(key))).toBe(true);
+    }
   });
 });
 

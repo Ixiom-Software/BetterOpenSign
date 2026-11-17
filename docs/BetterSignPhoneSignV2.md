@@ -47,7 +47,12 @@ browser                docsign                      bs-service-identity     rela
    file (`SignedUrl || URL`) followed by incremental updates that draw their
    other widgets and add one blank, visible signature field named
    `fieldName`. docsign checks it extends the current file byte for byte
-   (`extendsPdf`), stores it, and holds the document (§6).
+   (`extendsPdf`), then has bs-service-identity make it Acrobat-ready
+   (`/v1/phone/pades/base`): an unsigned PDF with compressed cross-references
+   (pdf-lib's default) is re-saved with a classic table, content unchanged,
+   because the signing revision always appends a classic table and Acrobat
+   calls a signature over the mix invalid. That result is the base the phone
+   approves; docsign stores it and holds the document (§6).
 2. **approve.** The phone downloads the base (§3), checks it and the blank
    field, shows it, and on approval answers with the signature PNG and its two
    public keys (document key, root key).

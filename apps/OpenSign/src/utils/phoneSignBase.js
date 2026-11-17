@@ -18,8 +18,11 @@ import { loadPdfForSigning } from "./appendOnlyPdf";
 
 // The /T of the blank signature field: no '.' (it separates field name
 // parts) and at most 100 characters.
+// The server takes `bs-phone-` and at most 91 of [A-Za-z0-9_:-].
 export const phoneSignFieldName = (key) =>
-  `bs-phone-${String(key).replace(/\./g, "-")}`.slice(0, 100);
+  `bs-phone-${String(key)
+    .replace(/[^A-Za-z0-9_:-]/g, "-")
+    .slice(0, 91)}`;
 
 // The signer's signature widget, if they have exactly one:
 // { pageNumber, position }, else null.

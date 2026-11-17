@@ -116,6 +116,32 @@ describe("PhoneSignPdf", () => {
     expect(start).toHaveBeenCalledTimes(2);
   });
 
+  it("cancels on the server when closed while it runs", async () => {
+    const start = vi.fn(async () => ({ reqId: "rq", expiresAt: 0 }));
+    const onClose = vi.fn();
+    run.mockImplementation((name) =>
+      name === "bsphonesignpdfpoll"
+        ? later({ status: "waiting" }, 50)
+        : Promise.resolve({ status: "cancelled" })
+    );
+    render(
+      <PhoneSignPdf isOpen start={start} onSigned={vi.fn()} onClose={onClose} />
+    );
+    await screen.findByText("phone-sign-pdf.waiting");
+    fireEvent.click(screen.getByText("phone-sign-pdf.cancel"));
+    expect(run).toHaveBeenCalledWith("bsphonesignpdfcancel", { reqId: "rq" });
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it("doesn't cancel once it has ended", async () => {
+    const start = vi.fn(async () => ({ reqId: "rq", expiresAt: 0 }));
+    run.mockImplementationOnce(() => later({ status: "denied" }));
+    render(<PhoneSignPdf isOpen start={start} onSigned={vi.fn()} />);
+    await screen.findByText("phone-sign-pdf.denied");
+    fireEvent.click(screen.getByText("phone-sign-pdf.close"));
+    expect(run).not.toHaveBeenCalledWith("bsphonesignpdfcancel", expect.anything());
+  });
+
   it("shows why it couldn't start", async () => {
     const start = vi.fn(async () => {
       throw new Error("Not your turn");

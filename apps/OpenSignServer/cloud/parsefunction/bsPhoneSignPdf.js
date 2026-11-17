@@ -436,7 +436,7 @@ export async function bsphonesignpdfstart(request) {
   if (caption != null && (typeof caption !== 'string' || caption.length > MAX_CAPTION)) {
     throw err(Parse.Error.INVALID_QUERY, `The caption can be at most ${MAX_CAPTION} characters.`);
   }
-  const baseBytes = Buffer.from(base, 'base64');
+  let baseBytes = Buffer.from(base, 'base64');
   if (baseBytes.length > MAX_PDF_BYTES) {
     throw err(Parse.Error.INVALID_QUERY, 'This document is too large to sign on your phone.');
   }
@@ -485,6 +485,23 @@ export async function bsphonesignpdfstart(request) {
     throw err(Parse.Error.CONNECTION_FAILED, "Couldn't read the document's file. Try again.");
   }
   if (!extendsPdf(current, baseBytes)) throw err(STALE_DOCUMENT, STALE_MESSAGE);
+
+  // What the phone approves is the base made Acrobat-ready: an unsigned PDF
+  // with compressed cross-references (pdf-lib's default) is re-saved with a
+  // classic table, or Acrobat calls the phone's signature invalid ("errors in
+  // the formatting"; the signing revision always appends a classic table).
+  // The content is unchanged. One already signed is left as is (a warning).
+  try {
+    const n = await service('/v1/phone/pades/base', { pdf: baseBytes.toString('base64') }, 120000);
+    baseBytes = Buffer.from(n.pdf, 'base64');
+    if (n.warning) log('base_warning', { docId, warning: n.warning });
+  } catch (e) {
+    log('base_failed', { docId, error: e.message });
+    throw err(
+      Parse.Error.CONNECTION_FAILED,
+      "Couldn't prepare the document for your phone. Try again."
+    );
+  }
 
   const baseSha256 = sha256(baseBytes).toString('hex');
   const row = new Parse.Object(CLASS);

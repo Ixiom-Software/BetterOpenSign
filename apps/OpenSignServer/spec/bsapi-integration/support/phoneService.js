@@ -157,6 +157,12 @@ const routes = {
     if (!verifies(b.root_key, tbs, b.signature)) throw new Error('leaf signature');
     return { certificate: b64(Buffer.concat([tbs, unb64(b.signature)])) };
   },
+  // The real route re-saves PDFs with compressed cross-references; the
+  // fixtures here already use a classic table, so it hands them back.
+  '/v1/phone/pades/base': async b => ({
+    pdf: b.pdf,
+    base_sha256: crypto.createHash('sha256').update(Buffer.from(b.pdf, 'base64')).digest('hex'),
+  }),
   '/v1/phone/pades/prepare': async b => {
     const pdf = await desktopSign(unb64(b.base), 'phone', phoneService.p12);
     const h = sha(pdf).toString('hex');
