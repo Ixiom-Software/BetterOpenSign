@@ -345,25 +345,41 @@ async function buildStep(row, step, extra = {}) {
 }
 
 // Hand a built request to the relay. Throws a Parse.Error for the signer.
+//
+// Only approve needs the person: certify and sign are answered by the app
+// without a screen, so they go as `quiet` requests (the relay's own budget,
+// 240/h per sender, and a data-only push) instead of using up the 20/h a
+// known sender gets per phone. The relay also takes at most one request a
+// second per sender, and certify and sign follow an answer at once, so a
+// `rate-limited` refusal is retried after a short wait.
+const RATE_RETRIES = 3;
+const RATE_WAIT_MS = 1100;
+
 async function postRequest(row, { key, env, to, reqId, exp }) {
   const refused = (code, message, fields) => {
     log(fields.event, { vlad: row.get('vlad').slice(0, 16), ...fields });
     return err(code, message);
   };
+  const quiet = row.get('Step') !== 'approve';
   let res;
-  try {
-    res = await relayCall(key, 'POST', '/v1/req', {
-      body: { env: b64u(env), to: b64u(to), reqId: b64u(reqId), exp },
-    });
-  } catch (e) {
-    throw refused(
-      Parse.Error.CONNECTION_FAILED,
-      "Couldn't reach the BetterSign relay. Try again.",
-      {
-        event: 'relay_unreachable',
-        error: e.message,
-      }
-    );
+  for (let attempt = 0; ; attempt++) {
+    try {
+      res = await relayCall(key, 'POST', '/v1/req', {
+        body: { env: b64u(env), to: b64u(to), reqId: b64u(reqId), exp, ...(quiet ? { quiet } : {}) },
+      });
+    } catch (e) {
+      throw refused(
+        Parse.Error.CONNECTION_FAILED,
+        "Couldn't reach the BetterSign relay. Try again.",
+        {
+          event: 'relay_unreachable',
+          error: e.message,
+        }
+      );
+    }
+    if (res.status !== 429 || res.body.error !== 'rate-limited' || attempt >= RATE_RETRIES) break;
+    // eslint-disable-next-line no-await-in-loop
+    await new Promise(r => setTimeout(r, RATE_WAIT_MS));
   }
   if (res.status === 202) return;
   const fields = { event: 'relay_refused', status: res.status, error: res.body.error };

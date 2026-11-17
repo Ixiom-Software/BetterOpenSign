@@ -12,6 +12,9 @@ const ED_SPKI = Buffer.from('302a300506032b6570032100', 'hex');
 export const relay = {
   // 'ok' | 'unknown' (no phone registered for `to`) | 'ratelimited'
   mode: 'ok',
+  // Refuse this many more requests with `rate-limited` (the real relay's
+  // one-a-second per sender), then accept.
+  rateLimitNext: 0,
   delivery: 'pushed',
   requests: new Map(), // reqId (b64u) -> { env, to, exp, from, response }
   last: null,
@@ -62,6 +65,10 @@ export function startRelay() {
         const body = JSON.parse(raw.toString());
         if (relay.mode === 'unknown') return send(404, { error: 'unknown-recipient' });
         if (relay.mode === 'ratelimited') return send(429, { error: 'rate-limited' });
+        if (relay.rateLimitNext > 0) {
+          relay.rateLimitNext--;
+          return send(429, { error: 'rate-limited' });
+        }
         const rec = { ...body, from, response: null };
         relay.requests.set(body.reqId, rec);
         relay.last = rec;

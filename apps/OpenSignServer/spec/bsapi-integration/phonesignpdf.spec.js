@@ -198,6 +198,7 @@ describe('sign on phone v2 (PAdES)', () => {
     verifier.mode = 'ok';
     relay.mode = 'ok';
     relay.onRequest = null;
+    relay.rateLimitNext = 0;
     phoneService.mode = 'ok';
   });
 
@@ -241,6 +242,8 @@ describe('sign on phone v2 (PAdES)', () => {
     // The approve request: addressed to the identity, our content type, naming the base.
     const rec = relay.last;
     expect(rec.reqId).toBe(reqId);
+    // Approve needs the person: an ordinary request, so the phone rings.
+    expect(rec.quiet).toBeUndefined();
     expect(Buffer.from(rec.to, 'base64url').equals(sha(Buffer.from(bob.vlad, 'hex')))).toBeTrue();
     expect(envOf(rec).get('header').get('ct')).toBe(PDF_REQUEST_CT);
     const r = requestBody(rec);
@@ -269,6 +272,8 @@ describe('sign on phone v2 (PAdES)', () => {
     expect(Buffer.from(root.get('approveReqId')).toString('base64url')).toBe(reqId);
     expect(Buffer.from(root.get('challenge')).equals(Buffer.from(r.get('challenge')))).toBeTrue();
     expect(relay.last.reqId).not.toBe(reqId);
+    // The app answers certify and sign without a screen: quiet requests.
+    expect(relay.last.quiet).toBeTrue();
 
     answer(bob, bobPhone);
     expect((await status(reqId)).status).toBe('approved');
@@ -277,6 +282,7 @@ describe('sign on phone v2 (PAdES)', () => {
     answer(bob, bobPhone);
     expect((await status(reqId)).status).toBe('signing');
     const signReq = relay.last;
+    expect(signReq.quiet).toBeTrue();
     const sr = requestBody(signReq);
     expect(sr.get('step')).toBe('sign');
     expect(sr.get('certificate')).toBeTruthy();
@@ -318,6 +324,19 @@ describe('sign on phone v2 (PAdES)', () => {
     const sigs = verifyAll(final);
     expect(sigs.length).toBe(2);
     expect(sigs.every(x => x.ok)).toBeTrue();
+  });
+
+  it('waits out the relay\'s one request a second instead of failing', async () => {
+    const docId = await mkDoc(owner, [bobC]);
+    const s = await start(docId, await baseFor(docId));
+    const { reqId } = s.json.result;
+    // The next request after the approval is refused twice, then accepted.
+    relay.rateLimitNext = 2;
+    answer(bob, bobPhone);
+    expect((await status(reqId)).status).toBe('signing');
+    expect(relay.rateLimitNext).toBe(0);
+    answer(bob, bobPhone);
+    expect((await status(reqId)).status).toBe('signed');
   });
 
   it('goes straight to signing once the keys have certificates', async () => {
