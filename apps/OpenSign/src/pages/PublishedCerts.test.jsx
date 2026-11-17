@@ -22,7 +22,8 @@ vi.mock("../constant/appinfo", () => ({
 }));
 
 const API = "https://api.example.com/api/v1";
-const VLAD = "8724" + "ab".repeat(38);
+// Real VLADs are about 400 bytes.
+const VLAD = "8724" + "ab".repeat(398);
 const sha = (c) => c.repeat(64);
 const cert = (s, over = {}) => ({
   sha256: s,
@@ -69,7 +70,7 @@ describe("linkKind", () => {
     expect(linkKind(VLAD)).toEqual({ kind: "vlad", id: VLAD });
     expect(linkKind("xyz")).toBeNull();
     expect(linkKind("abc")).toBeNull();
-    expect(linkKind("ab".repeat(300))).toBeNull();
+    expect(linkKind("ab".repeat(4097))).toBeNull();
     expect(linkKind(undefined)).toBeNull();
   });
 

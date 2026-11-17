@@ -35,7 +35,9 @@ import { apiError, config } from './auth.js';
 
 const CLASS = 'bs_PublishedCert';
 // A VLAD in hex (its wire encoding): 16 to 256 bytes.
-export const VLAD_RE = /^(?:[0-9a-f]{2}){16,256}$/;
+// A VLAD's wire bytes in hex. Real ones are about 400 bytes (they carry a
+// small WASM check); the apps accept up to 4096 (bs_docsign MAX_VLAD).
+export const VLAD_RE = /^(?:[0-9a-f]{2}){16,4096}$/;
 const SERIAL_RE = /^[0-9a-f]{1,128}$/;
 const B64_RE = /^[A-Za-z0-9+/]+={0,2}$/;
 const MAX_DER_BYTES = 16 * 1024;
@@ -95,6 +97,13 @@ export function parseCert(c) {
   const serial = String(c.serial || '').toLowerCase();
   if (subjectCn === null || issuerCn === null || !SERIAL_RE.test(serial)) return null;
   if (!isInt(c.not_before) || !isInt(c.not_after) || typeof c.is_ca !== 'boolean') return null;
+  // The issuing certificate in the same CMS, matched by the service on the
+  // whole name (itself for a root); null when it isn't carried.
+  let issuerSha256 = null;
+  if (c.issuer_sha256 !== undefined && c.issuer_sha256 !== null) {
+    issuerSha256 = String(c.issuer_sha256).toLowerCase();
+    if (!/^[0-9a-f]{64}$/.test(issuerSha256)) return null;
+  }
   let vlad = null;
   if (c.vlad !== undefined && c.vlad !== null) {
     vlad = String(c.vlad).toLowerCase();
@@ -110,6 +119,7 @@ export function parseCert(c) {
     notAfter: new Date(c.not_after * 1000),
     isCa: c.is_ca,
     vlad,
+    issuerSha256,
   };
 }
 
@@ -146,16 +156,21 @@ export function parseSignatures(list) {
   return out.sort((a, b) => a.revision - b.revision);
 }
 
-const selfIssued = c => c.subjectCn === c.issuerCn;
+// By the service's issuer link when it sent one; by common name otherwise
+// (two CAs can share a CN, so that's only a fallback).
+const selfIssued = c =>
+  c.issuerSha256 ? c.issuerSha256 === c.sha256 : c.subjectCn === c.issuerCn;
+const issues = (up, cur) =>
+  cur.issuerSha256 ? up.sha256 === cur.issuerSha256 : up.subjectCn === cur.issuerCn;
 
-// The CAs above `cert` in its signature's chain, nearest first, matched by
-// issuer name. Not a trust decision: a reader still checks the signatures.
+// The CAs above `cert` in its signature's chain, nearest first. Not a trust
+// decision: a reader still checks the signatures.
 export function issuersOf(cert, chain) {
   const out = [];
   const seen = new Set([cert.sha256]);
   let cur = cert;
   while (!selfIssued(cur) && out.length < MAX_CHAIN) {
-    const up = chain.find(c => c.isCa && !seen.has(c.sha256) && c.subjectCn === cur.issuerCn);
+    const up = chain.find(c => c.isCa && !seen.has(c.sha256) && issues(c, cur));
     if (!up) break;
     out.push(up);
     seen.add(up.sha256);
@@ -223,7 +238,9 @@ export function describeSignature(sig, published) {
     coversWholeFile: sig.coversWholeFile,
     vlad: sig.signer.vlad,
     rootDownloadUrl: rootPublished ? downloadUrl(root.sha256) : null,
-    pageUrl: rootPublished ? pageUrl(sig.signer.vlad || root.vlad || root.sha256) : null,
+    // The root's own page: what the reader is asked to trust, and a short
+    // link (a VLAD is about 800 hex digits).
+    pageUrl: rootPublished ? pageUrl(root.sha256) : null,
   };
 }
 

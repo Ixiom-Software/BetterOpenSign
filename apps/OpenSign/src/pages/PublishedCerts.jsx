@@ -21,7 +21,8 @@ import { serverUrl_fn } from "../constant/appinfo";
 
 const SHA256_RE = /^[0-9a-f]{64}$/;
 // As the server: a VLAD in hex, 16 to 256 bytes.
-const VLAD_RE = /^(?:[0-9a-f]{2}){16,256}$/;
+// A VLAD's wire bytes in hex: real ones are about 400 bytes, up to 4096.
+const VLAD_RE = /^(?:[0-9a-f]{2}){16,4096}$/;
 
 // The API is beside Parse's /app mount.
 export const certsApi = () =>

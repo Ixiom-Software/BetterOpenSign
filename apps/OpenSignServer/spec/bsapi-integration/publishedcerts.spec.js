@@ -27,7 +27,9 @@ import {
 } from './support/signaturesService.js';
 import { readDocumentPdf } from '../../utils/appendOnlyPdf.js';
 
-const VLAD = () => '8724' + Buffer.from(tag() + tag() + tag() + tag() + tag()).toString('hex');
+// Real VLADs are about 400 bytes.
+const VLAD = () =>
+  '8724' + Buffer.from(tag() + tag() + tag() + tag() + tag()).toString('hex').padEnd(796, 'e9');
 
 // Every link annotation's URI in a PDF.
 async function links(bytes) {
@@ -170,13 +172,14 @@ describe('published certificates', () => {
       expect(r.json.code).toBe(119);
     });
 
-    it('links the root and the identity page in the completion certificate', async () => {
+    it('links each root and its page in the completion certificate', async () => {
       const uris = await links(await readDocumentPdf(first.certificateUrl));
-      expect(uris).toContain(`${API}/api/v1/certs/${root.sha256}.cer`);
-      expect(uris).toContain(`https://docsign.bettersign.ing/certs/${vlad}`);
-      expect(uris).toContain(`${API}/api/v1/certs/${janeRoot.sha256}.cer`);
-      expect(uris).toContain(`https://docsign.bettersign.ing/certs/${janeVlad}`);
-      expect(uris).toContain(`https://docsign.bettersign.ing/certs/${sealVlad}`);
+      // Pages by the root's fingerprint: short, unlike a VLAD.
+      for (const r of [root, janeRoot, sealRoot]) {
+        expect(uris).toContain(`${API}/api/v1/certs/${r.sha256}.cer`);
+        expect(uris).toContain(`https://docsign.bettersign.ing/certs/${r.sha256}`);
+      }
+      expect(uris.some(u => u.includes(vlad))).toBe(false);
       expect(uris.some(u => u.includes(third.sha256))).toBe(false);
     });
 
@@ -246,7 +249,7 @@ describe('published certificates', () => {
 
     it('404s for an unknown identity, 400s for a malformed VLAD', async () => {
       expect((await req('GET', `${API}/api/v1/identities/${VLAD()}/certs`)).status).toBe(404);
-      for (const bad of ['abc', 'zz'.repeat(40), 'ab'.repeat(300)]) {
+      for (const bad of ['abc', 'zz'.repeat(40), 'ab'.repeat(4097)]) {
         const r = await req('GET', `${API}/api/v1/identities/${bad}/certs`);
         expect(r.status).withContext(bad).toBe(400);
       }

@@ -48,14 +48,14 @@ the order it was made:
 | Line | |
 |---|---|
 | name | the signer certificate's common name; "Signer unknown" with "Certificate: not included in the signature" when the CMS doesn't carry it (then only Signed at and Status follow) |
-| Issued by | the root the chain reaches: the CA whose subject CN is the signer's issuer CN, and so on up; or the signer's issuer if the chain stops short |
+| Issued by | the root the chain reaches: the CA bs-service-identity names as each certificate's issuer (`issuer_sha256`, matched on the whole name), and so on up; or by common name for a response without it; or the signer's issuer if the chain stops short |
 | Signer / Root certificate SHA-256 | fingerprints as Acrobat shows them (`AB:CD:…`) |
 | Valid | the signer certificate's validity |
 | Signed at | the signature's `/M`, if it has one |
 | Status | "Unchanged since signing" (the CMS digest matches) or "Not confirmed unchanged since signing"; and whether it covers the whole document or later revisions (other signatures, the seal) came after it |
 | BetterSign identity (VLAD) | shortened, when the certificate carries one |
 | Root certificate | link to download the root (published roots only) |
-| Trust it in Acrobat | link to the page (section 5) |
+| Trust it in Acrobat | link to the root's page by its fingerprint (section 5); a VLAD is about 800 hex digits, too long for a printed link |
 
 The links are clickable in the PDF (URI link annotations) and printed in full.
 

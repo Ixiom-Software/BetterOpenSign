@@ -30,10 +30,16 @@ export function wrapText(str, font, size, maxWidth) {
     line = '';
     let rest = word;
     while (!fits(rest)) {
-      let n = rest.length - 1;
-      while (n > 1 && !fits(rest.slice(0, n))) n--;
-      lines.push(rest.slice(0, n));
-      rest = rest.slice(n);
+      // The longest prefix that fits (at least one character), by bisection.
+      let lo = 1;
+      let hi = rest.length - 1;
+      while (lo < hi) {
+        const mid = Math.ceil((lo + hi) / 2);
+        if (fits(rest.slice(0, mid))) lo = mid;
+        else hi = mid - 1;
+      }
+      lines.push(rest.slice(0, lo));
+      rest = rest.slice(lo);
     }
     line = rest;
   }

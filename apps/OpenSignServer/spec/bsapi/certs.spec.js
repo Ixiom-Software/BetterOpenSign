@@ -20,8 +20,9 @@ import {
 import GenerateCertificate from '../../cloud/parsefunction/pdf/GenerateCertificate.js';
 
 const TOKEN = 'certs-spec-token-0123456789abcdef0123456789';
-const VLAD = '8724' + 'ab'.repeat(38);
-const SEAL_VLAD = '8724' + 'cd'.repeat(38);
+// Real VLADs are about 400 bytes.
+const VLAD = '8724' + 'ab'.repeat(398);
+const SEAL_VLAD = '8724' + 'cd'.repeat(398);
 const NOW = Math.floor(Date.now() / 1000);
 
 // A CertJson as the service sends it; any bytes stand in for the DER.
@@ -131,6 +132,20 @@ describe('published certificates', () => {
       expect(rootOf(sig).sha256).toBe(root.sha256);
     });
 
+    it("follows the service's issuer link over common names", () => {
+      // Two CAs share a common name; the link says which one issued it.
+      const real = certJson('Shared CA', { ca: true });
+      const decoy = certJson('Shared CA', { ca: true });
+      const link = (c, to) => ({ ...c, issuer_sha256: to.sha256 });
+      const leaf = link(certJson('Carol', { issuer: 'Shared CA', vlad: VLAD }), real);
+      const [s1] = parseSignatures([
+        signatureJson(leaf, [leaf, link(decoy, decoy), link(real, real)]),
+      ]);
+      expect(rootOf(s1).sha256).toBe(real.sha256);
+      expect(parseSignatures([signatureJson({ ...leaf, issuer_sha256: 'zz' }, [])])[0].signer)
+        .toBeNull();
+    });
+
     it('a self-signed signer is its own root; a missing issuer is no root', () => {
       const self = certJson('Test Signer');
       const orphan = certJson('Bob', { issuer: 'Somewhere CA' });
@@ -180,13 +195,14 @@ describe('published certificates', () => {
     const leaf = certJson('Alice', { issuer: 'Alice root', vlad: VLAD });
     const [sig] = parseSignatures([signatureJson(leaf, [leaf, root])]);
 
-    it('links the published root and the identity’s page', () => {
+    it('links the published root and its page', () => {
       const d = describeSignature(sig, new Set([root.sha256, leaf.sha256]));
       expect(d.signerName).toBe('Alice');
       expect(d.rootName).toBe('Alice root');
       expect(d.rootSha256).toBe(root.sha256);
       expect(d.rootDownloadUrl).toBe(`https://api.example.com/api/v1/certs/${root.sha256}.cer`);
-      expect(d.pageUrl).toBe(`https://docsign.bettersign.ing/certs/${VLAD}`);
+      // The root's page, by fingerprint: short, unlike a VLAD (about 800 hex digits).
+      expect(d.pageUrl).toBe(`https://docsign.bettersign.ing/certs/${root.sha256}`);
     });
 
     it('a signature without its certificate says so', () => {
@@ -324,7 +340,7 @@ describe('published certificates', () => {
       const { root, list } = described(1);
       const { out } = await links(await GenerateCertificate(doc, { signatures: list }));
       expect(out).toContain(`https://api.example.com/api/v1/certs/${root.sha256}.cer`);
-      expect(out).toContain(`https://docsign.bettersign.ing/certs/${VLAD}`);
+      expect(out).toContain(`https://docsign.bettersign.ing/certs/${root.sha256}`);
     });
 
     it('lists a signature without its certificate, without links', async () => {
