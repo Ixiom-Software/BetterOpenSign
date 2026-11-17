@@ -35,6 +35,20 @@ function Header(props) {
   const enabledBackBtn = props?.disabledBackBtn === true ? false : true;
   const isViewerSigner = false;
   const finishLabel = t("finish");
+  // Sign with your BetterSign phone (v2), next to Finish when the page
+  // offers it (PhoneSignPdf).
+  const phoneSignButton = props?.phoneSignPdf && (
+    <Button
+      type="button"
+      variant="outlined"
+      size="small"
+      sx={{ mr: "3px" }}
+      onClick={() => props.phoneSignPdf()}
+    >
+      <i className="fa-light fa-mobile mr-1" aria-hidden="true"></i>
+      {t("phone-sign-pdf.button")}
+    </Button>
+  );
   //function for show decline alert
   const handleDeclinePdfAlert = async () => {
     if (props?.handleDecline) {
@@ -391,6 +405,22 @@ function Header(props) {
                           className="bg-white shadow-md rounded-md px-3 py-2"
                           sideOffset={5}
                         >
+                          {props?.phoneSignPdf && !isViewerSigner && (
+                            <DropdownMenu.Item
+                              className="DropdownMenuItem"
+                              onClick={() => props.phoneSignPdf()}
+                            >
+                              <div className="flex flex-row">
+                                <i
+                                  className="fa-light fa-mobile mr-[3px]"
+                                  aria-hidden="true"
+                                ></i>
+                                <span className="font-[500]">
+                                  {t("phone-sign-pdf.button")}
+                                </span>
+                              </div>
+                            </DropdownMenu.Item>
+                          )}
                           {props?.setIsEditTemplate && (
                             <DropdownMenu.Item
                               className="DropdownMenuItem"
@@ -672,6 +702,7 @@ function Header(props) {
                         <span className="hidden lg:block">{t("download")}</span>
                       </Button>
                     )}
+                    {!isViewerSigner && phoneSignButton}
                     {!isViewerSigner && (
                       <Button
                         type="button"
@@ -770,6 +801,7 @@ function Header(props) {
               >
                 {t("back")}
               </Button>
+              {phoneSignButton}
               <Button
                 type="button"
                 variant="contained"

@@ -1506,6 +1506,11 @@ export const addInitialData = (signerPos, setXyPosition, value, userId) => {
   });
 };
 
+// @cantoo/pdf-lib (append-only documents) can't save a font subset made by
+// @pdf-lib/fontkit: it calls the subset's encode() without the stream that
+// version needs, and save() throws. Embed the whole font there.
+const fontEmbedOptions = (pdfDoc) => ({ subset: !isAppendOnlyPdf(pdfDoc) });
+
 //function for embed document id
 export const embedDocId = async (pdfOriginalWH, pdfDoc, documentId) => {
   const appName = APP_NAME;
@@ -1514,7 +1519,7 @@ export const embedDocId = async (pdfOriginalWH, pdfDoc, documentId) => {
     "https://cdn.opensignlabs.com/webfonts/times.ttf"
   );
   pdfDoc.registerFontkit(fontkit);
-  const font = await pdfDoc.embedFont(fontBytes, { subset: true });
+  const font = await pdfDoc.embedFont(fontBytes, fontEmbedOptions(pdfDoc));
   //pdfOriginalWH contained all pdf's pages width and height
   for (let i = 0; i < pdfOriginalWH?.length; i++) {
     const fontSize = 10;
@@ -2047,6 +2052,94 @@ export const isEmptyValue = (val) =>
   (typeof val === "string" && val.trim() === "") ||
   (Array.isArray(val) && val.length === 0);
 
+// x position of a widget for pdf-lib, before getWidgetPosition
+const widgetXPosition = (position, scale) => {
+  const resizePos = position.xPosition;
+  //first two condition handle to old data already saved from mobile view which scale point diffrent
+  if (isMobile && position.isMobile) {
+    //if pos.isMobile false -- placeholder saved from desktop view then handle position in mobile view divided by scale
+    const x = resizePos * (position.scale / scale);
+    return x * scale;
+  } else if (position.isMobile && position.scale) {
+    const x = resizePos * position.scale;
+    return x;
+  } else {
+    return resizePos;
+  }
+};
+
+// y position (from the top) of a widget for pdf-lib, before getWidgetPosition
+const widgetYPosition = (position, isTextTypeWidget) => {
+  const resizePos = position.yPosition;
+
+  if (position.isMobile && position.scale) {
+    if (position.IsResize) {
+      const y = resizePos * position.scale;
+      return y;
+    } else {
+      const y = resizePos * position.scale;
+      return y;
+    }
+  } else {
+    const yPosition = isTextTypeWidget ? resizePos + 6 : resizePos;
+    return yPosition;
+  }
+};
+
+// `pageDrawSize` is the page size getWidgetPosition works in: the CropBox's
+// width and its top edge (see embedWidgetsToDoc).
+const pageDrawSize = (page) => {
+  const { y, width, height } = page.getCropBox();
+  return { height: height + y, width: width };
+};
+
+// `imageWidgetDrawOptions` is where embedWidgetsToDoc draws an image type
+// widget (signature, initials, stamp, image, draw): page.drawImage options
+// { x, y, width, height, rotate }, page and widget rotation included.
+export const imageWidgetDrawOptions = (page, position, scale) => {
+  const widgetWidth = placeholderWidth(position);
+  const widgetHeight = placeholderHeight(position);
+  const widgetRotation = position?.options?.rotation || 0;
+  const isSwapped = [90, 270].includes(widgetRotation);
+  // Use visual (swapped) dimensions to compute the correct position
+  const signature = {
+    x: widgetXPosition(position, scale),
+    y: widgetYPosition(position, false),
+    width: isSwapped ? widgetHeight : widgetWidth,
+    height: isSwapped ? widgetWidth : widgetHeight
+  };
+  const imageOptions = getWidgetPosition(
+    page,
+    signature,
+    1,
+    pageDrawSize(page)
+  );
+  if (widgetRotation) {
+    const pageRotation = page.getRotation().angle;
+    const combinedRotation = degrees(
+      (imageOptions.rotate?.angle || pageRotation) - widgetRotation
+    );
+    const visualWidth = imageOptions.width;
+    const visualHeight = imageOptions.height;
+    if (isSwapped) {
+      // Override with original (unswapped) dimensions for the actual image
+      imageOptions.width = visualHeight;
+      imageOptions.height = visualWidth;
+    }
+    imageOptions.rotate = combinedRotation;
+    // Adjust position to compensate for pdf-lib rotation pivot (bottom-left corner)
+    if (widgetRotation === 90) {
+      imageOptions.y += visualHeight;
+    } else if (widgetRotation === 180) {
+      imageOptions.x += imageOptions.width;
+      imageOptions.y += imageOptions.height;
+    } else if (widgetRotation === 270) {
+      imageOptions.x += visualWidth;
+    }
+  }
+  return imageOptions;
+};
+
 //function for embed all type widgets in document using pdf-lib
 export const embedWidgetsToDoc = async (
   widgets,
@@ -2060,7 +2153,7 @@ export const embedWidgetsToDoc = async (
     "https://cdn.opensignlabs.com/webfonts/times.ttf"
   );
   pdfDoc.registerFontkit(fontkit);
-  const font = await pdfDoc.embedFont(fontBytes, { subset: true });
+  const font = await pdfDoc.embedFont(fontBytes, fontEmbedOptions(pdfDoc));
   let hasError = false;
   for (let item of widgets) {
     if (hasError) break; // Stop the outer loop if an error occurred
@@ -2173,36 +2266,8 @@ export const embedWidgetsToDoc = async (
         let widgetWidth, widgetHeight;
         widgetWidth = placeholderWidth(position);
         widgetHeight = placeholderHeight(position);
-        const xPos = (position) => {
-          const resizePos = position.xPosition;
-          //first two condition handle to old data already saved from mobile view which scale point diffrent
-          if (isMobile && position.isMobile) {
-            //if pos.isMobile false -- placeholder saved from desktop view then handle position in mobile view divided by scale
-            const x = resizePos * (position.scale / scale);
-            return x * scale;
-          } else if (position.isMobile && position.scale) {
-            const x = resizePos * position.scale;
-            return x;
-          } else {
-            return resizePos;
-          }
-        };
-        const yPos = (position) => {
-          const resizePos = position.yPosition;
-
-          if (position.isMobile && position.scale) {
-            if (position.IsResize) {
-              const y = resizePos * position.scale;
-              return y;
-            } else {
-              const y = resizePos * position.scale;
-              return y;
-            }
-          } else {
-            const yPosition = isTextTypeWidget ? resizePos + 6 : resizePos;
-            return yPosition;
-          }
-        };
+        const xPos = (position) => widgetXPosition(position, scale);
+        const yPos = (position) => widgetYPosition(position, isTextTypeWidget);
         const color = position?.options?.fontColor;
         const updateColorInRgb = getWidgetsFontColor(color);
         const fontSize = parseInt(position?.options?.fontSize || 12);
@@ -2547,40 +2612,7 @@ export const embedWidgetsToDoc = async (
           // 6. Set to read‐only (if required)
           radioGroup.enableReadOnly();
         } else {
-          const widgetRotation = position?.options?.rotation || 0;
-          const isSwapped = [90, 270].includes(widgetRotation);
-          // Use visual (swapped) dimensions to compute the correct position
-          const signature = {
-            x: xPos(position),
-            y: yPos(position),
-            width: isSwapped ? widgetHeight : widgetWidth,
-            height: isSwapped ? widgetWidth : widgetHeight
-          };
-          const imageOptions = getWidgetPosition(page, signature, 1, getSize);
-          if (widgetRotation) {
-            const pageRotation = page.getRotation().angle;
-            const combinedRotation = degrees(
-              (imageOptions.rotate?.angle || pageRotation) - widgetRotation
-            );
-            const visualWidth = imageOptions.width;
-            const visualHeight = imageOptions.height;
-            if (isSwapped) {
-              // Override with original (unswapped) dimensions for the actual image
-              imageOptions.width = visualHeight;
-              imageOptions.height = visualWidth;
-            }
-            imageOptions.rotate = combinedRotation;
-            // Adjust position to compensate for pdf-lib rotation pivot (bottom-left corner)
-            if (widgetRotation === 90) {
-              imageOptions.y += visualHeight;
-            } else if (widgetRotation === 180) {
-              imageOptions.x += imageOptions.width;
-              imageOptions.y += imageOptions.height;
-            } else if (widgetRotation === 270) {
-              imageOptions.x += visualWidth;
-            }
-          }
-          page.drawImage(img, imageOptions);
+          page.drawImage(img, imageWidgetDrawOptions(page, position, scale));
         }
       } catch (err) {
         console.log("Err in embed widget on page ", pageNo, err);
