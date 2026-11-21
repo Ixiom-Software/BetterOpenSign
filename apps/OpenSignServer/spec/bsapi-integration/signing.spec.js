@@ -31,6 +31,10 @@ import {
   certificateOf,
 } from './support/lib.js';
 import { verifier } from './support/verifier.js';
+import { relay } from './support/relay.js';
+import { COMPLETED_CT } from '../../cloud/customRoute/bsapi/completedNotice.js';
+import { sha256 } from '../../cloud/customRoute/bsapi/relay.js';
+import { decodeCbor } from '../../cloud/customRoute/bsapi/statement.js';
 import { shared } from './support/setup.js';
 import { mailer } from '../../cloud/customRoute/bsapi/notify.js';
 import { commitAtRevision } from '../../cloud/parsefunction/pdf/PDF.js';
@@ -266,6 +270,19 @@ describe('desktop signing', () => {
       expect(r.json.status).toBe('completed');
       expect(mail.length).toBe(0); // nobody left to tell
       expect(await certificateOf(docId)).toBeTruthy();
+
+      // Erin's app hears that it's done: a quiet notice naming the document.
+      const to = sha256(Buffer.from(erin.vlad, 'hex')).toString('base64url');
+      const notice = await waitFor(async () =>
+        [...relay.requests.values()].find(r => {
+          if (r.to !== to) return false;
+          const env = decodeCbor(Buffer.from(r.env, 'base64url'));
+          if (env.get('header').get('ct') !== COMPLETED_CT) return false;
+          return decodeCbor(env.get('body')).get('docId') === docId;
+        })
+      );
+      expect(notice).toBeTruthy();
+      expect(notice?.quiet).toBe(true);
 
       const final = (await getFile(E, docId)).bytes;
       expect(final.subarray(0, s.pdf.length).equals(s.pdf)).toBe(true);

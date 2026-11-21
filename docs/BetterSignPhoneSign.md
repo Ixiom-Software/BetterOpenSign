@@ -170,6 +170,34 @@ docsign (BetterSignUpdates.md, "What a VLAD signs to log in"):
 The type and content type differ from `bs-login` and `bs-docsign`, so this
 approval can't be replayed as a sign-in or an upload, or the other way round.
 
+### 4.4 Document completed (docsign → app)
+
+`ct = application/vnd.bettersign.docsign-completed+cbor`
+(`cloud/customRoute/bsapi/completedNotice.js`; BetterSignApps #368)
+
+When `finishSigning` completes a document, docsign sends one notice to each
+active BetterSign VLAD (`bs_Identity`) linked to the document's owner or a
+signer, so the app can offer "Send to…" for the completed copy. Same envelope
+and signature as §4.1, posted `quiet: true` (the relay's visible alert reads
+"Sign-in request"; the app shows its own notification). Not awaited, never
+blocks completion, and a phone the relay doesn't know (404) is skipped.
+
+```jsonc
+DocsignCompletedNotice {
+  v: 1,
+  reqId: <16B>,                       // = header.reqId
+  origin: "https://docsign.bettersign.ing",
+  docId: "…",
+  iat, exp                            // = the header's; exp − iat = 300
+}
+```
+
+No title, as in §4.1. Nothing answers it: the app checks the envelope and
+`from` as for a request, then asks `GET /api/v1/documents/{docId}` as that
+identity, and only a `completed` document gets a notification. The notices
+for one document go out a second apart (the relay's one request a second per
+key), with one retry on `rate-limited`.
+
 ## 5. What docsign checks
 
 On the answer (`bsphonesignpoll`):
@@ -252,6 +280,7 @@ Server (`apps/OpenSignServer`, all optional):
 | `BS_RELAY_SIGNING_KEY` | generated once, kept in `bs_ApiConfig` | docsign's relay key, an Ed25519 seed in hex. Published at `GET /api/v1/relay-key` |
 | `BS_API_ORIGIN`, `BS_API_RP`, `BS_API_RECEIVER_VLAD` | as for the desktop API | What the statement must name (docs/BetterSignAPI.md) |
 | `BS_VERIFIER_URL` | `https://verify.bettersign.ing` | Checks `vladSig` |
+| `BS_COMPLETED_NOTICE` | on | `off` stops the "document completed" notices (§4.4) |
 
 Migration `20261115180000-create_bs_phonesign_classes.cjs` creates
 `bs_WebSession` and `bs_PhoneSignRequest`.

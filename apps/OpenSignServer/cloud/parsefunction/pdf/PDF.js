@@ -13,6 +13,7 @@ import {
 } from '../../../Utils.js';
 import GenerateCertificate from './GenerateCertificate.js';
 import { signaturesForCertificate } from '../../customRoute/bsapi/certs.js';
+import { notifyCompleted } from '../../customRoute/bsapi/completedNotice.js';
 import {
   extendsPdf,
   fileKey,
@@ -602,6 +603,8 @@ export async function finishSigning({
       sendMailsaveCertifcate(doc, isCustomMail, mailProvider, `signed_${name}`).catch(err =>
         console.log('completion certificate failed', doc.objectId, err?.message)
       );
+      // Tell the BetterSign apps on the document (never throws, not awaited).
+      notifyCompleted(doc);
     }
     // below code is used to remove exported signed pdf file from exports folder
     unlinkFile(signedFilePath);
