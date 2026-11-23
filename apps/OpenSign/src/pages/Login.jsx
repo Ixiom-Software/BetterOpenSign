@@ -73,7 +73,7 @@ function Login() {
       markBetterSignSession(value);
       await thirdpartyLoginfn(value.sessionToken);
     } catch (error) {
-      console.error("BetterSign sign-in failed", error);
+      console.error("BetterID sign-in failed", error);
       showToast("danger", error?.message || t("something-went-wrong-mssg"));
     }
   };
@@ -81,7 +81,7 @@ function Login() {
   // The button shows the error itself.
   const onBetterSignError = (error) => {
     leaveCallbackPath();
-    console.error("BetterSign sign-in failed", error);
+    console.error("BetterID sign-in failed", error);
   };
 
   const signInTexts = Object.fromEntries(

@@ -138,10 +138,10 @@ describe("PhoneSign", () => {
 
   it("shows the server's message when sending fails, and can send again", async () => {
     run.mockRejectedValueOnce(
-      new Error("Your BetterSign app hasn't connected yet.")
+      new Error("Your BetterID app hasn't connected yet.")
     );
     open();
-    await screen.findByText("Your BetterSign app hasn't connected yet.");
+    await screen.findByText("Your BetterID app hasn't connected yet.");
 
     run.mockImplementation((fn) =>
       fn === "bsphonesignstart"

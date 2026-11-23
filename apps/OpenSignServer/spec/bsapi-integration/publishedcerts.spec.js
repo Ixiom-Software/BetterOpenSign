@@ -177,7 +177,7 @@ describe('published certificates', () => {
       // Pages by the root's fingerprint: short, unlike a VLAD.
       for (const r of [root, janeRoot, sealRoot]) {
         expect(uris).toContain(`${API}/api/v1/certs/${r.sha256}.cer`);
-        expect(uris).toContain(`https://docsign.bettersign.ing/certs/${r.sha256}`);
+        expect(uris).toContain(`https://docsign.betterid.net/certs/${r.sha256}`);
       }
       expect(uris.some(u => u.includes(vlad))).toBe(false);
       expect(uris.some(u => u.includes(third.sha256))).toBe(false);
@@ -212,7 +212,7 @@ describe('published certificates', () => {
         not_before: new Date(leaf.not_before * 1000).toISOString(),
         not_after: new Date(leaf.not_after * 1000).toISOString(),
         download_url: `${API}/api/v1/certs/${leaf.sha256}.cer`,
-        page_url: `https://docsign.bettersign.ing/certs/${vlad}`,
+        page_url: `https://docsign.betterid.net/certs/${vlad}`,
       });
       expect(r.json.FirstSeenDoc).toBeUndefined();
     });

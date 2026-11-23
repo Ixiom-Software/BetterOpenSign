@@ -150,7 +150,7 @@ const Header = ({ isConsole, setIsLoggingOut }) => {
           sx={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 1.25 }}
         >
           <BrandMark
-            label="Open BetterSign home"
+            label="Open BetterID home"
             onClick={() => navigate("/dashboard/35KBoSgoAK")}
           />
           {isCustomLogo && (

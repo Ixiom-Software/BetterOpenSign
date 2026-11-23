@@ -146,7 +146,7 @@ function AgreementContent(props) {
             target="_blank"
             sx={{ cursor: "pointer" }}
           >
-            www.bettersign.ing
+            www.betterid.net
           </Link>
 
           <Box component="span">{t("term-cond-p30")}</Box>

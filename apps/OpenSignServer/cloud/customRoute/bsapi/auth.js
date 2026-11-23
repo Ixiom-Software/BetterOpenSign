@@ -16,7 +16,7 @@
 // created.
 //
 // Env:
-//   BS_API_ORIGIN       the origin statements must name. Default https://docsign.bettersign.ing
+//   BS_API_ORIGIN       the origin statements must name. Default https://docsign.betterid.net
 //   BS_API_RP           the rp statements must name. Default bs-opensign-api
 //   BS_API_RECEIVER_VLAD this server's VLAD (hex), the receiver_vlad of every
 //                       signed message. Unset: one generated once and stored
@@ -44,7 +44,7 @@ const RECEIVER_VLAD_RE = /^8724(?:[0-9a-f]{2})+$/;
 export function config() {
   const receiverVlad = (process.env.BS_API_RECEIVER_VLAD || '').trim().toLowerCase();
   return {
-    origin: (process.env.BS_API_ORIGIN || 'https://docsign.bettersign.ing').replace(/\/$/, ''),
+    origin: (process.env.BS_API_ORIGIN || 'https://docsign.betterid.net').replace(/\/$/, ''),
     rp: process.env.BS_API_RP || 'bs-opensign-api',
     receiverVlad: RECEIVER_VLAD_RE.test(receiverVlad) ? receiverVlad : null,
     tokenTtlS: Number(process.env.BS_API_TOKEN_TTL_S) || 1800,
@@ -55,7 +55,7 @@ export const apiError = (res, status, error, message, extra = {}) =>
   res.status(status).json({ error, message, ...extra });
 
 export const notConfigured = res =>
-  apiError(res, 503, 'not_configured', 'BetterSign sign-in is not set up on this server.');
+  apiError(res, 503, 'not_configured', 'BetterID sign-in is not set up on this server.');
 
 // Validate the signed-input fields of a request body: `signature`, and
 // `statement` and/or `message` (base64url). Returns an error message or null.
@@ -105,7 +105,7 @@ const notLinked = res =>
     res,
     403,
     'not_linked',
-    "This BetterSign identity isn't linked to an OpenSign account. Ask an admin to add it."
+    "This BetterID identity isn't linked to an OpenSign account. Ask an admin to add it."
   );
 
 // POST /auth/challenge
@@ -221,7 +221,7 @@ export async function issueToken(req, res) {
         res,
         502,
         'verifier_misconfigured',
-        "This server's BetterSign verifier secret is wrong or not set. Ask the administrator.",
+        "This server's BetterID verifier secret is wrong or not set. Ask the administrator.",
         { code: v.code }
       );
     }
@@ -293,7 +293,7 @@ export async function requireToken(req, res, next) {
     const vlad = token.get('vlad');
     const account = await accountForVlad(vlad);
     if (!account.user || account.user.id !== token.get('UserId').id) {
-      return apiError(res, 401, 'invalid_token', 'This BetterSign identity is no longer linked.');
+      return apiError(res, 401, 'invalid_token', 'This BetterID identity is no longer linked.');
     }
     req.bs = { vlad, user: account.user, token };
     return next();

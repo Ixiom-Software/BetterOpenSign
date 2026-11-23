@@ -16,7 +16,7 @@ export const APP_ID = 'opensign';
 export const MASTER_KEY = 'bsapi-test-master';
 export const MASTER = { 'X-Parse-Application-Id': APP_ID, 'X-Parse-Master-Key': MASTER_KEY };
 export const PUBLIC = { 'X-Parse-Application-Id': APP_ID };
-export const ORIGIN = 'https://docsign.bettersign.ing';
+export const ORIGIN = 'https://docsign.betterid.net';
 export const RP = 'bs-opensign-api';
 
 export const sha = b => crypto.createHash('sha256').update(b).digest();

@@ -152,7 +152,7 @@ describe('relay envelopes: docsign round trip', () => {
     const request = {
       v: 1,
       reqId,
-      origin: 'https://docsign.bettersign.ing',
+      origin: 'https://docsign.betterid.net',
       docId: 'abc123',
       fieldId: 'field-1',
       challenge: crypto.randomBytes(32),
@@ -228,7 +228,7 @@ describe('bs-docsign-field statement', () => {
     v: 1,
     type: 'bs-docsign-field',
     vlad: Buffer.from('8724' + 'ab'.repeat(40), 'hex'),
-    origin: 'https://docsign.bettersign.ing',
+    origin: 'https://docsign.betterid.net',
     rp: 'bs-opensign-api',
     docId: 'abc123',
     fieldId: 'field-1',

@@ -83,7 +83,7 @@ exactly nine keys:
 | `v` | uint | `1` |
 | `type` | text | `"bs-login"` |
 | `vlad` | bytes | raw VLAD bytes (the `vlad` hex sent to `/auth/challenge`) |
-| `origin` | text | `origin` from the challenge response (`https://docsign.bettersign.ing`) |
+| `origin` | text | `origin` from the challenge response (`https://docsign.betterid.net`) |
 | `rp` | text | `rp` from the challenge response (`bs-opensign-api`) |
 | `challenge` | bytes(32) | the challenge, base64url-decoded |
 | `reqId` | bytes(16) | random per request |
@@ -220,7 +220,7 @@ only by migration `20261114120000-create_bettersign_api_classes.cjs`, and
 | --- | --- | --- |
 | `BS_VERIFIER_URL` | `https://verify.bettersign.ing` | |
 | `BS_VERIFIER_SECRET` | none | the verifier droplet's `BS_VERIFIER_SECRET`. **Required in production** |
-| `BS_API_ORIGIN` | `https://docsign.bettersign.ing` | the `origin` statements must name, and the website that emailed links open |
+| `BS_API_ORIGIN` | `https://docsign.betterid.net` | the `origin` statements must name, and the website that emailed links open |
 | `BS_API_RP` | `bs-opensign-api` | the `rp` statements must name |
 | `BS_API_RECEIVER_VLAD` | generated | this server's VLAD (hex wire encoding, starts `8724`): the `receiver_vlad` every signed message must name. Unset: the first sign-in generates one (`8724` + 32 random bytes, not a real identity), stores it in `bs_ApiConfig` so every machine and restart uses it, and loads it into this variable. Set but malformed: sign-in and uploads return `503 not_configured` |
 | `BS_API_TOKEN_TTL_S` | `1800` | |
@@ -257,7 +257,7 @@ type, so neither can be used as the other:
 | `v` | uint | `1` |
 | `type` | text | `"bs-docsign"` |
 | `vlad` | bytes | raw VLAD bytes (the signed-in identity) |
-| `origin` | text | `https://docsign.bettersign.ing` |
+| `origin` | text | `https://docsign.betterid.net` |
 | `rp` | text | `bs-opensign-api` |
 | `docId` | text | the document id |
 | `base` | bytes(32) | SHA-256 of the file you downloaded (`X-Content-SHA256`) |

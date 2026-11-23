@@ -4,10 +4,10 @@ import { bs } from "../theme/md3Theme";
 
 /**
  * The BetterSign wordmark (logo + name) and the product pill beside it, as in
- * the bettersign.ing top bars (brand.css `.wordmark` + `.product-mark`).
+ * the betterid.net top bars (brand.css `.wordmark` + `.product-mark`).
  * Pass `href` for a link, or `onClick` to handle navigation in-app.
  */
-export const BrandMark = ({ href, onClick, label = "BetterSign home" }) => {
+export const BrandMark = ({ href, onClick, label = "BetterID home" }) => {
   const linkProps = href
     ? { component: "a", href }
     : {
@@ -44,7 +44,7 @@ export const BrandMark = ({ href, onClick, label = "BetterSign home" }) => {
           sx={{ borderRadius: "8px", display: "block" }}
         />
         <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>
-          BetterSign
+          BetterID
           <Box
             component="span"
             sx={{ fontSize: 10, opacity: 0.7, position: "relative", top: -6, ml: "1px" }}
@@ -75,7 +75,7 @@ export const BrandMark = ({ href, onClick, label = "BetterSign home" }) => {
 };
 
 /**
- * The bettersign.ing hero band (brand.css `.hero`) as a full-page backdrop for
+ * The betterid.net hero band (brand.css `.hero`) as a full-page backdrop for
  * the signed-out screens: dark ink gradient, green/blue glows, the faint grid,
  * and the wordmark + product mark in a top bar floating over it.
  */
@@ -113,7 +113,7 @@ const BrandHero = ({ children, ...rest }) => (
         py: 1.75
       }}
     >
-      <BrandMark href="https://www.bettersign.ing/" />
+      <BrandMark href="https://www.betterid.net/" />
     </Box>
     <Box sx={{ position: "relative", zIndex: 2, flex: 1 }}>{children}</Box>
   </Box>

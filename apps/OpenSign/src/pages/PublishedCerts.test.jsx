@@ -37,7 +37,7 @@ const cert = (s, over = {}) => ({
   not_before: "2026-01-01T00:00:00.000Z",
   not_after: "2027-01-01T00:00:00.000Z",
   download_url: `${API}/certs/${s}.cer`,
-  page_url: `https://docsign.bettersign.ing/certs/${VLAD}`,
+  page_url: `https://docsign.betterid.net/certs/${VLAD}`,
   ...over
 });
 const root = cert(sha("a"), {

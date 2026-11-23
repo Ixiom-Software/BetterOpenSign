@@ -122,7 +122,7 @@ const REASON_MESSAGES = {
   locked: 'Your phone was locked, so nothing was signed.',
   expired: 'The request expired on your phone. Try again.',
   'no-signature':
-    'Your phone has no signature to sign with. Add one in the BetterSign app, then try again.',
+    'Your phone has no signature to sign with. Add one in the BetterID app, then try again.',
   mismatch:
     "Your phone found that the document didn't match what it was asked to sign, so nothing was signed.",
   'unknown-approval': 'Your phone no longer has this approval. Try again.',
@@ -452,7 +452,7 @@ async function postRequest(row, { key, env, to, reqId, exp }) {
     } catch (e) {
       throw refused(
         Parse.Error.CONNECTION_FAILED,
-        "Couldn't reach the BetterSign relay. Try again.",
+        "Couldn't reach the BetterID relay. Try again.",
         {
           event: 'relay_unreachable',
           error: e.message,
@@ -468,7 +468,7 @@ async function postRequest(row, { key, env, to, reqId, exp }) {
   if (res.body.error === 'unknown-recipient') {
     throw refused(
       Parse.Error.OBJECT_NOT_FOUND,
-      "Your BetterSign app hasn't connected yet. Open the app on your phone, then try again.",
+      "Your BetterID app hasn't connected yet. Open the app on your phone, then try again.",
       fields
     );
   }
@@ -1109,7 +1109,7 @@ async function complete(row) {
     byteRange: appended.byteRange,
     reqId: approveReqId,
     signedAt: new Date().toISOString(),
-    signedWith: 'BetterSign phone',
+    signedWith: 'BetterID phone',
   };
   let res;
   try {
@@ -1126,7 +1126,7 @@ async function complete(row) {
       // in this same call.
       appendOnly: true,
       baseRevision: row.get('BaseRevision'),
-      auditExtra: { Vlad: vlad, SignedWith: 'BetterSign phone', SignedSha256: fileSha256 },
+      auditExtra: { Vlad: vlad, SignedWith: 'BetterID phone', SignedSha256: fileSha256 },
       docExtra: {
         VladSignatures: { __op: 'Add', objects: [entry] },
         PhoneSignLockId: { __op: 'Delete' },

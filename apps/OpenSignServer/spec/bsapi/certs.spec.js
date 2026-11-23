@@ -202,7 +202,7 @@ describe('published certificates', () => {
       expect(d.rootSha256).toBe(root.sha256);
       expect(d.rootDownloadUrl).toBe(`https://api.example.com/api/v1/certs/${root.sha256}.cer`);
       // The root's page, by fingerprint: short, unlike a VLAD (about 800 hex digits).
-      expect(d.pageUrl).toBe(`https://docsign.bettersign.ing/certs/${root.sha256}`);
+      expect(d.pageUrl).toBe(`https://docsign.betterid.net/certs/${root.sha256}`);
     });
 
     it('a signature without its certificate says so', () => {
@@ -340,7 +340,7 @@ describe('published certificates', () => {
       const { root, list } = described(1);
       const { out } = await links(await GenerateCertificate(doc, { signatures: list }));
       expect(out).toContain(`https://api.example.com/api/v1/certs/${root.sha256}.cer`);
-      expect(out).toContain(`https://docsign.bettersign.ing/certs/${root.sha256}`);
+      expect(out).toContain(`https://docsign.betterid.net/certs/${root.sha256}`);
     });
 
     it('lists a signature without its certificate, without links', async () => {

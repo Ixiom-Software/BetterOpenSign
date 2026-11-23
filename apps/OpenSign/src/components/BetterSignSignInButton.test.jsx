@@ -22,14 +22,14 @@ describe("BetterSignSignInButton", () => {
     });
     render(
       <BetterSignSignInButton
-        label="Mit BetterSign anmelden"
+        label="Mit BetterID anmelden"
         texts={{
           "Approve on your phone…": "Bestätigen Sie auf Ihrem Smartphone…",
           "Use passkey instead": "Stattdessen Passkey verwenden"
         }}
       />
     );
-    const button = shadow().getByRole("button", { name: "Mit BetterSign anmelden" });
+    const button = shadow().getByRole("button", { name: "Mit BetterID anmelden" });
     fireEvent.click(button);
     await waitFor(() =>
       expect(shadow().getByRole("status")).toHaveTextContent("Bestätigen Sie auf Ihrem Smartphone…")

@@ -106,7 +106,7 @@ Envelope {
 DocsignSignRequest {
   v: 1,
   reqId: <16B>,                       // = header.reqId
-  origin: "https://docsign.bettersign.ing",
+  origin: "https://docsign.betterid.net",
   rp: "bs-opensign-api",
   receiverVlad: <bytes>,              // docsign's VLAD, the receiver of the signed message
   docId: "…", fieldId: "…",

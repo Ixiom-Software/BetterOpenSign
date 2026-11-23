@@ -1,6 +1,6 @@
-# OpenSign Deployment — `docsign.bettersign.ing`
+# OpenSign Deployment — `docsign.betterid.net`
 
-**Status:** ✅ Live · **Deployed:** 2026-10-06 · **Owner:** brendon@ixiomsoftware.com
+**Status:** ✅ Live (moved from `docsign.bettersign.ing` on 2026-11-22) · **Deployed:** 2026-10-06 · **Owner:** brendon@ixiomsoftware.com
 
 A self-hosted [OpenSign](https://github.com/OpenSignLabs/OpenSign) (open-source DocuSign
 alternative) running as a split frontend/backend across **Cloudflare** and **Fly.io**.
@@ -11,19 +11,48 @@ alternative) running as a split frontend/backend across **Cloudflare** and **Fly
 
 | Piece | URL | Platform |
 |---|---|---|
-| **Frontend (app UI) — canonical** | https://docsign.bettersign.ing | Cloudflare Workers (Static Assets) |
+| **Frontend (app UI) — canonical** | https://docsign.betterid.net | Cloudflare Workers (Static Assets) |
+| ↳ old name | https://docsign.bettersign.ing → **301 redirects** to docsign.betterid.net, same path and query (`deploy/cloudflare-frontend/redirect.js` in the Worker) | Cloudflare |
 | ↳ alias | https://opensign.bettersign.ing → **301 redirects** to docsign (Page Rule) | Cloudflare |
 | **Backend API** (Parse Server) | https://docsign-bettersign-api.fly.dev | Fly.io (Docker) |
 | **Database** (MongoDB) | `docsign-bettersign-mongo.internal:27017` (private, no public IP) | Fly.io (Docker) |
-| **BetterSign relay** ("Sign on phone") | https://relay.bettersign.ing (BetterSignApps `server/bs-fill-relay`) | Cloudflare Worker + Durable Object |
+| **BetterID relay** ("Sign on phone") | https://relay.bettersign.ing (BetterSignApps `server/bs-fill-relay`) | Cloudflare Worker + Durable Object |
 
-> **docsign.bettersign.ing is the single canonical URL.** bs-id's `bs-opensign` client
-> only redirects back to it, so Sign in with BetterSign only works from that origin —
-> `opensign.bettersign.ing` 301-redirects to it so every entry point lands on the working
-> domain.
+> **docsign.betterid.net is the single canonical URL.** bs-id's `bs-opensign` client
+> only redirects back to it, so Sign in with BetterID only works from that origin —
+> `docsign.bettersign.ing` and `opensign.bettersign.ing` 301-redirect to it so every
+> entry point lands on the working domain.
+
+### Moving to docsign.betterid.net (BetterSign → BetterID rename)
+
+**Done 2026-11-22** (bs-id version `bfccac88`, BetterSignApps PR #498; docsign
+Worker version `90d95a4a`). The site was `docsign.bettersign.ing`. The code defaults to
+`https://docsign.betterid.net` (`BS_API_ORIGIN`, email logo, published-certificate
+links). The move went in this order, which still applies to a fresh setup:
+
+1. **DNS/zone:** `betterid.net` must be a zone in the Cloudflare account, so the
+   Worker can claim `docsign.betterid.net` as a custom domain.
+2. **bs-id:** add `https://docsign.betterid.net/auth/bettersign/callback` to the
+   `bs-opensign` client's redirect URIs (keep the old one until the move is done) and
+   deploy bs-id by hand. Without it, Sign in with BetterID fails on the new name.
+3. **Backend** (§7): `fly deploy`. If `BS_API_ORIGIN` or `EMAIL_LOGO_URL` are set as
+   Fly secrets, change them to the new name too (`fly secrets list`).
+4. **Frontend** (§7): deploy; both names now serve the app.
+5. **Redirect:** the Worker itself 301s `docsign.bettersign.ing` to the new name
+   (`redirect.js`, `run_worker_first`), because the wrangler login has no zone
+   permissions for Redirect Rules. The `opensign.bettersign.ing` Page Rule still
+   points at the old name, so it reaches the new one in two hops; repoint it in
+   the dashboard when convenient. Extension sign-in and phone signing check the
+   origin, so they only work on the new name.
+6. **Website links:** `www.betterid.net` (home, privacy, terms) already serves
+   BetterID, so `WEBSITE_URL`, `TERMS_URL` and the footer and header links point there.
+7. **Not moved yet:** `id.`, `relay.`, `verify.` and `send.bettersign.ing`, and
+   `contact@bettersign.ing` (`betterid.net` has no MX records, so mail there would
+   bounce). None of these exist on `betterid.net` yet. The Fly app names keep
+   `bettersign` too. Change each with its own service when it moves.
 
 Health checks:
-- `curl https://docsign.bettersign.ing/` → app shell (HTTP 200)
+- `curl https://docsign.betterid.net/` → app shell (HTTP 200)
 - `curl https://docsign-bettersign-api.fly.dev/` → `opensign-server is running !!!`
 - `curl https://docsign-bettersign-api.fly.dev/app/health` → `{"status":"ok"}`
 
@@ -36,7 +65,7 @@ Health checks:
                      │  HTTPS
                      ▼
    ┌─────────────────────────────────────────┐
-   │ Cloudflare Workers Static Assets         │   docsign.bettersign.ing
+   │ Cloudflare Workers Static Assets         │   docsign.betterid.net
    │  - React SPA (Vite build, ./build)       │   (Cloudflare universal TLS,
    │  - not_found_handling = SPA              │    global edge cache)
    │  - Worker name: docsign                  │
@@ -62,11 +91,11 @@ Health checks:
 
 **Why the frontend talks to `*.fly.dev` directly (not a branded API subdomain):**
 Fly auto-provisions valid TLS for `*.fly.dev`. A branded two-level host like
-`api.docsign.bettersign.ing` is **not** covered by Cloudflare's universal cert
-(`*.bettersign.ing` only covers one label deep), which would need Advanced Certificate
+`api.docsign.betterid.net` is **not** covered by Cloudflare's universal cert
+(`*.betterid.net` only covers one label deep), which would need Advanced Certificate
 Manager or a Fly custom-domain cert. For a test this adds failure points with no
 functional benefit. The backend sends open CORS (`Access-Control-Allow-Origin: *`), so the
-cross-origin call from `docsign.bettersign.ing` → `docsign-bettersign-api.fly.dev` works.
+cross-origin call from `docsign.betterid.net` → `docsign-bettersign-api.fly.dev` works.
 See §7 for how to move to a branded API host later.
 
 ---
@@ -95,7 +124,7 @@ See §7 for how to move to a branded API host later.
   - `REACT_APP_APPID=<APP_ID>` (must equal the backend `APP_ID`)
 - **Deploy config:** `deploy/cloudflare-frontend/` (`cloudflare.config.ts`, `wrangler.config.ts`, `package.json`).
 - **SPA routing:** `assets.notFoundHandling = "single-page-application"` so deep links / refreshes return `index.html` (verified: `/form/abc123` → 200).
-- **Custom domains:** `domains: ["docsign.bettersign.ing", "opensign.bettersign.ing"]` in `cloudflare.config.ts` — both serve the same Worker; Cloudflare created the DNS records + edge certs automatically. The `*.workers.dev` preview URL is **disabled**. (The baked-in API URL is domain-agnostic and CORS is open, so no rebuild is needed to add frontend domains.)
+- **Custom domains:** `domains: ["docsign.betterid.net", "docsign.bettersign.ing"]` in `cloudflare.config.ts` and `wrangler.jsonc` — both are bound to the same Worker, whose `redirect.js` 301s the old name to the new one (see "Moving to docsign.betterid.net" above); Cloudflare created the DNS records + edge certs automatically. The `*.workers.dev` preview URL is **disabled**. (The baked-in API URL is domain-agnostic and CORS is open, so no rebuild is needed to add frontend domains.)
 
 ### 4.2 Backend — Fly app `docsign-bettersign-api`
 - **Source:** `apps/OpenSignServer` (Parse Server 8).
@@ -159,15 +188,15 @@ at the cost of ~10–30 s cold starts) and/or replace the Mongo app with **Mongo
     - **Needs the phone app:** the BetterSign app has to register with the relay and handle the `docsign-sign-request` content type (docs/BetterSignPhoneSign.md §6). Until it does, the button reports that the app hasn't connected.
 14. **Sign in with BetterSign (bs-id OIDC).** The login page's BetterSign sign-in, through bs-id (`https://id.bettersign.ing`, BetterSignApps `apps/Experiments/bs-id`): the passkey on the phone (QR scan or same device) instead of a push. The browser runs authorization code + PKCE (`apps/OpenSign/src/constant/bsid.js`) and returns to `/auth/bettersign/callback`; the `bsidlogin` cloud fn exchanges the code at bs-id `/token`, verifies the ES256 id_token against `/jwks` (`iss`, `aud`, `nonce`, `exp`) and signs in the account its `vlad` maps to.
     - **Who may sign in:** a VLAD needs an active row in the `bs_Identity` class (master key only) pointing at an existing account. Unknown VLADs are refused, logged as `{"event":"bsidlogin_denied","vlad":…}`, and added to `bs_Identity` turned off with no account. An admin links them on the Users page (BetterSign identities), or with the master-key `curl` in [docs/BetterSignAPI.md §3](docs/BetterSignAPI.md#3-linking-a-vlad-to-an-account); it takes effect at once, no redeploy.
-    - **bs-id side:** the clients `bs-opensign` (callback `https://docsign.bettersign.ing/auth/bettersign/callback`) and `bs-opensign-dev` (`http://localhost:3000/...`) must be in bs-id's client registry, deployed with `npx wrangler deploy --env prod` in BetterSignApps.
+    - **bs-id side:** the clients `bs-opensign` (callback `https://docsign.betterid.net/auth/bettersign/callback`) and `bs-opensign-dev` (`http://localhost:3000/...`) must be in bs-id's client registry, deployed with `npx wrangler deploy --env prod` in BetterSignApps.
     - Optional frontend overrides (build-time): `REACT_APP_BS_ID_URL` (default `https://id.bettersign.ing`), `REACT_APP_BS_ID_CLIENT_ID` (default `bs-opensign`). Server: `BS_ID_URL`, `BS_ID_CLIENT_ID`.
-    - **Through the extension (no QR after the first time):** needs the `bs-opensign` clients deployed with `extensionLogin: true` (BetterSignApps `server/bs-id`), and `BS_API_ORIGIN` set to the site's origin as the browser sees it (default `https://docsign.bettersign.ing`) plus the verifier settings (`BS_VERIFIER_URL`, `BS_VERIFIER_SECRET`). Cloud fns `bsextchallenge` and `bsextlogin`; see BetterSignUpdates.md, "After the first time".
+    - **Through the extension (no QR after the first time):** needs the `bs-opensign` clients deployed with `extensionLogin: true` (BetterSignApps `server/bs-id`), and `BS_API_ORIGIN` set to the site's origin as the browser sees it (default `https://docsign.betterid.net`) plus the verifier settings (`BS_VERIFIER_URL`, `BS_VERIFIER_SECRET`). Cloud fns `bsextchallenge` and `bsextlogin`; see BetterSignUpdates.md, "After the first time".
     - **Rate limit off Fly.** Both cloud fns are limited per client IP (`BS_API_AUTH_RATE_PER_MIN`, default 30 a minute), using Fly's `Fly-Client-IP`. Anywhere else they fall back to Parse's `request.ip`, which is Express's `req.ip` under Parse's `trustProxy` setting (`PARSE_SERVER_TRUST_PROXY`, off by default). With it off, that's the address of whatever opened the connection. If you host the server off Fly:
       - **Clients connect directly:** nothing to do. The address is the client's and can't be faked with headers.
       - **Behind a proxy or load balancer:** every request comes from the proxy, so all clients share one limit, and one noisy client can lock everyone out of sign-in. Set `PARSE_SERVER_TRUST_PROXY` to the number of proxies in front of it (usually `1`) or their addresses, so `req.ip` is the client address your proxy added to `X-Forwarded-For`; entries the client sent itself are ignored. Make sure the server only accepts traffic from the proxy.
       - **Don't set it to `true`.** That trusts every `X-Forwarded-For` entry, including ones the client wrote, and the limit can be dodged by sending a new value each time.
       - Check the result: send a few requests with made-up `X-Forwarded-For` values and confirm they're still counted together. Or rate-limit `POST /app/functions/bsextchallenge` and `/app/functions/bsextlogin` at the proxy or a WAF instead.
-15. **Published certificates.** The completion certificate lists the signed PDF's digital signatures (read through bs-service-identity's `POST /v1/pdf/signatures`; skipped, and logged as `bscerts_*`, when `BS_SERVICE_IDENTITY_URL`/`_TOKEN` aren't set or it fails). BetterSign certificates (with a VLAD) and their roots are stored in `bs_PublishedCert` (migration `20261117120000-create_bs_publishedcert.cjs`) and served publicly at `/api/v1/certs/:sha256(.cer)` and `/api/v1/identities/:vlad/certs`, with the page `https://docsign.bettersign.ing/certs/<vlad or sha256>`. They expose the signer's certificate name and VLAD to anyone with the link: see [docs/PublishedCertificates.md](docs/PublishedCertificates.md) §6.
+15. **Published certificates.** The completion certificate lists the signed PDF's digital signatures (read through bs-service-identity's `POST /v1/pdf/signatures`; skipped, and logged as `bscerts_*`, when `BS_SERVICE_IDENTITY_URL`/`_TOKEN` aren't set or it fails). BetterSign certificates (with a VLAD) and their roots are stored in `bs_PublishedCert` (migration `20261117120000-create_bs_publishedcert.cjs`) and served publicly at `/api/v1/certs/:sha256(.cer)` and `/api/v1/identities/:vlad/certs`, with the page `https://docsign.betterid.net/certs/<vlad or sha256>`. They expose the signer's certificate name and VLAD to anyone with the link: see [docs/PublishedCertificates.md](docs/PublishedCertificates.md) §6.
 
 ---
 
@@ -186,19 +215,14 @@ cp -R apps/OpenSign/build /tmp/docsign-site/build
 cp deploy/cloudflare-frontend/{cloudflare.config.ts,wrangler.config.ts,package.json} /tmp/docsign-site/
 cd /tmp/docsign-site && npm install && cf deploy
 ```
-If `cf deploy` fails with `Cannot find package 'cf'` (its `cf/config` import), deploy the
-same settings with plain Wrangler instead (Cloudflare account brendonp@ixiomsoftware.com):
+If `cf deploy` fails with `Cannot find package 'cf'` (its `cf/config` import), deploy
+with plain Wrangler and the committed `wrangler.jsonc` instead (Cloudflare account
+brendonp@ixiomsoftware.com). Only this path includes `redirect.js`, the old-name 301:
 ```bash
-cd /tmp/docsign-site && rm -f cloudflare.config.ts wrangler.config.ts
-cat > wrangler.jsonc <<'JSON'
-{
-  "name": "docsign",
-  "compatibility_date": "2026-10-06",
-  "assets": { "directory": "./build", "not_found_handling": "single-page-application" },
-  "routes": [{ "pattern": "docsign.bettersign.ing", "custom_domain": true }]
-}
-JSON
-npx wrangler deploy
+rm -rf /tmp/docsign-site && mkdir -p /tmp/docsign-site
+cp -R apps/OpenSign/build /tmp/docsign-site/build
+cp deploy/cloudflare-frontend/{wrangler.jsonc,redirect.js} /tmp/docsign-site/
+cd /tmp/docsign-site && npx wrangler deploy
 ```
 `apps/OpenSign/.env` (gitignored) must hold `REACT_APP_APPID=729aeaeb26bf`
 and `REACT_APP_SERVERURL=https://docsign-bettersign-api.fly.dev/app` before the build.
@@ -268,10 +292,10 @@ fly secrets set MONGODB_URI="mongodb+srv://user:pass@cluster/opensign?retryWrite
 ```
 
 ### Add a branded API domain later (optional)
-Use a **one-label** host like `docsign-api.bettersign.ing` (covered by the universal cert):
-`fly certs add docsign-api.bettersign.ing --app docsign-bettersign-api`, add a DNS-only
+Use a **one-label** host like `docsign-api.betterid.net` (covered by the universal cert):
+`fly certs add docsign-api.betterid.net --app docsign-bettersign-api`, add a DNS-only
 (grey-cloud) CNAME → `docsign-bettersign-api.fly.dev`, then rebuild the frontend with
-`REACT_APP_SERVERURL=https://docsign-api.bettersign.ing/app` and update the backend
+`REACT_APP_SERVERURL=https://docsign-api.betterid.net/app` and update the backend
 `SERVER_URL` secret to match.
 
 ---
@@ -279,12 +303,12 @@ Use a **one-label** host like `docsign-api.bettersign.ing` (covered by the unive
 ## 8. Reproducing from scratch
 
 Prereqs: `cf` authenticated (`cf auth whoami`), `flyctl` authenticated (`fly auth whoami`),
-the `bettersign.ing` zone in the Cloudflare account.
+the `betterid.net` zone in the Cloudflare account (and `bettersign.ing` for the old-name redirect).
 
 1. **Generate secrets:** `APP_ID` (12 hex), `MASTER_KEY` (strong random), Mongo user/pass.
 2. **Mongo app:** `fly apps create docsign-bettersign-mongo`; `fly volumes create mongo_data --size 1 --region sjc`; `fly secrets set MONGO_INITDB_ROOT_USERNAME/PASSWORD --stage`; deploy with `deploy/fly-mongo/fly.toml` (command must include `--ipv6`).
 3. **Backend app:** `fly apps create docsign-bettersign-api`; `fly volumes create opensign_files --size 1 --region sjc`; set secrets `APP_ID`, `MASTER_KEY`, `MONGODB_URI` (`...@docsign-bettersign-mongo.internal:27017/opensign?authSource=admin`), `SERVER_URL`; `cd apps/OpenSignServer && fly deploy`.
-4. **Frontend:** write `apps/OpenSign/.env` (`REACT_APP_SERVERURL`, `REACT_APP_APPID`); `npm install && npm run build`; deploy per §7 using `deploy/cloudflare-frontend/`; the `domains` key wires `docsign.bettersign.ing`.
+4. **Frontend:** write `apps/OpenSign/.env` (`REACT_APP_SERVERURL`, `REACT_APP_APPID`); `npm install && npm run build`; deploy per §7 using `deploy/cloudflare-frontend/`; the `domains` key wires `docsign.betterid.net`.
 
 ### `cf` CLI gotchas (beta) learned here
 - `cf` uses **Workers Static Assets**, not legacy Pages. Deploy with `cf deploy`.

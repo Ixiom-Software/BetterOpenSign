@@ -94,7 +94,7 @@ export async function signerVlad(request) {
   if (!vlad) {
     throw err(
       Parse.Error.OPERATION_FORBIDDEN,
-      'Sign on phone needs a Sign in with BetterSign session.'
+      'Sign on phone needs a Sign in with BetterID session.'
     );
   }
   return vlad;
@@ -202,7 +202,7 @@ export async function bsphonesignstart(request) {
   } catch (e) {
     return unsent(
       Parse.Error.CONNECTION_FAILED,
-      "Couldn't reach the BetterSign relay. Try again.",
+      "Couldn't reach the BetterID relay. Try again.",
       {
         event: 'relay_unreachable',
         fields: { error: e.message },
@@ -217,7 +217,7 @@ export async function bsphonesignstart(request) {
     if (res.body.error === 'unknown-recipient') {
       return unsent(
         Parse.Error.OBJECT_NOT_FOUND,
-        "Your BetterSign app hasn't connected yet. Open the app on your phone, then try again.",
+        "Your BetterID app hasn't connected yet. Open the app on your phone, then try again.",
         refused
       );
     }

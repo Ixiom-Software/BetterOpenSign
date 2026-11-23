@@ -3,7 +3,7 @@ import { createTheme } from "@mui/material/styles";
 /**
  * Open BetterSign theme: Material UI v7 dressed in the BetterSign brand.
  *
- * Tokens come from the bettersign.ing sites (BetterSignApps
+ * Tokens come from the betterid.net sites (BetterSignApps
  * website/brand/brand.css), so the app shares their look: deep ink top bar and
  * footer, green gradient pill buttons, teal accents, soft-shadowed 16px cards
  * on a cool grey page, and the system font stack with heavy, tight headings.

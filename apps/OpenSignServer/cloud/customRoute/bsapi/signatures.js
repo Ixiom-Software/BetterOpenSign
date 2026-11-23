@@ -149,7 +149,7 @@ export async function uploadSignature(req, res) {
         res,
         502,
         'verifier_misconfigured',
-        "This server's BetterSign verifier secret is wrong or not set. Ask the administrator.",
+        "This server's BetterID verifier secret is wrong or not set. Ask the administrator.",
         { code: v.code }
       );
     }
@@ -193,7 +193,7 @@ export async function uploadSignature(req, res) {
       publicUrl: c.origin,
       appendOnly: true,
       baseRevision,
-      auditExtra: { Vlad: vlad, SignedWith: 'BetterSign', SignedSha256: fileSha256 },
+      auditExtra: { Vlad: vlad, SignedWith: 'BetterID', SignedSha256: fileSha256 },
       docExtra: { VladSignatures: { __op: 'Add', objects: [entry] } },
     });
   } catch (e) {

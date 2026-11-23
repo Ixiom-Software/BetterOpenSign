@@ -98,7 +98,7 @@ Parse.Cloud.beforeSave('bs_Identity', bsIdentityBeforeSave);
 Parse.Cloud.beforeLogin(() => {
   throw new Parse.Error(
     Parse.Error.OPERATION_FORBIDDEN,
-    'Password sign-in is disabled. Sign in with BetterSign.'
+    'Password sign-in is disabled. Sign in with BetterID.'
   );
 });
 
