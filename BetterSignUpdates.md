@@ -22,6 +22,20 @@ operations are covered in [DEPLOYMENT.md](DEPLOYMENT.md).
 
 ## Change log
 
+### 2026-11-22: service hosts and contact address move to betterid.net
+
+- **Defaults** name `https://id.betterid.net` (bs-id: `BS_ID_URL` in `fly.toml`,
+  `REACT_APP_BS_ID_URL`, the vendored sign-in button), `https://relay.betterid.net`
+  (`BS_RELAY_URL`) and `https://verify.betterid.net` (`BS_VERIFIER_URL`).
+- **Contact address** is `contact@betterid.net`: `SUPPORT_EMAIL` (frontend and
+  server), the footer, the spam-report line in emails, and all seven languages.
+- **Not deployed with the rest of the rename.** Deploy once relay, verify and mail
+  are live and the browser extension trusts `id.betterid.net`; the checklist and the
+  `SMTP_USER_EMAIL` secret change are in DEPLOYMENT.md, "Moving to
+  docsign.betterid.net", step 7.
+- What still says `bettersign.ing`: the old-name redirect (`redirect.js`, both
+  Worker domains), the `opensign.bettersign.ing` alias, and history in this file.
+
 ### 2026-11-22: BetterSign is now BetterID; the site moves to docsign.betterid.net
 
 - **What people see says BetterID.** All seven languages, the manifest, the header
@@ -738,7 +752,7 @@ Server (`apps/OpenSignServer/`):
 | `cloud/main.js` | Registers our cloud functions (`bettersignlogin`, `bsidlogin`, `bsidentity*`, `updateuserbyadmin`, `bsphonesign*`) and the `bs_Identity` save hook; `beforeLogin` hook blocking password sign-in ("Sign in with BetterID") | 2026-10-06 → 11-22 |
 | `cloud/customRoute/customApp.js` | Mounts the desktop API router (`bsapi`) at `/api/v1` | 2026-11-14 |
 | `cloud/parsefunction/pdf/PDF.js` | Append-only signing once a VLAD signed; signing commits as a compare-and-swap on `SignRevision`; the seal goes through `utils/seal.js`; email logo is `emailLogoUrl` | 2026-11-14 → 11-16 |
-| `Utils.js` | `appName` is BetterID (was BetterSign); adds `supportEmail`, `emailLogoUrl` (default `docsign.betterid.net`), `spamReportMsg`; `mailTemplate` logo | 2026-11-16 → 11-22 |
+| `Utils.js` | `appName` is BetterID (was BetterSign); adds `supportEmail` (default `contact@betterid.net`), `emailLogoUrl` (default `docsign.betterid.net`), `spamReportMsg`; `mailTemplate` logo | 2026-11-16 → 11-22 |
 | `cloud/parsefunction/sendMailv3.js`, `sendMailWithAttachment.js`, `sendSystemMail.js` | Spam-report footer from `spamReportMsg` (to `supportEmail`, not `complaints@opensignlabs.com`) | 2026-11-16 |
 | `cloud/parsefunction/declinedocument.js`, `ForwardDoc.js` | Email logo is `emailLogoUrl` | 2026-11-16 |
 | `cloud/parsefunction/Newsletter.js` | Does nothing (upstream posts to `app.opensignlabs.com`) | 2026-11-16 |
@@ -775,7 +789,7 @@ changes:
 | `src/constant/Utils.js` | `runPublicCloudFn`; `handleSendOTP` sends the session; keeps signature fields when flattening an append-only PDF; app name, email logo and support address from `brand.js` | 2026-11-13 → 11-16 |
 | Files that hard-coded `"OpenSign™"`: `src/components/Title.jsx`, `bulksend/BulkSendUi.jsx`, `pdf/EditTemplate.jsx`, `preferences/MailTemplateEditor.jsx`, `shared/fields/FolderModal.jsx`, `shared/fields/SelectFolder.jsx`, `emailbuilder/getConfiguration/sample/{request,completion}-email.ts`, `src/pages/Form.jsx`, `Opensigndrive.jsx`, `Preferences.jsx`, `UpdateExistUserAdmin.jsx`, `src/primitives/DownloadPdfZip.jsx`, `RenderReportCell.jsx`, `src/reports/document/DocumentsReport.jsx`, `src/reports/template/TemplatesReport.jsx` (also `Login.jsx`, `GuestLogin.jsx`, `SignyourselfPdf.jsx`, `PdfRequestFiles.jsx` and the brand files above) | Import `APP_NAME` from `src/constant/brand.js`; the email samples use `EMAIL_LOGO_URL`. On merge, any new `"OpenSign™"` from upstream becomes `APP_NAME` | 2026-11-16 |
 | `src/pages/AddAdmin.jsx` | Terms link is `TERMS_URL` (betterid.net/sign/terms); OpenSign newsletter opt-in removed |  2026-11-16 → 11-22 |
-| `src/components/pdf/AgreementContent.jsx` | Site link is www.betterid.net; support address is contact@bettersign.ing | 2026-11-16 → 11-22 |
+| `src/components/pdf/AgreementContent.jsx` | Site link is www.betterid.net; support address is `SUPPORT_EMAIL` (contact@betterid.net) | 2026-11-16 → 11-22 |
 | `src/components/SocialMedia.jsx` | Only a GitHub link, to this repository | 2026-11-16 |
 | `src/constant/appinfo.js`, `src/assets/images/logo.png` | App-icon favicon; BetterID wordmark | 2026-11-16 → 11-22 |
 | `src/App.jsx` | `/auth/bettersign/callback` route; `/forgetpassword`, `/changepassword` removed | 2026-11-06 → 11-13 |
@@ -783,7 +797,7 @@ changes:
 | `src/index.css`, `src/styles/dark-theme-improvements.css`, `tailwind.config.js`, `index.html`, `public/manifest.json` | Brand colours and DaisyUI themes, theme-color; manifest name BetterID | 2026-11-06 → 11-22 |
 | `public/locales/en/translation.json` | `signer-link-hint`, `bs-identities.*`, edit-user strings, `phone-sign.*` (English only; other languages fall back); `home.*` | 2026-11-13 → 11-15 |
 | `public/locales/{es,fr,it,de,hi,kr}/translation.json` | `signer-link-hint`, `home.*` (home page), appended at the end | 2026-11-15 |
-| `public/locales/*/translation.json` (all seven) | Values say BetterID (BetterSign until 2026-11-22) instead of OpenSign / OpenSign™, and `contact@bettersign.ing` instead of `*@opensignlabs.com`; keys unchanged | 2026-11-16 → 11-22 |
+| `public/locales/*/translation.json` (all seven) | Values say BetterID (BetterSign until 2026-11-22) instead of OpenSign / OpenSign™, and `contact@betterid.net` (`contact@bettersign.ing` until 2026-11-22) instead of `*@opensignlabs.com`; keys unchanged | 2026-11-16 → 11-22 |
 | `package.json`, `package-lock.json` | MUI v7, `@cantoo/pdf-lib`, `patch-package` postinstall | 2026-10-07 → 11-14 |
 
 Repo root: `README.md` (link to this file), `.gitignore`.

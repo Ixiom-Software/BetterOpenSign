@@ -10,7 +10,7 @@
 // and `bsextlogin` cloud functions
 // (apps/OpenSignServer/cloud/parsefunction/bsextlogin.js).
 //
-// Otherwise it redirects to bs-id (https://id.bettersign.ing) for the passkey:
+// Otherwise it redirects to bs-id (https://id.betterid.net) for the passkey:
 // an authorization-code + PKCE flow. bs-id sends the browser back to
 // BSID_CALLBACK_PATH, where the button (on Login.jsx) finishes by itself
 // through the `bsidlogin` cloud function
@@ -27,7 +27,7 @@ function config() {
   const url =
     env?.REACT_APP_BS_ID_URL ||
     process.env.REACT_APP_BS_ID_URL ||
-    "https://id.bettersign.ing";
+    "https://id.betterid.net";
   const clientId =
     env?.REACT_APP_BS_ID_CLIENT_ID ||
     process.env.REACT_APP_BS_ID_CLIENT_ID ||

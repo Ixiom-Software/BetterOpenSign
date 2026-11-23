@@ -199,13 +199,13 @@ describe('relay envelopes: docsign round trip', () => {
 describe('relay auth message', () => {
   it('is the domain, host, method, path and ts, then the raw body digest', () => {
     const msg = relayAuthMessage(
-      'relay.bettersign.ing',
+      'relay.betterid.net',
       'POST',
       '/v1/req',
       '1760000000',
       Buffer.from('{}')
     );
-    const headText = 'bs-fill/v1.1/relay\nrelay.bettersign.ing\nPOST\n/v1/req\n1760000000\n';
+    const headText = 'bs-fill/v1.1/relay\nrelay.betterid.net\nPOST\n/v1/req\n1760000000\n';
     expect(msg.subarray(0, headText.length).toString()).toBe(headText);
     expect(msg.subarray(headText.length).equals(sha256(Buffer.from('{}')))).toBeTrue();
   });

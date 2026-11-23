@@ -15,7 +15,7 @@ afterEach(() => delete window.RUNTIME_ENV);
 describe("signInButtonOptions (this site's settings for the button)", () => {
   it("uses bs-id's production URL and this app's client by default", () => {
     const o = signInButtonOptions();
-    expect(o.bsIdUrl).toBe("https://id.bettersign.ing");
+    expect(o.bsIdUrl).toBe("https://id.betterid.net");
     expect(o.clientId).toBe("bs-opensign");
     expect(o.redirectUri).toBe(window.location.origin + BSID_CALLBACK_PATH);
     expect(o.redirectUri).toBe(bsIdRedirectUri());

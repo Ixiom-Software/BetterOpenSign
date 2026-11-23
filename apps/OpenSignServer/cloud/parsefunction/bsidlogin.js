@@ -1,5 +1,5 @@
 // bsidlogin — "Sign in with BetterSign" through bs-id (the BetterSign OIDC
-// provider, BetterSignApps apps/Experiments/bs-id, https://id.bettersign.ing).
+// provider, BetterSignApps apps/Experiments/bs-id, https://id.betterid.net).
 //
 // The browser runs the authorization-code + PKCE redirect (see
 // apps/OpenSign/src/constant/bsid.js) and hands us the code. We:
@@ -15,7 +15,7 @@
 // the admin picks the account, not the user.
 //
 // Env:
-//   BS_ID_URL        bs-id origin (= the id_token `iss`). Default https://id.bettersign.ing
+//   BS_ID_URL        bs-id origin (= the id_token `iss`). Default https://id.betterid.net
 //   BS_ID_CLIENT_ID  this app's client_id at bs-id. Default bs-opensign
 //
 // Params: { code, codeVerifier, redirectUri, nonce }
@@ -33,7 +33,7 @@ const JWKS_TTL_MS = 10 * 60 * 1000;
 
 function config() {
   return {
-    url: (process.env.BS_ID_URL || 'https://id.bettersign.ing').replace(/\/$/, ''),
+    url: (process.env.BS_ID_URL || 'https://id.betterid.net').replace(/\/$/, ''),
     clientId: process.env.BS_ID_CLIENT_ID || 'bs-opensign',
   };
 }

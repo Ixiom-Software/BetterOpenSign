@@ -1,5 +1,5 @@
 // The BetterSign relay (BetterSignApps server/bs-fill-relay,
-// https://relay.bettersign.ing): how docsign reaches a signer's BetterSign
+// https://relay.betterid.net): how docsign reaches a signer's BetterSign
 // phone app for "Sign on phone". The relay is the app's built-in connection:
 //
 //   - a request is addressed to the identity, to = sha256(VLAD bytes);
@@ -14,7 +14,7 @@
 // docs/BetterSignPhoneSign.md (repo root).
 //
 // Env:
-//   BS_RELAY_URL          default https://relay.bettersign.ing
+//   BS_RELAY_URL          default https://relay.betterid.net
 //   BS_RELAY_SIGNING_KEY  docsign's relay key, an Ed25519 seed (64 hex). Unset:
 //                         one generated once and stored (apiConfig.js)
 
@@ -279,7 +279,7 @@ export function openEnvelope(
 // --- relay client --------------------------------------------------------------
 
 export function relayUrl() {
-  return (process.env.BS_RELAY_URL || 'https://relay.bettersign.ing').replace(/\/$/, '');
+  return (process.env.BS_RELAY_URL || 'https://relay.betterid.net').replace(/\/$/, '');
 }
 
 export function relayAuthMessage(host, method, path, ts, body) {

@@ -1,5 +1,5 @@
 // Client for the BetterSign verifier (BetterSignApps server/OrgIdP/bs-verifier,
-// https://verify.bettersign.ing). POST /verify checks a Multisig over arbitrary
+// https://verify.betterid.net). POST /verify checks a Multisig over arbitrary
 // bytes against the identity's current /keys/primary, after resolving and
 // hardened-verifying its log.
 //
@@ -11,13 +11,13 @@
 // it isn't reported as the identity's signature failing.
 //
 // Env:
-//   BS_VERIFIER_URL     default https://verify.bettersign.ing
+//   BS_VERIFIER_URL     default https://verify.betterid.net
 //   BS_VERIFIER_SECRET  sent as x-bs-verifier-secret (the droplet's BS_VERIFIER_SECRET)
 
 import axios from 'axios';
 
 export function verifierUrl() {
-  return (process.env.BS_VERIFIER_URL || 'https://verify.bettersign.ing').replace(/\/$/, '');
+  return (process.env.BS_VERIFIER_URL || 'https://verify.betterid.net').replace(/\/$/, '');
 }
 
 // Returns { ok: true } or { ok: false, unavailable, misconfigured, code, error }.

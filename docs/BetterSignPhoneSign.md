@@ -33,7 +33,7 @@ in [BetterSignPhoneSignV2.md](./BetterSignPhoneSignV2.md). This document is v1.
 
 ## 2. How a request reaches the phone
 
-The BetterSign relay (`https://relay.bettersign.ing`, BetterSignApps
+The BetterSign relay (`https://relay.betterid.net`, BetterSignApps
 `server/bs-fill-relay`) is the connection the app already uses for the browser
 extension and Agent Gate. A request is addressed to the identity:
 `to = sha256(VLAD bytes)`. Delivery follows the relay's "open app first, push
@@ -213,7 +213,7 @@ the app hasn't connected (the relay has no binding for the identity).
 1. **Register with the relay for the identity, without a grant.** Today the app
    registers and polls only for relays named by a browser or agent grant
    (`fill_service.dart` `_relays`). For docsign it should register
-   `to = sha256(vlad)` with its FCM token at `https://relay.bettersign.ing`, and
+   `to = sha256(vlad)` with its FCM token at `https://relay.betterid.net`, and
    long-poll `/v1/inbox` while open. Register as soon as the identity exists:
    the relay binds `to` to the first key that registers it (§8).
 2. **Route `docsign-sign-request` to a new handler**, alongside the fill and
@@ -248,10 +248,10 @@ Server (`apps/OpenSignServer`, all optional):
 
 | Setting | Default | Meaning |
 |---|---|---|
-| `BS_RELAY_URL` | `https://relay.bettersign.ing` | The relay |
+| `BS_RELAY_URL` | `https://relay.betterid.net` | The relay |
 | `BS_RELAY_SIGNING_KEY` | generated once, kept in `bs_ApiConfig` | docsign's relay key, an Ed25519 seed in hex. Published at `GET /api/v1/relay-key` |
 | `BS_API_ORIGIN`, `BS_API_RP`, `BS_API_RECEIVER_VLAD` | as for the desktop API | What the statement must name (docs/BetterSignAPI.md) |
-| `BS_VERIFIER_URL` | `https://verify.bettersign.ing` | Checks `vladSig` |
+| `BS_VERIFIER_URL` | `https://verify.betterid.net` | Checks `vladSig` |
 
 Migration `20261115180000-create_bs_phonesign_classes.cjs` creates
 `bs_WebSession` and `bs_PhoneSignRequest`.

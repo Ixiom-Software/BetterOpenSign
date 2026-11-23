@@ -84,7 +84,7 @@ const Footer = () => {
             Privacy
           </a>
           &nbsp;&middot;&nbsp;
-          <a href="mailto:contact@bettersign.ing">contact@bettersign.ing</a>
+          <a href="mailto:contact@betterid.net">contact@betterid.net</a>
         </Typography>
         <Typography
           variant="body2"
