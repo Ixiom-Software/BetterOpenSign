@@ -4,8 +4,8 @@ import Parse from "parse";
 import PhoneSign, {
   BS_SESSION_KEY,
   canSignOnPhone,
-  isBetterSignSession,
-  markBetterSignSession
+  isBetterIDSession,
+  markBetterIDSession
 } from "./PhoneSign";
 
 vi.mock("parse", () => ({ default: { Cloud: { run: vi.fn() } } }));
@@ -45,35 +45,35 @@ beforeEach(() => {
 });
 afterEach(() => localStorage.clear());
 
-describe("BetterSign session marker", () => {
-  it("is a BetterSign session only while the marked session is current", () => {
-    expect(isBetterSignSession()).toBe(false);
-    markBetterSignSession({ bettersign: true, sessionToken: "r:abc" });
+describe("BetterID session marker", () => {
+  it("is a BetterID session only while the marked session is current", () => {
+    expect(isBetterIDSession()).toBe(false);
+    markBetterIDSession({ betterid: true, sessionToken: "r:abc" });
     localStorage.setItem("accesstoken", "r:abc");
-    expect(isBetterSignSession()).toBe(true);
+    expect(isBetterIDSession()).toBe(true);
     // e.g. the emailed signing link signed someone else in
     localStorage.setItem("accesstoken", "r:guest");
-    expect(isBetterSignSession()).toBe(false);
+    expect(isBetterIDSession()).toBe(false);
   });
 
   it("isn't marked when the server didn't record the session", () => {
-    markBetterSignSession({ bettersign: false, sessionToken: "r:abc" });
+    markBetterIDSession({ betterid: false, sessionToken: "r:abc" });
     localStorage.setItem("accesstoken", "r:abc");
     expect(localStorage.getItem(BS_SESSION_KEY)).toBeNull();
-    expect(isBetterSignSession()).toBe(false);
+    expect(isBetterIDSession()).toBe(false);
   });
 
   it("is gone after logout clears storage", () => {
-    markBetterSignSession({ bettersign: true, sessionToken: "r:abc" });
+    markBetterIDSession({ betterid: true, sessionToken: "r:abc" });
     localStorage.setItem("accesstoken", "r:abc");
     localStorage.clear();
-    expect(isBetterSignSession()).toBe(false);
+    expect(isBetterIDSession()).toBe(false);
   });
 });
 
 describe("canSignOnPhone", () => {
   beforeEach(() => {
-    markBetterSignSession({ bettersign: true, sessionToken: "r:abc" });
+    markBetterIDSession({ betterid: true, sessionToken: "r:abc" });
     localStorage.setItem("accesstoken", "r:abc");
   });
 

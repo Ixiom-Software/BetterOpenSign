@@ -54,7 +54,7 @@ import saveAsTemplate from './parsefunction/saveAsTemplate.js';
 import updateTenant from './parsefunction/updateTenant.js';
 import recreateDocument from './parsefunction/recreateDocument.js';
 import loginUser from './parsefunction/loginUser.js';
-import bettersignlogin from './parsefunction/bettersignlogin.js';
+import betteridlogin from './parsefunction/betteridlogin.js';
 import bsidlogin from './parsefunction/bsidlogin.js';
 import { bsextchallenge, bsextlogin } from './parsefunction/bsextlogin.js';
 import { bsphonesignstart, bsphonesignpoll } from './parsefunction/bsPhoneSign.js';
@@ -92,9 +92,9 @@ Parse.Cloud.beforeSave('contracts_Document', DocumentBeforesave);
 Parse.Cloud.beforeSave('contracts_Template', TemplateBeforeSave);
 Parse.Cloud.beforeSave('bs_Identity', bsIdentityBeforeSave);
 
-// No password sign-in (/login, `loginuser`). Users sign in with BetterSign and
+// No password sign-in (/login, `loginuser`). Users sign in with BetterID and
 // recipients through the signing link; both get sessions from /loginAs, which
-// doesn't run this trigger. See BetterSignUpdates.md.
+// doesn't run this trigger. See BetterIDUpdates.md.
 Parse.Cloud.beforeLogin(() => {
   throw new Parse.Error(
     Parse.Error.OPERATION_FORBIDDEN,
@@ -154,7 +154,7 @@ Parse.Cloud.define('saveastemplate', saveAsTemplate);
 Parse.Cloud.define('updatetenant', updateTenant);
 Parse.Cloud.define('recreatedoc', recreateDocument);
 Parse.Cloud.define('loginuser', loginUser);
-Parse.Cloud.define('bettersignlogin', bettersignlogin);
+Parse.Cloud.define('betteridlogin', betteridlogin);
 Parse.Cloud.define('bsidlogin', bsidlogin);
 Parse.Cloud.define('bsextchallenge', bsextchallenge);
 Parse.Cloud.define('bsextlogin', bsextlogin);

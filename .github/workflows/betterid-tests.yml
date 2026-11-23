@@ -1,6 +1,6 @@
-name: bettersign-tests
+name: betterid-tests
 
-# Tests for the BetterSign desktop API (/api/v1) and append-only signing.
+# Tests for the BetterID desktop API (/api/v1) and append-only signing.
 # The rest of the upstream suite (apps/OpenSignServer `npm test`) isn't run
 # here: its specs are upstream's stale examples.
 

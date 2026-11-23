@@ -115,7 +115,7 @@ function WidgetsValueModal(props) {
   const [penColor, setPenColor] = useState("");
   const [isOptional, setIsOptional] = useState(true);
   const [isTab, setIsTab] = useState("");
-  // "Sign on phone" (BetterSign) modal visibility.
+  // "Sign on phone" (BetterID) modal visibility.
   const [showPhoneSign, setShowPhoneSign] = useState(false);
   const [textWidth, setTextWidth] = useState(0);
   const [textHeight, setTextHeight] = useState(0);
@@ -425,7 +425,7 @@ function WidgetsValueModal(props) {
     setIsAutoSign(false);
   };
 
-  // Apply the image the signer approved in their BetterSign app. Mirrors
+  // Apply the image the signer approved in their BetterID app. Mirrors
   // handleSaveSignature's write path (onSaveSign + setXyPosition) but the image
   // comes from the phone instead of the draw/type pad.
   const applyPhoneSignature = (signImg) => {

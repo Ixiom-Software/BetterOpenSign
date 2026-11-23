@@ -37,7 +37,7 @@ describe("signInButtonOptions (this site's settings for the button)", () => {
     expect(await o.getChallenge()).toBe("CHAL");
     expect(run).toHaveBeenLastCalledWith("bsextchallenge");
 
-    const session = { sessionToken: "r:1", objectId: "u1", bettersign: true };
+    const session = { sessionToken: "r:1", objectId: "u1", betterid: true };
     run.mockResolvedValueOnce(session);
     expect(await o.completeExtension({ statement: "st", vladSig: "sig", challenge: "CHAL" })).toBe(session);
     expect(run).toHaveBeenLastCalledWith("bsextlogin", { challengeId: "ch1", statement: "st", vladSig: "sig" });
@@ -57,7 +57,7 @@ describe("signInButtonOptions (this site's settings for the button)", () => {
 
   it("finishes the passkey through bsidlogin", async () => {
     const o = signInButtonOptions();
-    const session = { sessionToken: "r:2", objectId: "u1", bettersign: true };
+    const session = { sessionToken: "r:2", objectId: "u1", betterid: true };
     run.mockResolvedValueOnce(session);
     const cb = { code: "c", codeVerifier: "v", nonce: "n", redirectUri: bsIdRedirectUri() };
     expect(await o.completePasskey(cb)).toBe(session);
@@ -66,7 +66,7 @@ describe("signInButtonOptions (this site's settings for the button)", () => {
 
   it("passes server errors through to the button (which reports them)", async () => {
     const o = signInButtonOptions();
-    run.mockRejectedValueOnce(new Error("This BetterSign identity isn't linked"));
+    run.mockRejectedValueOnce(new Error("This BetterID identity isn't linked"));
     await expect(o.completeExtension({ statement: "s", vladSig: "v" })).rejects.toThrow(/isn't linked/);
   });
 });

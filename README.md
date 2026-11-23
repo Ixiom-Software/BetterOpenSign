@@ -39,12 +39,12 @@
 6. [License](#license)
 7. [Acknowledgments](#acknowledgments)
 
-> **BetterSign fork:** this repository is Open BetterSign. Its changes to OpenSign,
-> including Sign in with BetterSign as the only home page sign-in, recipients signing
-> through the emailed link, the hardened 6-digit one-time code rules, the BetterSign
+> **BetterID fork:** this repository is Open BetterID. Its changes to OpenSign,
+> including Sign in with BetterID as the only home page sign-in, recipients signing
+> through the emailed link, the hardened 6-digit one-time code rules, the BetterID
 > desktop API and VLAD management on the Users page, are described in
-> [BetterSignUpdates.md](BetterSignUpdates.md). Its
-> [Changes from upstream OpenSign](BetterSignUpdates.md#changes-from-upstream-opensign)
+> [BetterIDUpdates.md](BetterIDUpdates.md). Its
+> [Changes from upstream OpenSign](BetterIDUpdates.md#changes-from-upstream-opensign)
 > section lists every file the fork changes, for merging newer OpenSign releases.
 
 ---

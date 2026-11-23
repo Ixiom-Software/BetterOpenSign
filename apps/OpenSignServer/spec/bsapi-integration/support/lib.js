@@ -183,12 +183,12 @@ export async function desktopSign(base, name, p12) {
   });
   Placeholder({
     pdfDoc: d,
-    reason: `BetterSign ${name}`,
+    reason: `BetterID ${name}`,
     location: 'n/a',
     name,
     contactInfo: 'x',
     signatureLength: 8000,
-    fieldName: `BetterSign ${name}`,
+    fieldName: `BetterID ${name}`,
     lib: cantoo,
   });
   return new SignPdf().sign(

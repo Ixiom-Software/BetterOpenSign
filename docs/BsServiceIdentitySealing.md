@@ -24,7 +24,7 @@ Today docsign seals every completed document, and its completion certificate,
 with one PKCS#12 (`PFX_BASE64` / `PASS_PHRASE`, the self-signed "OpenSign Demo
 Signer", or a tenant's `PfxFile`) through `@signpdf`.
 
-bs-service-identity is a Rust sidecar that gives docsign its own BetterSign
+bs-service-identity is a Rust sidecar that gives docsign its own BetterID
 identity (a VLAD with a provenance log, published to the DHT by an embedded
 peer) and a PAdES document-signing account. Over a private HTTP API with one
 bearer token it can:
@@ -43,12 +43,12 @@ bearer token it can:
    over a field *it* adds and registers the signature in its signing log. So we
    replace the *placeholder + `SignPdf`* step, not the `P12Signer`.
 2. **A second artefact.** Each seal produces a `.sig` companion (~25 KB, the
-   BetterSign proof). The PDF alone is still an ordinary PAdES file, but
-   without the `.sig` nobody can do BetterSign verification later. We must
+   BetterID proof). The PDF alone is still an ordinary PAdES file, but
+   without the `.sig` nobody can do BetterID verification later. We must
    store it.
 3. **No `reason` / `name` / `contactInfo`.** The certificate CN is fixed per
-   service (`BS_SERVICE_SIGNER_NAME`); the field is always named `BetterSign`.
-4. **Field-name collision.** bs_core names the new field `BetterSign`, the
+   service (`BS_SERVICE_SIGNER_NAME`); the field is always named `BetterID`.
+4. **Field-name collision.** bs_core names the new field `BetterID`, the
    same name the desktop app uses for VLAD signatures. On an append-only
    document a desktop signer has already signed, the seal would add a second
    field with the same fully qualified name, which PDF readers handle badly.
@@ -63,7 +63,7 @@ bearer token it can:
 Small, and they make the integration clean rather than worked around:
 
 - [ ] **`field_name=<name>` query param** for the added field (default stays
-      `BetterSign`). docsign will pass `OpenSign seal <ISO time>`. Fixes item 4.
+      `BetterID`). docsign will pass `OpenSign seal <ISO time>`. Fixes item 4.
       *Workaround if this slips:* docsign adds a blank, uniquely named
       signature field itself as an incremental revision (cantoo, like
       `sealAppendOnly`) and calls with `field=<name>`.
@@ -165,7 +165,7 @@ way `finishSigning` already deletes an orphaned PDF upload.
 ### 4.4 Show and use it
 
 - Download: offer the `.sig` next to the signed PDF (owner's document view),
-  so a holder can verify offline with BetterSign tooling.
+  so a holder can verify offline with BetterID tooling.
 - A "Verify seal" Parse function that fetches the stored PDF and `.sig` and
   calls `/v1/pades/verify`; the UI shows `verified`, signing time, and
   "sealed by Better OpenSign (VLAD …)".
@@ -212,9 +212,9 @@ The seal runs on the last signer's request. If the service is down:
    signer) and with `/v1/pades/verify`.
 5. Production: same, watch `fly logs` for fallbacks for a week, then remove
    `SEAL_FALLBACK`.
-6. Update `BetterSignUpdates.md`, DEPLOYMENT.md (§4 new component, §6 item 6
+6. Update `BetterIDUpdates.md`, DEPLOYMENT.md (§4 new component, §6 item 6
    on the certificate, §7 runbook: rotate, `rotate-signing-key`, backups,
-   recovery-key custody) and `docs/BetterSignAPI.md`.
+   recovery-key custody) and `docs/BetterIDAPI.md`.
 
 ## 6. Later (not in this plan)
 

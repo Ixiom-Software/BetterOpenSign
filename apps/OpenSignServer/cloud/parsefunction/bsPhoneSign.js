@@ -1,10 +1,10 @@
 // "Sign on phone": the signer approves a signature or initials field in their
-// BetterSign phone app instead of drawing it. Only for a session from "Sign in
-// with BetterSign" (utils/bsWebSession.js): that gives us the signer's VLAD,
+// BetterID phone app instead of drawing it. Only for a session from "Sign in
+// with BetterID" (utils/bsWebSession.js): that gives us the signer's VLAD,
 // so there is nothing to type, no phone number.
 //
 //   1. bsphonesignstart { docId, fieldId, kind }
-//      We push a request to the identity through the BetterSign relay
+//      We push a request to the identity through the BetterID relay
 //      (customRoute/bsapi/relay.js): straight to the app if it's open,
 //      otherwise the relay wakes the phone with FCM.
 //      -> { requestId, delivery, expiresAt }
@@ -18,7 +18,7 @@
 //       | { status: denied | expired | failed, message? }
 //
 // The approved image goes into the field through the normal signing path.
-// Protocol: docs/BetterSignPhoneSign.md (repo root).
+// Protocol: docs/BetterIDPhoneSign.md (repo root).
 
 import crypto from 'node:crypto';
 import { bsIdSessionVlad } from '../../utils/bsWebSession.js';

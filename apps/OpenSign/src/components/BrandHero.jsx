@@ -1,9 +1,9 @@
 import Box from "@mui/material/Box";
-import bettersignIcon from "../assets/images/bettersign-icon.png";
+import betteridIcon from "../assets/images/betterid-icon.png";
 import { bs } from "../theme/md3Theme";
 
 /**
- * The BetterSign wordmark (logo + name) and the product pill beside it, as in
+ * The BetterID wordmark (logo + name) and the product pill beside it, as in
  * the betterid.net top bars (brand.css `.wordmark` + `.product-mark`).
  * Pass `href` for a link, or `onClick` to handle navigation in-app.
  */
@@ -37,7 +37,7 @@ export const BrandMark = ({ href, onClick, label = "BetterID home" }) => {
       >
         <Box
           component="img"
-          src={bettersignIcon}
+          src={betteridIcon}
           alt=""
           width={30}
           height={30}

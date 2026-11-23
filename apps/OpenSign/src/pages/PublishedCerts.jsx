@@ -1,7 +1,7 @@
 // PublishedCerts: the public page (no sign-in) for certificates docsign
 // published from completed documents (docs/PublishedCertificates.md).
 //
-//   /certs/<vlad>     a BetterSign identity: its root and signing certificates
+//   /certs/<vlad>     a BetterID identity: its root and signing certificates
 //   /certs/<sha256>   one certificate, and the root that issued it
 //
 // Each root can be downloaded, with the steps to trust it in Adobe Acrobat.

@@ -79,7 +79,7 @@ describe('append-only signing', () => {
         name: 'Alice',
         contactInfo: 'a',
         signatureLength: 8000,
-        fieldName: 'BetterSign alice',
+        fieldName: 'BetterID alice',
         lib: cantoo,
       });
       const signed = await new SignPdf().sign(Buffer.from(await a.save()), signer());
@@ -134,7 +134,7 @@ describe('append-only signing', () => {
       name: 'Alice',
       contactInfo: 'a',
       signatureLength: 8000,
-      fieldName: 'BetterSign alice',
+      fieldName: 'BetterID alice',
       lib: cantoo,
     });
     const signed = await new SignPdf().sign(Buffer.from(await a.save()), signer());
@@ -153,7 +153,7 @@ describe('append-only signing', () => {
       .map(f => f.getName());
     expect(names.length).toBe(3);
     expect(names).toContain('company');
-    expect(names).toContain('BetterSign alice');
+    expect(names).toContain('BetterID alice');
     const sigFlags = final.catalog
       .lookup(cantoo.PDFName.of('AcroForm'), cantoo.PDFDict)
       .lookup(cantoo.PDFName.of('SigFlags'), cantoo.PDFNumber)

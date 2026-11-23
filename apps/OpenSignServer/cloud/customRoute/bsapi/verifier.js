@@ -1,4 +1,4 @@
-// Client for the BetterSign verifier (BetterSignApps server/OrgIdP/bs-verifier,
+// Client for the BetterID verifier (BetterSignApps server/OrgIdP/bs-verifier,
 // https://verify.betterid.net). POST /verify checks a Multisig over arbitrary
 // bytes against the identity's current /keys/primary, after resolving and
 // hardened-verifying its log.

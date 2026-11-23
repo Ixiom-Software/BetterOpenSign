@@ -1,6 +1,6 @@
-// /api/v1: OpenSign's API for the BetterSign desktop app, authenticated by the
+// /api/v1: OpenSign's API for the BetterID desktop app, authenticated by the
 // identity's own signature (auth.js), not by bs-id. Design and the desktop
-// side of the protocol: docs/BetterSignAPI.md (repo root).
+// side of the protocol: docs/BetterIDAPI.md (repo root).
 //
 // Express 5 passes rejected promises from async handlers to the error handler.
 
@@ -18,7 +18,7 @@ export const router = express.Router();
 router.post('/auth/challenge', authRateLimit('challenge'), createChallenge);
 router.post('/auth/token', authRateLimit('token'), issueToken);
 // The key docsign signs its "Sign on phone" requests with, so the app can
-// check a request names this site (docs/BetterSignPhoneSign.md).
+// check a request names this site (docs/BetterIDPhoneSign.md).
 router.get('/relay-key', async (req, res) => {
   const key = await relayKey();
   res.json({ pub: key.pub.toString('base64url'), origin: config().origin });
@@ -35,7 +35,7 @@ router.get('/documents', listDocuments);
 router.get('/documents/:id', getDocument);
 router.get('/documents/:id/file', getDocumentFile);
 router.post('/documents/:id/signatures', uploadSignature);
-// Sign on phone v2: the PDFs the phone checks and signs (docs/BetterSignPhoneSignV2.md).
+// Sign on phone v2: the PDFs the phone checks and signs (docs/BetterIDPhoneSignV2.md).
 router.get('/phone-sign/:reqId/file', phoneSignFile);
 
 router.use((req, res) => apiError(res, 404, 'not_found', 'No such endpoint.'));

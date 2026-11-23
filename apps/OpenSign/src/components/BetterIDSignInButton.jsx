@@ -1,11 +1,11 @@
 import { useEffect, useRef } from "react";
 import Box from "@mui/material/Box";
 import { bs } from "../theme/md3Theme";
-import { mountSignInButton } from "../vendor/signInWithBetterSignButton/button";
+import { mountSignInButton } from "../vendor/signInWithBetterIDButton/button";
 import { signInButtonOptions } from "../constant/bsid";
 
 /**
- * The shared "Sign in with BetterSign" button (<bettersign-sign-in>, vendored
+ * The shared "Sign in with BetterID" button (<betterid-sign-in>, vendored
  * from BetterSignApps), wired to this site's cloud functions (constant/bsid.js)
  * and dressed as the theme's primary button through its CSS custom properties.
  *
@@ -20,7 +20,7 @@ import { signInButtonOptions } from "../constant/bsid";
  *   texts                      { "<the button's English text>": "shown instead" },
  *                              for its status line and "Use passkey instead"
  */
-export default function BetterSignSignInButton({
+export default function BetterIDSignInButton({
   onSignedIn,
   onError,
   disabled = false,
@@ -83,15 +83,15 @@ export default function BetterSignSignInButton({
       ref={containerRef}
       sx={(theme) => ({
         // brand.css `.btn.primary`, as MuiButton containedPrimary.
-        "--bettersign-bg": bs.gradient,
-        "--bettersign-fg": bs.onGreen,
-        "--bettersign-radius": "9999px",
-        "--bettersign-font": bs.fontFamily,
-        "--bettersign-focus": bs.greenBr,
-        "--bettersign-status": theme.palette.text.secondary,
-        "--bettersign-error": theme.palette.error.main,
-        "--bettersign-link": theme.palette.primary.main,
-        "& bettersign-sign-in::part(button)": { minHeight: 50, fontWeight: 700 }
+        "--betterid-bg": bs.gradient,
+        "--betterid-fg": bs.onGreen,
+        "--betterid-radius": "9999px",
+        "--betterid-font": bs.fontFamily,
+        "--betterid-focus": bs.greenBr,
+        "--betterid-status": theme.palette.text.secondary,
+        "--betterid-error": theme.palette.error.main,
+        "--betterid-link": theme.palette.primary.main,
+        "& betterid-sign-in::part(button)": { minHeight: 50, fontWeight: 700 }
       })}
     />
   );

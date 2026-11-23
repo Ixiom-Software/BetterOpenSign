@@ -1,10 +1,10 @@
-// "Sign in with BetterSign": this site's settings for the shared sign-in
-// button (src/vendor/signInWithBetterSignButton/button.js, the
-// <bettersign-sign-in> element, vendored from BetterSignApps
-// server/signInWithBetterSignButton). components/BetterSignSignInButton.jsx
+// "Sign in with BetterID": this site's settings for the shared sign-in
+// button (src/vendor/signInWithBetterIDButton/button.js, the
+// <betterid-sign-in> element, vendored from BetterSignApps
+// server/signInWithBetterIDButton). components/BetterIDSignInButton.jsx
 // mounts it with signInButtonOptions().
 //
-// The button tries the BetterSign extension first: if this browser was linked
+// The button tries the BetterID extension first: if this browser was linked
 // to this site ("Remember this browser" at the first passkey sign-in), the
 // phone approves with a tap, no QR. The server half is the `bsextchallenge`
 // and `bsextlogin` cloud functions
@@ -41,8 +41,8 @@ export const bsIdRedirectUri = () =>
 /**
  * Options for the kit's mountSignInButton(): bs-id and this site's client,
  * and the hooks that send each step to the Parse cloud functions instead of
- * the kit's default /bettersign routes. Each resolves to what the cloud
- * function returned ({ sessionToken, objectId, bettersign: true }).
+ * the kit's default /betterid routes. Each resolves to what the cloud
+ * function returned ({ sessionToken, objectId, betterid: true }).
  */
 export function signInButtonOptions() {
   // One button signs in once at a time, so the challenge id from

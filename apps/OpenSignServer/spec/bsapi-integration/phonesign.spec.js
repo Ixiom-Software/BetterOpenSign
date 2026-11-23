@@ -1,6 +1,6 @@
-// "Sign on phone" (cloud/parsefunction/bsPhoneSign.js): a BetterSign web
+// "Sign on phone" (cloud/parsefunction/bsPhoneSign.js): a BetterID web
 // session pushes a field to the signer's app through the relay (a stand-in,
-// support/relay.js), and the spec plays the phone. Sign in with BetterSign
+// support/relay.js), and the spec plays the phone. Sign in with BetterID
 // itself goes through a stand-in bs-id (support/bsid.js).
 import crypto from 'node:crypto';
 import {
@@ -46,7 +46,7 @@ async function session(userId) {
   return r.json.sessionToken;
 }
 
-// A session that came from Sign in with BetterSign, for a linked identity.
+// A session that came from Sign in with BetterID, for a linked identity.
 async function bsSession(id, userId) {
   const token = await session(userId);
   await recordBsIdSession(token, id.vlad, userId);
@@ -345,7 +345,7 @@ describe('sign on phone', () => {
     expect(await rowCount(bobId)).toBe(before);
   });
 
-  it('is only for a Sign in with BetterSign session', async () => {
+  it('is only for a Sign in with BetterID session', async () => {
     const plain = await session(bobId);
     const s = await call('bsphonesignstart', plain, { docId, fieldId: 'field-1' });
     expect(s.json.code).toBe(119);
@@ -405,7 +405,7 @@ describe('sign on phone', () => {
   });
 });
 
-describe('Sign in with BetterSign marks the session', () => {
+describe('Sign in with BetterID marks the session', () => {
   let dan;
   let danId;
 
@@ -424,7 +424,7 @@ describe('Sign in with BetterSign marks the session', () => {
   it('records the session and its VLAD', async () => {
     const r = await signIn();
     expect(r.status).toBe(200);
-    expect(r.json.result.bettersign).toBeTrue();
+    expect(r.json.result.betterid).toBeTrue();
     const tokenHash = crypto.createHash('sha256').update(r.json.result.sessionToken).digest('hex');
     const where = encodeURIComponent(JSON.stringify({ TokenHash: tokenHash }));
     const rows = await req('GET', `${PARSE}/classes/bs_WebSession?where=${where}`, {
@@ -444,7 +444,7 @@ describe('Sign in with BetterSign marks the session', () => {
       const r = await signIn();
       expect(r.status).toBe(200);
       expect(r.json.result.sessionToken).toBeTruthy();
-      expect(r.json.result.bettersign).toBeFalse();
+      expect(r.json.result.betterid).toBeFalse();
     } finally {
       failing = false;
     }

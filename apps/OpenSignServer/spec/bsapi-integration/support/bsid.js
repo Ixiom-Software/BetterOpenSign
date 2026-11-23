@@ -1,5 +1,5 @@
-// A stand-in for bs-id (the BetterSign OIDC provider) for Sign in with
-// BetterSign (cloud/parsefunction/bsidlogin.js): POST /token trades a code the
+// A stand-in for bs-id (the BetterID OIDC provider) for Sign in with
+// BetterID (cloud/parsefunction/bsidlogin.js): POST /token trades a code the
 // spec issued for an ES256 id_token naming a VLAD; GET /jwks serves the key.
 import http from 'node:http';
 import crypto from 'node:crypto';

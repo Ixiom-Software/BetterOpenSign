@@ -755,7 +755,7 @@ describe('sign on phone v2 (PAdES)', () => {
     expect((await docRow(docId)).PhoneSignLockId).toBeUndefined();
   });
 
-  it('is only for a Sign in with BetterSign session, and only its own requests', async () => {
+  it('is only for a Sign in with BetterID session, and only its own requests', async () => {
     const docId = await mkDoc(owner, [bobC]);
     const plain = (
       await req('POST', `${PARSE}/loginAs`, { headers: MASTER, body: { userId: bobId } })

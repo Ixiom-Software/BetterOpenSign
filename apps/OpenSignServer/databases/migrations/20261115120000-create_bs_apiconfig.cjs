@@ -1,5 +1,5 @@
 /**
- * BetterSign desktop API: bs_ApiConfig, server-wide settings the API
+ * BetterID desktop API: bs_ApiConfig, server-wide settings the API
  * generates and keeps (master key only). Today just the receiver VLAD
  * (cloud/customRoute/bsapi/receiverVlad.js) when BS_API_RECEIVER_VLAD isn't set.
  *

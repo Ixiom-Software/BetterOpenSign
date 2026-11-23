@@ -1,7 +1,7 @@
 // Published certificates (cloud/customRoute/bsapi/certs.js): a completed
 // document's signatures, read through a stand-in for bs-service-identity's
 // POST /v1/pdf/signatures, go into its completion certificate and, for
-// BetterSign identities, into bs_PublishedCert and the public routes.
+// BetterID identities, into bs_PublishedCert and the public routes.
 import * as pdfLib from 'pdf-lib';
 import {
   API,
@@ -104,17 +104,17 @@ describe('published certificates', () => {
     const vlad = VLAD();
     const janeVlad = VLAD();
     const sealVlad = VLAD();
-    const PHONE_ROOT = 'Brendon Paul (BetterSign phone root c81763)';
+    const PHONE_ROOT = 'Brendon Paul (BetterID phone root c81763)';
     const root = certJson(PHONE_ROOT, { ca: true, notBefore: 1700000000 });
     const leaf = certJson('Brendon Paul', { issuer: PHONE_ROOT, vlad, notBefore: 1700000000 });
     const newerLeaf = certJson('Brendon Paul', { issuer: PHONE_ROOT, vlad, notBefore: 1750000000 });
-    const janeRoot = certJson('BetterSign signer (BetterSign root 689d07)', { ca: true });
+    const janeRoot = certJson('BetterID signer (BetterID root 689d07)', { ca: true });
     const jane = certJson('Jane Englefield', {
       issuer: janeRoot.subject_cn,
       vlad: janeVlad,
     });
-    const sealRoot = certJson('BetterSign docsign (BetterSign root c17c6e)', { ca: true });
-    const seal = certJson('BetterSign docsign', { issuer: sealRoot.subject_cn, vlad: sealVlad });
+    const sealRoot = certJson('BetterID docsign (BetterID root c17c6e)', { ca: true });
+    const seal = certJson('BetterID docsign', { issuer: sealRoot.subject_cn, vlad: sealVlad });
     const third = certJson('Test Signer');
     // A CA the CMS carries that issued none of these.
     const stray = certJson('Some other CA', { ca: true });
@@ -144,7 +144,7 @@ describe('published certificates', () => {
       expect(row.DocumentHash).toBe(sha(final).toString('hex'));
     });
 
-    it('stores BetterSign certificates and their roots, not the third party’s', async () => {
+    it('stores BetterID certificates and their roots, not the third party’s', async () => {
       const stored = await rows({ FirstSeenDoc: first.docId });
       expect(stored.map(r => r.Sha256).sort()).toEqual(
         [
@@ -188,7 +188,7 @@ describe('published certificates', () => {
       expect(r.status).toBe(200);
       expect(r.headers.get('content-type')).toBe('application/pkix-cert');
       expect(r.headers.get('content-disposition')).toBe(
-        `attachment; filename="Brendon_Paul_BetterSign_phone_root_c81763_-${root.sha256.slice(0, 8)}.cer"`
+        `attachment; filename="Brendon_Paul_BetterID_phone_root_c81763_-${root.sha256.slice(0, 8)}.cer"`
       );
       expect(r.headers.get('cache-control')).toMatch(/public/);
       expect(r.headers.get('access-control-allow-origin')).toBe('*');

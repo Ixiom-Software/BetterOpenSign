@@ -1,5 +1,5 @@
 /**
- * BetterSign desktop API (/api/v1): VLAD -> account links, sign-in
+ * BetterID desktop API (/api/v1): VLAD -> account links, sign-in
  * challenges and access tokens (all three master-key only: a client that
  * could create a bs_Identity row could link its VLAD to any account), and
  * contracts_Document.VladSignatures / SignRevision.

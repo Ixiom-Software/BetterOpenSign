@@ -12,7 +12,7 @@ primary_region = "sjc"
   # rollout in docs/BsServiceIdentitySealing.md §5; BS_SERVICE_IDENTITY_TOKEN
   # is a secret (the service's BS_SERVICE_TOKEN).
   BS_SERVICE_IDENTITY_URL = "http://bs-service-identity.internal:8789"
-  # "Sign in with BetterSign" through bs-id (cloud/parsefunction/bsidlogin.js).
+  # "Sign in with BetterID" through bs-id (cloud/parsefunction/bsidlogin.js).
   BS_ID_URL = "https://id.betterid.net"
   BS_ID_CLIENT_ID = "bs-opensign"
 

@@ -445,7 +445,7 @@ export const STALE_MESSAGE = 'This document changed since you opened it. Reload 
  * notification mails and, when everyone has signed, OpenSign's seal and the
  * completion certificate. Shared by signPdf and /api/v1 desktop uploads.
  *
- * @param {boolean} appendOnly - a BetterSign identity has signed (or is
+ * @param {boolean} appendOnly - a BetterID identity has signed (or is
  *   signing): the seal is appended, never a rewrite.
  * @param {number} baseRevision - the document's SignRevision when this PDF was
  *   checked against its file. If another signing has committed since,
@@ -520,7 +520,7 @@ export async function finishSigning({
         ? signersName?.join(', ')
         : username + ' <' + userEmail + '>';
     signedFilePath = `./exports/signed_${name}`;
-    // A BetterSign identity signed an append-only document: append the
+    // A BetterID identity signed an append-only document: append the
     // seal; flattening or re-saving would break that signature
     // (utils/appendOnlyPdf.js).
     if (!appendOnly) {
@@ -688,7 +688,7 @@ async function PDF(req) {
       const PdfBuffer = Buffer.from(req.params.pdfFile, 'base64');
       const appendOnly = isAppendOnly(_resDoc);
       if (appendOnly) {
-        // A BetterSign identity signed this document, so the browser must
+        // A BetterID identity signed this document, so the browser must
         // append its changes (embedWidgetsToDoc loads it forIncrementalUpdate).
         const current = await readDocumentPdf(_resDoc.SignedUrl || _resDoc.URL);
         if (!extendsPdf(current, PdfBuffer)) {

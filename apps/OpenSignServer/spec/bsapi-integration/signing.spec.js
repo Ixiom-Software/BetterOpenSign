@@ -191,7 +191,7 @@ describe('desktop signing', () => {
       expect(r.status).toBe(201);
       expect(r.json.appendOnly).toBe(true);
       expect(r.json.status).toBe('in_progress');
-      expect(r.json.signers[0].signedWithBetterSign).toBe(true);
+      expect(r.json.signers[0].signedWithBetterID).toBe(true);
       expect(r.json.signedSha256).toBe(sha(s.pdf).toString('hex'));
 
       expect(mail.length).toBe(1);
@@ -516,7 +516,7 @@ describe('desktop signing', () => {
         body: { ACL: { [userId]: { read: true, write: true } } },
       });
       // Password sign-in is blocked (cloud/main.js beforeLogin); real users get
-      // their session from /loginAs, as Sign in with BetterSign does.
+      // their session from /loginAs, as Sign in with BetterID does.
       const login = await req('POST', `${PARSE}/loginAs`, {
         headers: MASTER,
         body: { userId },

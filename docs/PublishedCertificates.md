@@ -1,10 +1,10 @@
 # Published certificates
 
 A PDF reader shows a signature as valid only if it trusts the certificate the
-signature chains to. A BetterSign phone or desktop signs with a certificate
+signature chains to. A BetterID phone or desktop signs with a certificate
 issued by the identity's own root, which no reader trusts out of the box. So
 docsign shows the certificates behind each signature in the completion
-certificate, and publishes the BetterSign ones so a reader can download the
+certificate, and publishes the BetterID ones so a reader can download the
 root and trust it.
 
 Code: `apps/OpenSignServer/cloud/customRoute/bsapi/certs.js` (server),
@@ -53,7 +53,7 @@ the order it was made:
 | Valid | the signer certificate's validity |
 | Signed at | the signature's `/M`, if it has one |
 | Status | "Unchanged since signing" (the CMS digest matches) or "Not confirmed unchanged since signing"; and whether it covers the whole document or later revisions (other signatures, the seal) came after it |
-| BetterSign identity (VLAD) | shortened, when the certificate carries one |
+| BetterID identity (VLAD) | shortened, when the certificate carries one |
 | Root certificate | link to download the root (published roots only) |
 | Trust it in Acrobat | link to the root's page by its fingerprint (section 5); a VLAD is about 800 hex digits, too long for a printed link |
 
@@ -70,7 +70,7 @@ first sighting kept:
 | `Sha256` | of the DER, hex; unique (index made when the server first stores one) |
 | `Der` | base64 |
 | `SubjectCN`, `IssuerCN`, `Serial`, `IsCA`, `NotBefore`, `NotAfter` | from the certificate |
-| `Vlad` | the VLAD from the certificate's BetterSign identity extension; for a CA without one, the identity whose certificate it was first seen issuing |
+| `Vlad` | the VLAD from the certificate's BetterID identity extension; for a CA without one, the identity whose certificate it was first seen issuing |
 | `IssuerSha256` | the CA above it in the same signature, if any |
 | `FirstSeenDoc`, `FirstSeenAt` | the completed document it came from (never served) |
 
@@ -78,7 +78,7 @@ Rules:
 
 - **Completed documents only.** Certificates are read when the completion
   certificate is made.
-- **BetterSign certificates only:** a certificate with a VLAD, and the CAs
+- **BetterID certificates only:** a certificate with a VLAD, and the CAs
   above it in the same signature's chain (matched by issuer name). Nothing
   else: a third party's certificate (a tenant's own PFX, the demo PFX, another
   signing tool's) appears in the completion certificate but isn't stored or
@@ -148,7 +148,7 @@ These pages and routes are public. Anyone with a link, or a VLAD, sees:
 
 - the **name** in each certificate (its common name: usually the signer's
   name), and the root's name;
-- the **VLAD**, which identifies the BetterSign identity across every site
+- the **VLAD**, which identifies the BetterID identity across every site
   that sees it;
 - **validity dates and how many signing certificates** the identity has used
   on documents here (a hint at how often it renewed or changed devices).
@@ -168,7 +168,7 @@ What limits it:
 - No rate limit on these routes (they're single indexed lookups); the API is
   reached directly on Fly, not through Cloudflare.
 
-Signers should know that signing with BetterSign on docsign publishes their
+Signers should know that signing with BetterID on docsign publishes their
 certificate's name and VLAD here. Withdraw a row as in section 3.
 
 ## 7. Settings

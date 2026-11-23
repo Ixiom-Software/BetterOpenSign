@@ -16,7 +16,7 @@ import { accountForVlad, recordSignInAttempt } from '../../utils/bsIdentity.js';
 const call = (who, fn, body = {}) =>
   req('POST', `${PARSE}/functions/${fn}`, { headers: who.session, body });
 
-describe('Users page: BetterSign identities', () => {
+describe('Users page: BetterID identities', () => {
   let tenant;
   let admin;
   let member;
@@ -162,7 +162,7 @@ describe('Users page: BetterSign identities', () => {
       expect(list.identities.some(i => i.vlad === id.vlad)).toBe(true);
     });
 
-    // Known issue (BetterSignUpdates.md, Follow-ups): an org admin can link a
+    // Known issue (BetterIDUpdates.md, Follow-ups): an org admin can link a
     // VLAD they hold to the tenant admin and sign in as them. Enable this spec
     // when bsIdentityAdmin.js applies updateuserbyadmin's org-admin rules.
     xit("can't link a VLAD to the tenant admin, or touch the tenant admin's links", async () => {
@@ -178,7 +178,7 @@ describe('Users page: BetterSign identities', () => {
     });
   });
 
-  // Known issue (BetterSignUpdates.md, Follow-ups): unassigned rows are shared
+  // Known issue (BetterIDUpdates.md, Follow-ups): unassigned rows are shared
   // by every tenant. Enable this spec when they're scoped.
   xit("doesn't show another tenant's admins the unassigned sign-in attempts", async () => {
     const pending = identity();

@@ -1,12 +1,12 @@
 // Published certificates (docs/PublishedCertificates.md, repo root): the
-// certificates BetterSign identities signed completed documents with, and the
+// certificates BetterID identities signed completed documents with, and the
 // CAs that issued them, so a reader can see and trust them. docsign reads them
 // from the signed PDF itself, through bs-service-identity's
 // POST /v1/pdf/signatures; nothing is uploaded by the apps.
 //
 //   signaturesForCertificate(doc)  when the completion certificate is made:
 //     the final PDF's signatures for its "Digital signatures" section, and
-//     their BetterSign certificates stored. Best effort: null when the service
+//     their BetterID certificates stored. Best effort: null when the service
 //     is unset or fails (logged), and the certificate is made without it.
 //   GET /api/v1/certs/:sha256.cer          the DER (application/pkix-cert)
 //   GET /api/v1/certs/:sha256              a JSON summary
@@ -17,7 +17,7 @@
 // bs_PublishedCert (master key only), one row per certificate, the first
 // sighting kept: Sha256 (unique), Der (base64), SubjectCN, IssuerCN, Serial,
 // IsCA, Vlad, IssuerSha256, NotBefore, NotAfter, FirstSeenDoc, FirstSeenAt.
-// Only certificates with a VLAD (from the BetterSign identity extension) and
+// Only certificates with a VLAD (from the BetterID identity extension) and
 // the CAs above them in the same signature are stored, from intact signatures
 // of completed documents. Vlad on a CA without one of its own is the identity
 // whose certificate it was first seen issuing.
@@ -333,7 +333,7 @@ export async function publishCertificates(signatures, docId) {
 
 /**
  * The completed document's signatures for its completion certificate, read
- * from its final PDF (`doc.SignedUrl`), with their BetterSign certificates
+ * from its final PDF (`doc.SignedUrl`), with their BetterID certificates
  * published. Best effort: null (and logged) if the service is unset or fails.
  *
  * @param {object} doc - the completed contracts_Document (JSON)

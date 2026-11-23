@@ -1,15 +1,15 @@
-// Vendored from BetterSignApps server/signInWithBetterSignButton/src/browser.js (commit f7aeadb).
+// Vendored from BetterSignApps server/signInWithBetterIDButton/src/browser.js (commit cac8260a).
 // Don't edit here: change it there and run
-//   node server/signInWithBetterSignButton/scripts/vendor.mjs <this folder> button
+//   node server/signInWithBetterIDButton/scripts/vendor.mjs <this folder> button
 // --- end of vendoring note ---
-// The browser half of "Sign in with BetterSign": try the BetterSign extension
+// The browser half of "Sign in with BetterID": try the BetterID extension
 // (a tap on the phone, no QR), and fall back to the passkey at bs-id.
 //
 //   extensionSignIn()       the extension path (extension-login-design.md §4.3,
 //                           page messages §11.1)
 //   startPasskeySignIn()    the passkey path: an authorization-code + PKCE
 //   takePasskeyCallback()   redirect to bs-id and back (web-signin-design.md)
-//   signInWithBetterSign()  both: the extension if this browser is linked to
+//   signInWithBetterID()  both: the extension if this browser is linked to
 //                           this site, otherwise the passkey
 //
 // The first passkey sign-in links the browser ("Remember this browser" on
@@ -24,7 +24,7 @@
 // verifyExtensionLogin); this file only carries them.
 
 /**
- * Sign in through the BetterSign extension.
+ * Sign in through the BetterID extension.
  *
  *   rp            the site's bs-id client id (what the link was made for)
  *   getChallenge  async () => challenge (base64url, 32 bytes) from the site's
@@ -178,16 +178,19 @@ export function takePasskeyCallback(search, { redirectUri }) {
 // --- both ---------------------------------------------------------------------------
 
 /**
- * The "Sign in with BetterSign" button: the extension if it can, the passkey
+ * The "Sign in with BetterID" button: the extension if it can, the passkey
  * otherwise. Takes extensionSignIn()'s options plus startPasskeySignIn()'s
  * ({ bsIdUrl, clientId, redirectUri, scope }); `rp` defaults to clientId.
  *
  * Resolves like extensionSignIn(), except that "unavailable" never comes
  * back: the page is on its way to bs-id instead ({ result: "redirecting" }).
  */
-export async function signInWithBetterSign(opts) {
+export async function signInWithBetterID(opts) {
   const r = await extensionSignIn({ rp: opts.clientId, ...opts });
   if (r.result !== "unavailable") return r;
   await startPasskeySignIn(opts);
   return { result: "redirecting", reason: r.reason };
 }
+
+/** @deprecated The pre-rename name of signInWithBetterID(), for copies vendored before it. */
+export const signInWithBetterSign = signInWithBetterID;

@@ -1,4 +1,4 @@
-// A stand-in for the BetterSign relay (bs-fill-relay) for "Sign on phone":
+// A stand-in for the BetterID relay (bs-fill-relay) for "Sign on phone":
 // POST /v1/req and GET /v1/resp/{reqId}, with the relay's signed-call check.
 // Specs play the phone by reading `relay.requests` and calling respond().
 import http from 'node:http';

@@ -1,8 +1,8 @@
 # Sign on phone v2: the phone's key signs the PDF
 
-In v1 ([BetterSignPhoneSign.md](./BetterSignPhoneSign.md)) the phone approves a
+In v1 ([BetterIDPhoneSign.md](./BetterIDPhoneSign.md)) the phone approves a
 field and returns a PNG; the PDF carries no signature from the phone. In v2 the
-signer's BetterSign phone signs the **whole PDF** with its own P-256 key, as a
+signer's BetterID phone signs the **whole PDF** with its own P-256 key, as a
 PAdES signature that readers validate. It is remote signing: docsign prepares
 the bytes, the phone checks them against the PDF it downloads and signs them
 with a hardware key, docsign embeds the result.
@@ -24,7 +24,7 @@ unchanged and still served.
 
 ## 1. The flow
 
-Same rules as v1 §1: only for a Sign in with BetterSign session, and the
+Same rules as v1 §1: only for a Sign in with BetterID session, and the
 request reaches the phone over the relay (v1 §2).
 
 ```
@@ -71,7 +71,7 @@ browser                docsign                      bs-service-identity     rela
    inputs, embeds the CMS and verifies it. docsign checks the result extends
    the base and has a signature covering the whole file, then commits it with
    `finishSigning` like a desktop signature: `appendOnly: true`, an audit
-   entry with `Vlad`, `SignedWith: 'BetterSign phone'` and `SignedSha256`, and
+   entry with `Vlad`, `SignedWith: 'BetterID phone'` and `SignedSha256`, and
    a `VladSignatures` entry. From then on the document is append-only: later
    signers and OpenSign's seal append. A document you sign yourself completes
    in that same call, so the seal is appended there too. If storing the file
@@ -143,7 +143,7 @@ Answers are relay envelopes with
 |---|---|
 | `102` | Malformed `docId`, `fieldName`, `base` or `caption`; base too large |
 | `101` | No such document; or the app has never connected to the relay |
-| `119` | Not a BetterSign session; not the signer's turn (as v1); or another signer is signing it on their phone (§6) |
+| `119` | Not a BetterID session; not the signer's turn (as v1); or another signer is signing it on their phone (§6) |
 | `141` | `base` isn't the current file with bytes appended, or the document changed meanwhile |
 | `155` | The relay's rate limit |
 | `100` | The relay or the document's file can't be reached; the request couldn't be built; bs-service-identity couldn't make the base Acrobat-ready, or rewrote a signed document |
@@ -152,7 +152,7 @@ Answers are relay envelopes with
 ## 3. The phone's download
 
 `GET /api/v1/phone-sign/:reqId/file` (desktop API bearer token,
-[BetterSignAPI.md](./BetterSignAPI.md)): the base for the approve request's
+[BetterIDAPI.md](./BetterIDAPI.md)): the base for the approve request's
 `reqId`, the prepared PDF for the sign request's. Only to the identity the
 request was sent to (the token's VLAD), and only while the attempt runs;
 `404` otherwise. `X-Content-SHA256` is the hash the request names.
@@ -266,7 +266,7 @@ up on this server."
 - **The phone's keys aren't in the identity's log yet.** The approve statement,
   signed by `/keys/primary`, names both keys and is kept in `Statements`.
 - **Later signers draw into page content**, as after a desktop signature
-  ([BetterSignAPI.md](./BetterSignAPI.md)): the phone's signature still
+  ([BetterIDAPI.md](./BetterIDAPI.md)): the phone's signature still
   verifies for its revision, but strict validators may flag later changes.
 - **The request isn't sealed** and **a relay address can be claimed first**,
   as in v1 §8.

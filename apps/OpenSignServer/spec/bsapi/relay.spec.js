@@ -1,5 +1,5 @@
 // Unit tests for the relay client (cloud/customRoute/bsapi/relay.js): CBOR,
-// HPKE and envelopes against the BetterSign protocol's own test vectors, and
+// HPKE and envelopes against the BetterID protocol's own test vectors, and
 // a round trip standing in for the phone. No database or network.
 /* eslint-env es2020 */
 import crypto from 'node:crypto';

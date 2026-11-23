@@ -1,5 +1,5 @@
 /**
- * Shared by the BetterSign migrations. Kept outside migrations/, where
+ * Shared by the BetterID migrations. Kept outside migrations/, where
  * parse-dbtool would run it as a migration.
  */
 
