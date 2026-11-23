@@ -1,6 +1,6 @@
 # OpenSign Deployment — `docsign.betterid.net`
 
-**Status:** ✅ Live (as `docsign.bettersign.ing` until the move below) · **Deployed:** 2026-10-06 · **Owner:** brendon@ixiomsoftware.com
+**Status:** ✅ Live (moved from `docsign.bettersign.ing` on 2026-11-22) · **Deployed:** 2026-10-06 · **Owner:** brendon@ixiomsoftware.com
 
 A self-hosted [OpenSign](https://github.com/OpenSignLabs/OpenSign) (open-source DocuSign
 alternative) running as a split frontend/backend across **Cloudflare** and **Fly.io**.
@@ -12,7 +12,7 @@ alternative) running as a split frontend/backend across **Cloudflare** and **Fly
 | Piece | URL | Platform |
 |---|---|---|
 | **Frontend (app UI) — canonical** | https://docsign.betterid.net | Cloudflare Workers (Static Assets) |
-| ↳ old name | https://docsign.bettersign.ing → **301 redirects** to docsign.betterid.net (Redirect Rule) | Cloudflare |
+| ↳ old name | https://docsign.bettersign.ing → **301 redirects** to docsign.betterid.net, same path and query (`deploy/cloudflare-frontend/redirect.js` in the Worker) | Cloudflare |
 | ↳ alias | https://opensign.bettersign.ing → **301 redirects** to docsign (Page Rule) | Cloudflare |
 | **Backend API** (Parse Server) | https://docsign-bettersign-api.fly.dev | Fly.io (Docker) |
 | **Database** (MongoDB) | `docsign-bettersign-mongo.internal:27017` (private, no public IP) | Fly.io (Docker) |
@@ -25,9 +25,10 @@ alternative) running as a split frontend/backend across **Cloudflare** and **Fly
 
 ### Moving to docsign.betterid.net (BetterSign → BetterID rename)
 
-The site was `docsign.bettersign.ing`. The code now defaults to
+**Done 2026-11-22** (bs-id version `bfccac88`, BetterSignApps PR #498; docsign
+Worker version `90d95a4a`). The site was `docsign.bettersign.ing`. The code defaults to
 `https://docsign.betterid.net` (`BS_API_ORIGIN`, email logo, published-certificate
-links), so do these **before** deploying it, in this order:
+links). The move went in this order, which still applies to a fresh setup:
 
 1. **DNS/zone:** `betterid.net` must be a zone in the Cloudflare account, so the
    Worker can claim `docsign.betterid.net` as a custom domain.
@@ -37,11 +38,12 @@ links), so do these **before** deploying it, in this order:
 3. **Backend** (§7): `fly deploy`. If `BS_API_ORIGIN` or `EMAIL_LOGO_URL` are set as
    Fly secrets, change them to the new name too (`fly secrets list`).
 4. **Frontend** (§7): deploy; both names now serve the app.
-5. **Redirect:** in the `bettersign.ing` zone, add a Redirect Rule: hostname equals
-   `docsign.bettersign.ing` → `https://docsign.betterid.net${path}` (dynamic,
-   301, keep query string). Point the `opensign.bettersign.ing` Page Rule at the
-   new name too. Extension sign-in and phone signing check the origin, so they only
-   work on the new name once the backend is deployed.
+5. **Redirect:** the Worker itself 301s `docsign.bettersign.ing` to the new name
+   (`redirect.js`, `run_worker_first`), because the wrangler login has no zone
+   permissions for Redirect Rules. The `opensign.bettersign.ing` Page Rule still
+   points at the old name, so it reaches the new one in two hops; repoint it in
+   the dashboard when convenient. Extension sign-in and phone signing check the
+   origin, so they only work on the new name.
 6. **Not moved yet:** `id.`, `relay.`, `verify.`, `www.` and `send.bettersign.ing`,
    `contact@bettersign.ing`, and the Fly app names. Change each with its own service
    when it moves.
@@ -119,7 +121,7 @@ See §7 for how to move to a branded API host later.
   - `REACT_APP_APPID=<APP_ID>` (must equal the backend `APP_ID`)
 - **Deploy config:** `deploy/cloudflare-frontend/` (`cloudflare.config.ts`, `wrangler.config.ts`, `package.json`).
 - **SPA routing:** `assets.notFoundHandling = "single-page-application"` so deep links / refreshes return `index.html` (verified: `/form/abc123` → 200).
-- **Custom domains:** `domains: ["docsign.betterid.net", "docsign.bettersign.ing"]` in `cloudflare.config.ts` — both serve the same Worker, and a Redirect Rule sends the old name to the new one (see "Moving to docsign.betterid.net" below); Cloudflare created the DNS records + edge certs automatically. The `*.workers.dev` preview URL is **disabled**. (The baked-in API URL is domain-agnostic and CORS is open, so no rebuild is needed to add frontend domains.)
+- **Custom domains:** `domains: ["docsign.betterid.net", "docsign.bettersign.ing"]` in `cloudflare.config.ts` and `wrangler.jsonc` — both are bound to the same Worker, whose `redirect.js` 301s the old name to the new one (see "Moving to docsign.betterid.net" above); Cloudflare created the DNS records + edge certs automatically. The `*.workers.dev` preview URL is **disabled**. (The baked-in API URL is domain-agnostic and CORS is open, so no rebuild is needed to add frontend domains.)
 
 ### 4.2 Backend — Fly app `docsign-bettersign-api`
 - **Source:** `apps/OpenSignServer` (Parse Server 8).
@@ -210,22 +212,14 @@ cp -R apps/OpenSign/build /tmp/docsign-site/build
 cp deploy/cloudflare-frontend/{cloudflare.config.ts,wrangler.config.ts,package.json} /tmp/docsign-site/
 cd /tmp/docsign-site && npm install && cf deploy
 ```
-If `cf deploy` fails with `Cannot find package 'cf'` (its `cf/config` import), deploy the
-same settings with plain Wrangler instead (Cloudflare account brendonp@ixiomsoftware.com):
+If `cf deploy` fails with `Cannot find package 'cf'` (its `cf/config` import), deploy
+with plain Wrangler and the committed `wrangler.jsonc` instead (Cloudflare account
+brendonp@ixiomsoftware.com). Only this path includes `redirect.js`, the old-name 301:
 ```bash
-cd /tmp/docsign-site && rm -f cloudflare.config.ts wrangler.config.ts
-cat > wrangler.jsonc <<'JSON'
-{
-  "name": "docsign",
-  "compatibility_date": "2026-10-06",
-  "assets": { "directory": "./build", "not_found_handling": "single-page-application" },
-  "routes": [
-    { "pattern": "docsign.betterid.net", "custom_domain": true },
-    { "pattern": "docsign.bettersign.ing", "custom_domain": true }
-  ]
-}
-JSON
-npx wrangler deploy
+rm -rf /tmp/docsign-site && mkdir -p /tmp/docsign-site
+cp -R apps/OpenSign/build /tmp/docsign-site/build
+cp deploy/cloudflare-frontend/{wrangler.jsonc,redirect.js} /tmp/docsign-site/
+cd /tmp/docsign-site && npx wrangler deploy
 ```
 `apps/OpenSign/.env` (gitignored) must hold `REACT_APP_APPID=729aeaeb26bf`
 and `REACT_APP_SERVERURL=https://docsign-bettersign-api.fly.dev/app` before the build.

@@ -36,9 +36,12 @@ operations are covered in [DEPLOYMENT.md](DEPLOYMENT.md).
   nothing that draws them at a fixed size moves. File names are unchanged.
 - **Site URL.** Defaults now name `https://docsign.betterid.net`: `BS_API_ORIGIN`
   (the origin desktop, extension and phone statements must name), the email logo,
-  and published-certificate links. The Worker serves both names during the move.
-  Order of the move (zone, bs-id callback, backend, frontend, redirect):
-  DEPLOYMENT.md, "Moving to docsign.betterid.net".
+  and published-certificate links. Both names are bound to the Worker, and its new
+  script (`deploy/cloudflare-frontend/redirect.js`, deployed with the committed
+  `wrangler.jsonc`) 301s `docsign.bettersign.ing` to the new name, keeping path
+  and query. bs-id's `bs-opensign` client accepts both callbacks (BetterSignApps
+  PR #498). Moved and deployed 2026-11-22; steps in DEPLOYMENT.md, "Moving to
+  docsign.betterid.net".
 - **Not renamed, on purpose:** code identifiers and file names (`bs-*`,
   `bettersignlogin`, `BetterSignSignInButton`, `<bettersign-sign-in>`, the
   `/auth/bettersign/callback` path, `vnd.bettersign.*` content types and
