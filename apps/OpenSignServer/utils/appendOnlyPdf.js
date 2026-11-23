@@ -1,4 +1,4 @@
-// Append-only PDFs: documents a BetterSign identity (VLAD) has signed.
+// Append-only PDFs: documents a BetterID identity (VLAD) has signed.
 //
 // A VLAD signature (PAdES, from the desktop app via /api/v1) covers the exact
 // bytes of the file as it was signed. Rewriting the file afterwards, as
@@ -34,7 +34,7 @@ export async function readDocumentPdf(url) {
   return Buffer.from(res.data);
 }
 
-// True once any BetterSign identity has signed the document.
+// True once any BetterID identity has signed the document.
 export function isAppendOnly(doc) {
   const sigs = typeof doc?.get === 'function' ? doc.get('VladSignatures') : doc?.VladSignatures;
   return Array.isArray(sigs) && sigs.length > 0;

@@ -1,9 +1,9 @@
-// PhoneSign: "Sign on phone" with BetterSign.
+// PhoneSign: "Sign on phone" with BetterID.
 //
-// Only for someone who signed in with BetterSign (isBetterSignSession): the
+// Only for someone who signed in with BetterID (isBetterIDSession): the
 // server knows their identity from that sign-in, so there is nothing to type.
-// Opening the modal sends the field to their BetterSign app over the app's own
-// connection to the BetterSign relay; if the app isn't open, the relay wakes
+// Opening the modal sends the field to their BetterID app over the app's own
+// connection to the BetterID relay; if the app isn't open, the relay wakes
 // the phone with a push notification. They approve it there and the image
 // their app returns is applied to the field.
 //
@@ -20,30 +20,30 @@ import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
 import CircularProgress from "@mui/material/CircularProgress";
 
-// Set after Sign in with BetterSign, to that session's token, so any other
+// Set after Sign in with BetterID, to that session's token, so any other
 // session (the emailed signing link, a later sign-in) doesn't match.
 export const BS_SESSION_KEY = "bsSession";
 
 // Login.jsx: remember the session bsidlogin returned, if the server recorded
-// it as a BetterSign one.
-export function markBetterSignSession(res) {
-  if (res?.bettersign && res?.sessionToken) {
+// it as a BetterID one.
+export function markBetterIDSession(res) {
+  if (res?.betterid && res?.sessionToken) {
     localStorage.setItem(BS_SESSION_KEY, res.sessionToken);
   }
 }
 
-export function isBetterSignSession() {
+export function isBetterIDSession() {
   const marked = localStorage.getItem(BS_SESSION_KEY);
   return !!marked && marked === localStorage.getItem("accesstoken");
 }
 
-// Whether to offer "Sign on phone" for a widget: a BetterSign session, a saved
+// Whether to offer "Sign on phone" for a widget: a BetterID session, a saved
 // document, and a signature or initials field.
 export function canSignOnPhone(docId, widgetType) {
   return (
     !!docId &&
     ["signature", "initials"].includes(widgetType) &&
-    isBetterSignSession()
+    isBetterIDSession()
   );
 }
 

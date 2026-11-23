@@ -1,6 +1,6 @@
-// Which web sessions came from "Sign in with BetterSign" (bsidlogin, or
+// Which web sessions came from "Sign in with BetterID" (bsidlogin, or
 // bsextlogin through the extension), and for which VLAD. Features that need
-// the signer's BetterSign identity, such as "Sign on phone"
+// the signer's BetterID identity, such as "Sign on phone"
 // (cloud/parsefunction/bsPhoneSign.js), are only for these sessions: a
 // recipient who opened the emailed link, or anyone with a session minted
 // another way, has no row.
@@ -36,7 +36,7 @@ export async function recordBsIdSession(sessionToken, vlad, userId) {
 }
 
 // The VLAD behind a cloud function request's session, or null if the session
-// didn't come from Sign in with BetterSign or the VLAD is no longer linked to
+// didn't come from Sign in with BetterID or the VLAD is no longer linked to
 // this user.
 export async function bsIdSessionVlad(request) {
   const user = request.user;

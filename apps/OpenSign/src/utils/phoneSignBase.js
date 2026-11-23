@@ -1,4 +1,4 @@
-// Sign with your BetterSign phone (v2): the base revision the phone signs.
+// Sign with your BetterID phone (v2): the base revision the phone signs.
 //
 // The signer's phone signs the whole PDF with its own key (PAdES). The
 // browser builds the revision it signs: the document's current file, followed
@@ -7,7 +7,7 @@
 // widget is. The server checks the base extends the current file
 // (OpenSignServer utils/appendOnlyPdf.js extendsPdf) and puts the phone's
 // signature in that field. So the base is built in incremental mode
-// (@cantoo/pdf-lib forIncrementalUpdate), even on a document no BetterSign
+// (@cantoo/pdf-lib forIncrementalUpdate), even on a document no BetterID
 // identity has signed yet, and signature fields are never flattened
 // (flattenExceptSignatures).
 //

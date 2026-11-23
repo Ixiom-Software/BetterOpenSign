@@ -659,7 +659,7 @@ function SignYourSelf() {
     return { showAlert, widgetKey, tourPageNumber };
   };
 
-  // Sign with your BetterSign phone (v2): checks the other widgets as Finish
+  // Sign with your BetterID phone (v2): checks the other widgets as Finish
   // does, then opens PhoneSignPdf, which builds the base and sends it.
   const handlePhoneSignPdf = () => {
     const signature = phoneSignatureWidget(xyPosition);

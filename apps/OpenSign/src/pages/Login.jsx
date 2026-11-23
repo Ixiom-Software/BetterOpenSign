@@ -17,9 +17,9 @@ import {
 import Loader from "../primitives/Loader";
 import { useTranslation } from "react-i18next";
 import SelectLanguage from "../components/pdf/SelectLanguage";
-import { markBetterSignSession } from "../components/pdf/PhoneSign";
+import { markBetterIDSession } from "../components/pdf/PhoneSign";
 import { BSID_CALLBACK_PATH } from "../constant/bsid";
-import BetterSignSignInButton from "../components/BetterSignSignInButton";
+import BetterIDSignInButton from "../components/BetterIDSignInButton";
 import Box from "@mui/material/Box";
 import Paper from "@mui/material/Paper";
 import Typography from "@mui/material/Typography";
@@ -63,14 +63,14 @@ function Login() {
     }
   };
 
-  // "Sign in with BetterSign" (the button: a tap on the phone through the
-  // BetterSign extension, or the passkey at bs-id) gave us a session.
-  const onBetterSignSignedIn = async (value) => {
+  // "Sign in with BetterID" (the button: a tap on the phone through the
+  // BetterID extension, or the passkey at bs-id) gave us a session.
+  const onBetterIDSignedIn = async (value) => {
     leaveCallbackPath();
     setState((prev) => ({ ...prev, loading: true }));
     try {
-      // Marks this session as a BetterSign one ("Sign on phone", PhoneSign.jsx).
-      markBetterSignSession(value);
+      // Marks this session as a BetterID one ("Sign on phone", PhoneSign.jsx).
+      markBetterIDSession(value);
       await thirdpartyLoginfn(value.sessionToken);
     } catch (error) {
       console.error("BetterID sign-in failed", error);
@@ -79,7 +79,7 @@ function Login() {
   };
 
   // The button shows the error itself.
-  const onBetterSignError = (error) => {
+  const onBetterIDError = (error) => {
     leaveCallbackPath();
     console.error("BetterID sign-in failed", error);
   };
@@ -433,12 +433,12 @@ function Login() {
                     {t("Login-to-your-account")}
                   </Typography>
                   <Box sx={{ mt: 2.5 }}>
-                    <BetterSignSignInButton
+                    <BetterIDSignInButton
                       disabled={state.loading}
                       label={t("home.sign-in-button")}
                       texts={signInTexts}
-                      onSignedIn={onBetterSignSignedIn}
-                      onError={onBetterSignError}
+                      onSignedIn={onBetterIDSignedIn}
+                      onError={onBetterIDError}
                     />
                   </Box>
                   <Typography

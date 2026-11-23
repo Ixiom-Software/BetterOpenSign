@@ -35,7 +35,7 @@ function Header(props) {
   const enabledBackBtn = props?.disabledBackBtn === true ? false : true;
   const isViewerSigner = false;
   const finishLabel = t("finish");
-  // Sign with your BetterSign phone (v2), next to Finish when the page
+  // Sign with your BetterID phone (v2), next to Finish when the page
   // offers it (PhoneSignPdf).
   const phoneSignButton = props?.phoneSignPdf && (
     <Button

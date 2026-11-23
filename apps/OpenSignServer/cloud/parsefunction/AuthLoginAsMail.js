@@ -1,4 +1,4 @@
-import { sessionViaLoginAs } from './bettersignlogin.js';
+import { sessionViaLoginAs } from './betteridlogin.js';
 import { assertDocRecipient, normalizeEmail, verifyEmailOtp } from './emailOtp.js';
 
 // A recipient opening `docId` from the emailed signing link signs in with the

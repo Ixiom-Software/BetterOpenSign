@@ -1,8 +1,8 @@
-// Sign on phone v2: the signer's BetterSign phone signs the whole PDF with its
+// Sign on phone v2: the signer's BetterID phone signs the whole PDF with its
 // own P-256 key, as a PAdES signature. Remote signing: we prepare the bytes
 // (through bs-service-identity), the phone checks them against the PDF it
 // downloads and signs them, we embed the result. Only for a session from
-// "Sign in with BetterSign", like v1 (bsPhoneSign.js, unchanged).
+// "Sign in with BetterID", like v1 (bsPhoneSign.js, unchanged).
 //
 //   1. bsphonesignpdfstart { docId, fieldName, base, caption? }
 //      `base` is the signer's revision: the document's current file with their
@@ -38,7 +38,7 @@
 // and the seal append. The phone downloads the PDFs from
 // GET /api/v1/phone-sign/:reqId/file (phoneSignFile).
 //
-// Protocol and limits: docs/BetterSignPhoneSignV2.md (repo root).
+// Protocol and limits: docs/BetterIDPhoneSignV2.md (repo root).
 //
 // Env: BS_SERVICE_IDENTITY_URL, BS_SERVICE_IDENTITY_TOKEN (as utils/seal.js),
 // and v1's relay and verifier settings.

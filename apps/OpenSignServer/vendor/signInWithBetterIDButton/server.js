@@ -1,8 +1,8 @@
-// Vendored from BetterSignApps server/signInWithBetterSignButton/src/server.js (commit b4422dc).
+// Vendored from BetterSignApps server/signInWithBetterIDButton/src/server.js (commit cac8260a).
 // Don't edit here: change it there and run
-//   node server/signInWithBetterSignButton/scripts/vendor.mjs <this folder> server
+//   node server/signInWithBetterIDButton/scripts/vendor.mjs <this folder> server
 // --- end of vendoring note ---
-// The server half of "Sign in with BetterSign" through the browser extension
+// The server half of "Sign in with BetterID" through the browser extension
 // (docs/Technical/extension-login-design.md §4.3, §6.3): check the phone's
 // signed sign-in statement before treating its VLAD as signed in.
 //
@@ -136,7 +136,7 @@ export async function verifyExtensionLogin({
 }
 
 /**
- * A `verify` for verifyExtensionLogin: POST {url}/verify on the BetterSign
+ * A `verify` for verifyExtensionLogin: POST {url}/verify on the BetterID
  * verifier (server/OrgIdP/bs-verifier), with x-bs-verifier-secret if set.
  * A 503 (the verifier couldn't get the log) comes back as `unavailable`.
  */

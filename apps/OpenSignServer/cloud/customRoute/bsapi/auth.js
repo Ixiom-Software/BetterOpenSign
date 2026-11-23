@@ -1,4 +1,4 @@
-// /api/v1 sign-in for the BetterSign desktop app: no browser, no bs-id.
+// /api/v1 sign-in for the BetterID desktop app: no browser, no bs-id.
 //
 //   1. POST /auth/challenge { vlad }
 //      -> { challengeId, challenge, origin, rp, receiverVlad, expiresAt }

@@ -1,13 +1,13 @@
-// bettersignlogin — passwordless OpenSign login for a verified BetterSign identity.
+// betteridlogin — passwordless OpenSign login for a verified BetterID identity.
 //
-// Called server-to-server by the BetterSign signing Worker (Experiment #2) AFTER
+// Called server-to-server by the BetterID signing Worker (Experiment #2) AFTER
 // the Worker's native verifier has cryptographically verified the phone's
 // signature over the login challenge. We trust the Worker via a shared secret
 // (BS_LOGIN_SECRET) and mint a standard Parse session token the browser hands to
 // Parse.User.become (see apps/OpenSign/src/pages/Login.jsx thirdpartyLoginfn).
 //
 // Params: { vlad, email?, name?, secret }
-//   vlad    — the verified BetterSign VLAD (identity id)
+//   vlad    — the verified BetterID VLAD (identity id)
 //   email   — the account email mapped from the device registry (optional; if
 //             absent we derive a stable one from the vlad for create-on-first-use)
 //   secret  — must equal process.env.BS_LOGIN_SECRET (constant-time compared)
@@ -42,7 +42,7 @@ function emailForVlad(vlad) {
     .toLowerCase()
     .replace(/[^a-z0-9]/g, '')
     .slice(0, 24);
-  return `bs-${safe}@bettersign.local`;
+  return `bs-${safe}@betterid.local`;
 }
 
 export async function sessionViaLoginAs(userId) {
@@ -59,7 +59,7 @@ export async function sessionViaLoginAs(userId) {
   return res.data; // { objectId, sessionToken, ...userFields }
 }
 
-export default async function bettersignlogin(request) {
+export default async function betteridlogin(request) {
   const { vlad, secret } = request.params || {};
   if (!secretOk(secret)) {
     throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Unauthorized.');
@@ -85,7 +85,7 @@ export default async function bettersignlogin(request) {
   } else {
     const user = new Parse.User();
     user.set('username', email);
-    // A random password the user never uses (login is via BetterSign).
+    // A random password the user never uses (login is via BetterID).
     user.set('password', crypto.randomBytes(24).toString('hex'));
     user.set('email', email);
     user.set('name', name);

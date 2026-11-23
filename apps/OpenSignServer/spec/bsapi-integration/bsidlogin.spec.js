@@ -1,4 +1,4 @@
-// Sign in with BetterSign (cloud/parsefunction/bsidlogin.js) against the mock
+// Sign in with BetterID (cloud/parsefunction/bsidlogin.js) against the mock
 // bs-id: linked VLADs get a session; a VLAD without an active link is refused
 // and recorded for an admin (utils/bsIdentity.js recordSignInAttempt).
 import { MASTER, PARSE, PUBLIC, identity, link, mkUser, ptr, req, tag } from './support/lib.js';
@@ -15,7 +15,7 @@ const rowsFor = async vlad =>
     )
   ).json.results;
 
-describe('Sign in with BetterSign (bsidlogin)', () => {
+describe('Sign in with BetterID (bsidlogin)', () => {
   it('signs in a linked VLAD', async () => {
     const id = identity();
     const email = `bsid-${tag()}@example.com`;

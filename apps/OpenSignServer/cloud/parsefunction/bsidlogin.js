@@ -1,4 +1,4 @@
-// bsidlogin — "Sign in with BetterSign" through bs-id (the BetterSign OIDC
+// bsidlogin — "Sign in with BetterID" through bs-id (the BetterID OIDC
 // provider, BetterSignApps apps/Experiments/bs-id, https://id.betterid.net).
 //
 // The browser runs the authorization-code + PKCE redirect (see
@@ -9,7 +9,7 @@
 //      utils/bsIdentity.js); a VLAD with no active link is recorded for an
 //      admin to link and refused,
 //   4. mint a Parse session for that account (same /loginAs path as
-//      bettersignlogin), which Login.jsx finishes with thirdpartyLoginfn.
+//      betteridlogin), which Login.jsx finishes with thirdpartyLoginfn.
 //
 // Only linked VLADs can sign in, and only to an account that already exists:
 // the admin picks the account, not the user.
@@ -19,12 +19,12 @@
 //   BS_ID_CLIENT_ID  this app's client_id at bs-id. Default bs-opensign
 //
 // Params: { code, codeVerifier, redirectUri, nonce }
-// Returns: { sessionToken, objectId, email, bettersign } (bettersign: the session
-// was recorded as a BetterSign one)
+// Returns: { sessionToken, objectId, email, betterid } (betterid: the session
+// was recorded as a BetterID one)
 
 import crypto from 'node:crypto';
 import axios from 'axios';
-import { sessionViaLoginAs } from './bettersignlogin.js';
+import { sessionViaLoginAs } from './betteridlogin.js';
 import { accountForVlad, recordSignInAttempt } from '../../utils/bsIdentity.js';
 import { recordBsIdSession } from '../../utils/bsWebSession.js';
 
@@ -158,17 +158,17 @@ export async function signInVlad(vlad, event) {
   }
   const { user, email } = account;
 
-  // 4. Session for that account, remembered as a BetterSign session (for
+  // 4. Session for that account, remembered as a BetterID session (for
   // "Sign on phone", utils/bsWebSession.js). The sign-in doesn't depend on
-  // that: if it can't be recorded, the session just isn't a BetterSign one.
+  // that: if it can't be recorded, the session just isn't a BetterID one.
   const login = await sessionViaLoginAs(user.id);
-  let bettersign = true;
+  let betterid = true;
   try {
     await recordBsIdSession(login.sessionToken, vlad, user.id);
   } catch (e) {
-    bettersign = false;
+    betterid = false;
     console.log(JSON.stringify({ event: `${event}_session_not_recorded`, error: e.message }));
   }
   console.log(JSON.stringify({ event, vlad: vlad.slice(0, 16), userId: user.id }));
-  return { sessionToken: login.sessionToken, objectId: user.id, email, bettersign };
+  return { sessionToken: login.sessionToken, objectId: user.id, email, betterid };
 }

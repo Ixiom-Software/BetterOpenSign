@@ -1,4 +1,4 @@
-// Sign in with BetterSign through the extension (cloud/parsefunction/bsextlogin.js):
+// Sign in with BetterID through the extension (cloud/parsefunction/bsextlogin.js):
 // a challenge, then the phone's bs-login statement and its signature over
 // SHA-256("bs-login/v1/statement\n" ‖ statement), checked by the mock verifier.
 import crypto from 'node:crypto';
@@ -43,7 +43,7 @@ async function linkedIdentity() {
   return { id, userId, email };
 }
 
-describe('Sign in with BetterSign through the extension (bsextlogin)', () => {
+describe('Sign in with BetterID through the extension (bsextlogin)', () => {
   afterEach(() => (verifier.mode = 'ok'));
 
   it('signs in a linked VLAD', async () => {
@@ -55,7 +55,7 @@ describe('Sign in with BetterSign through the extension (bsextlogin)', () => {
     expect(r.json.result.objectId).toBe(userId);
     expect(r.json.result.email).toBe(email);
     expect(r.json.result.sessionToken).toMatch(/^r:/);
-    expect(r.json.result.bettersign).toBe(true);
+    expect(r.json.result.betterid).toBe(true);
   });
 
   it('uses a challenge once, even after a failed try', async () => {

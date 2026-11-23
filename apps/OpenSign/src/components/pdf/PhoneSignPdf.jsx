@@ -1,8 +1,8 @@
-// PhoneSignPdf: "Sign with your BetterSign phone" at Finish (v2).
+// PhoneSignPdf: "Sign with your BetterID phone" at Finish (v2).
 //
-// The signer's BetterSign phone signs the whole PDF with its own key (PAdES)
+// The signer's BetterID phone signs the whole PDF with its own key (PAdES)
 // instead of returning a PNG for one field (PhoneSign, v1). Offered to someone
-// signed in with BetterSign (isBetterSignSession) whose widgets hold exactly
+// signed in with BetterID (isBetterIDSession) whose widgets hold exactly
 // one signature widget. The page builds the base (utils/phoneSignBase.js) and
 // starts the request; this modal shows its progress until the server has
 // committed the signed PDF (as finishSigning does for a normal Finish), the
@@ -23,13 +23,13 @@ import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
 import CircularProgress from "@mui/material/CircularProgress";
-import { isBetterSignSession } from "./PhoneSign";
+import { isBetterIDSession } from "./PhoneSign";
 import { phoneSignatureWidget } from "../../utils/phoneSignBase";
 
-// Whether to offer "Sign with your BetterSign phone" at Finish: a BetterSign
+// Whether to offer "Sign with your BetterID phone" at Finish: a BetterID
 // session, a saved document, and exactly one signature widget of the signer's.
 export function canSignPdfOnPhone(docId, widgets) {
-  return !!docId && isBetterSignSession() && !!phoneSignatureWidget(widgets);
+  return !!docId && isBetterIDSession() && !!phoneSignatureWidget(widgets);
 }
 
 const RETRY_MS = 1500;

@@ -3,10 +3,10 @@
 // sealed (plan: docs/BsServiceIdentitySealing.md).
 //
 // Two backends:
-//   bs-service-identity  docsign's BetterSign identity (BetterSignApps
+//   bs-service-identity  docsign's BetterID identity (BetterSignApps
 //                        server/bs-service-identity), a PAdES seal by its
 //                        document-signing log, plus a `.sig` proof that
-//                        BetterSign verification needs
+//                        BetterID verification needs
 //   p12                  @signpdf with a PKCS#12: a tenant's own PfxFile, or
 //                        PFX_BASE64 / PASS_PHRASE (the demo certificate)
 //
@@ -69,7 +69,7 @@ async function sealWithService({ pdfBytes, appendOnly, filename }) {
   for (let attempt = 0; ; attempt++) {
     const fieldName = sealFieldName(new Date(), attempt);
     const params = { format: 'json', field_name: fieldName };
-    // A rewrite would break an earlier BetterSign signature. Otherwise let
+    // A rewrite would break an earlier BetterID signature. Otherwise let
     // the service repair a malformed file if it has to.
     if (appendOnly) params.append_only = 'true';
     if (filename) params.filename = filename;
@@ -176,14 +176,14 @@ async function sealWithP12({ pdfBytes, appendOnly, reason, certificate, pfx }) {
  * Seal a PDF.
  *
  * @param {Buffer} pdfBytes - the document (already flattened, unless append-only)
- * @param {boolean} appendOnly - a BetterSign identity signed it: the seal must
+ * @param {boolean} appendOnly - a BetterID identity signed it: the seal must
  *   be one appended revision
  * @param {object} doc - the contracts_Document (JSON), for the tenant's certificate
  * @param {string} [reason] - who signed, for the p12 seal's /Reason
  * @param {boolean} [certificate] - this is the completion certificate
- * @param {string} [filename] - kept in the BetterSign signing record
+ * @param {string} [filename] - kept in the BetterID signing record
  * @returns {Promise<{pdf: Buffer, sig?: Buffer, seal: object}>} `sig` is the
- *   BetterSign proof (bs-service-identity only); `seal` is what to store as
+ *   BetterID proof (bs-service-identity only); `seal` is what to store as
  *   the document's Seal / CertificateSeal (without the `.sig` URL)
  */
 export async function sealPdf({

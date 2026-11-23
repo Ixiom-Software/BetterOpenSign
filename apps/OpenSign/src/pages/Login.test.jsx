@@ -3,8 +3,8 @@ import { fireEvent, render, waitFor, within } from "@testing-library/react";
 import axios from "axios";
 import Parse from "parse";
 import Login from "./Login";
-import { markBetterSignSession } from "../components/pdf/PhoneSign";
-import * as kit from "../vendor/signInWithBetterSignButton/browser";
+import { markBetterIDSession } from "../components/pdf/PhoneSign";
+import * as kit from "../vendor/signInWithBetterIDButton/browser";
 
 vi.mock("parse", () => ({
   default: { Cloud: { run: vi.fn(async () => null) }, User: { become: vi.fn(async () => ({})) } }
@@ -29,10 +29,10 @@ vi.mock("../constant/Utils", () => ({
 vi.mock("../redux/reducers/infoReducer", () => ({ fetchAppInfo: () => ({ type: "x" }) }));
 vi.mock("../components/BrandHero", () => ({ default: ({ children }) => <div>{children}</div> }));
 vi.mock("../components/pdf/SelectLanguage", () => ({ default: () => null }));
-vi.mock("../components/pdf/PhoneSign", () => ({ markBetterSignSession: vi.fn() }));
-// The real <bettersign-sign-in> element and constant/bsid.js; only the kit's
+vi.mock("../components/pdf/PhoneSign", () => ({ markBetterIDSession: vi.fn() }));
+// The real <betterid-sign-in> element and constant/bsid.js; only the kit's
 // extension and bs-id steps are stand-ins.
-vi.mock("../vendor/signInWithBetterSignButton/browser", () => ({
+vi.mock("../vendor/signInWithBetterIDButton/browser", () => ({
   extensionSignIn: vi.fn(),
   hasPendingPasskeySignIn: vi.fn(() => false),
   startPasskeySignIn: vi.fn(() => new Promise(() => {})),
@@ -54,7 +54,7 @@ vi.stubGlobal("localStorage", memoryStorage());
 // The button lives in the element's shadow root.
 const widget = async () => {
   const el = await waitFor(() => {
-    const found = document.querySelector("bettersign-sign-in");
+    const found = document.querySelector("betterid-sign-in");
     expect(found).not.toBeNull();
     return found;
   });
@@ -64,7 +64,7 @@ const button = async () => (await widget()).getByRole("button", { name: /Sign in
 const status = async () => (await widget()).getByRole("status");
 
 const run = Parse.Cloud.run;
-const session = (token) => ({ sessionToken: token, objectId: "u1", bettersign: true });
+const session = (token) => ({ sessionToken: token, objectId: "u1", betterid: true });
 
 beforeEach(() => {
   localStorage.clear();
@@ -76,11 +76,11 @@ beforeEach(() => {
   axios.get.mockResolvedValue({ data: null });
 });
 
-describe("Sign in with BetterSign button", () => {
+describe("Sign in with BetterID button", () => {
   it("is the shared widget, for this site's client", async () => {
     render(<Login />);
     await button();
-    const el = document.querySelector("bettersign-sign-in");
+    const el = document.querySelector("betterid-sign-in");
     expect(el.getAttribute("client-id")).toBe("bs-opensign");
     expect(el.getAttribute("redirect-uri")).toBe(window.location.origin + "/auth/bettersign/callback");
   });
@@ -110,7 +110,7 @@ describe("Sign in with BetterSign button", () => {
     });
     render(<Login />);
     fireEvent.click(await button());
-    await waitFor(() => expect(markBetterSignSession).toHaveBeenCalledWith(session("r:ext")));
+    await waitFor(() => expect(markBetterIDSession).toHaveBeenCalledWith(session("r:ext")));
     expect(run).toHaveBeenCalledWith("bsextlogin", { challengeId: "ch1", statement: "st", vladSig: "sig" });
     await waitFor(() => expect(axios.get).toHaveBeenCalled());
     expect(axios.get.mock.calls[0][1].headers["X-Parse-Session-Token"]).toBe("r:ext");
@@ -121,7 +121,7 @@ describe("Sign in with BetterSign button", () => {
     render(<Login />);
     fireEvent.click(await button());
     await waitFor(async () => expect(await status()).toHaveTextContent("Sign-in was denied on your phone."));
-    expect(markBetterSignSession).not.toHaveBeenCalled();
+    expect(markBetterIDSession).not.toHaveBeenCalled();
   });
 
   it("refused by the server: shows its message", async () => {
@@ -133,7 +133,7 @@ describe("Sign in with BetterSign button", () => {
     render(<Login />);
     fireEvent.click(await button());
     await waitFor(async () => expect(await status()).toHaveTextContent(/isn't linked to an account/));
-    expect(markBetterSignSession).not.toHaveBeenCalled();
+    expect(markBetterIDSession).not.toHaveBeenCalled();
   });
 
   it("not linked: off to bs-id for the passkey, busy until the page leaves", async () => {
@@ -155,7 +155,7 @@ describe("Sign in with BetterSign button", () => {
     kit.takePasskeyCallback.mockReturnValue(cb);
     run.mockImplementation(async (name) => (name === "bsidlogin" ? session("r:pk") : null));
     render(<Login />);
-    await waitFor(() => expect(markBetterSignSession).toHaveBeenCalledWith(session("r:pk")));
+    await waitFor(() => expect(markBetterIDSession).toHaveBeenCalledWith(session("r:pk")));
     expect(run).toHaveBeenCalledWith("bsidlogin", cb);
     expect(window.location.pathname).toBe("/");
     expect(window.location.search).toBe("");

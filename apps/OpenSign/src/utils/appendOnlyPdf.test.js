@@ -39,7 +39,7 @@ async function formPdf({ withSignature = true } = {}) {
       Subtype: "Widget",
       FT: "Sig",
       Rect: [0, 0, 0, 0],
-      T: PDFString.of("BetterSign alice"),
+      T: PDFString.of("BetterID alice"),
       F: 4,
       P: p.ref
     })
@@ -91,7 +91,7 @@ describe("flattenExceptSignatures", () => {
     const fields = (await IncrementalPDFDocument.load(out))
       .getForm()
       .getFields();
-    expect(fields.map((f) => f.getName())).toEqual(["BetterSign alice"]);
+    expect(fields.map((f) => f.getName())).toEqual(["BetterID alice"]);
     expect(fields[0]).toBeInstanceOf(PDFSignature);
   });
 
@@ -107,7 +107,7 @@ describe("flattenExceptSignatures", () => {
 
     expect(() => flattenExceptSignatures(form)).not.toThrow();
     expect(form.getFields().map((f) => f.getName())).toEqual([
-      "BetterSign alice"
+      "BetterID alice"
     ]);
   });
 

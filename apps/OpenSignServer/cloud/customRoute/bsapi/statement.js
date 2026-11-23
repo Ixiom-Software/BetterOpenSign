@@ -1,4 +1,4 @@
-// The BetterSign sign-in statement (bs-login v1), as oauthService and
+// The BetterID sign-in statement (bs-login v1), as oauthService and
 // apiDelegateService check it (BetterSignApps
 // docs/Technical/extension-login-design.md §6.3,
 // client/browserExtension/docs/PROTOCOL.md §1.3).

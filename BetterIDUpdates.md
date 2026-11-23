@@ -1,11 +1,11 @@
-# BetterSign Updates
+# BetterID Updates
 
-Changes this fork (Open BetterSign) makes on top of upstream OpenSign. Hosting and
+Changes this fork (Open BetterID) makes on top of upstream OpenSign. Hosting and
 operations are covered in [DEPLOYMENT.md](DEPLOYMENT.md).
 
 - [Change log](#change-log)
 - [Home page and sign-in](#home-page-and-sign-in)
-  - [Sign in with BetterSign](#sign-in-with-bettersign)
+  - [Sign in with BetterID](#sign-in-with-betterid)
   - [What a VLAD signs to log in](#what-a-vlad-signs-to-log-in)
   - [Recipients: the emailed signing link](#recipients-the-emailed-signing-link)
   - [No username/password sign-in](#no-usernamepassword-sign-in)
@@ -21,6 +21,41 @@ operations are covered in [DEPLOYMENT.md](DEPLOYMENT.md).
 ---
 
 ## Change log
+
+Entries before 2026-11-23 were written when the product was BetterSign; their
+product names now read BetterID. Old addresses and stored values in them are kept
+as they were.
+
+### 2026-11-23: code, comments, tests and docs say BetterID
+
+- **Renamed:** `bettersignlogin` → `betteridlogin` (cloud function and file),
+  `BetterSignSignInButton` → `BetterIDSignInButton`, `markBetterSignSession` /
+  `isBetterSignSession` → `markBetterIDSession` / `isBetterIDSession`, the login
+  response's `bettersign` flag → `betterid` (frontend and server together), the
+  `/api/v1` documents field `signedWithBetterSign` → `signedWithBetterID`,
+  placeholder emails `@bettersign.local` → `@betterid.local`, CSS variables
+  `--bettersign-*` → `--betterid-*`, and the element `<bettersign-sign-in>` →
+  `<betterid-sign-in>` with its `betterid-*` events. Nothing outside this repo used
+  them.
+- **Button re-vendored** from BetterSignApps `server/signInWithBetterIDButton`
+  (commit `cac8260a`) into `vendor/signInWithBetterIDButton/` (frontend and
+  server); the old `signInWithBetterSignButton/` copies are gone.
+- **Files:** `BetterSignUpdates.md` → `BetterIDUpdates.md`, `docs/BetterSign*.md` →
+  `docs/BetterID*.md`, `.github/workflows/bettersign-tests.yml` →
+  `betterid-tests.yml`, `bettersign-icon.png` → `betterid-icon.png`,
+  `public/bettersign-logo.png` → `public/betterid-logo.png` (`EMAIL_LOGO_URL`). The
+  Worker 301s `/bettersign-logo.png` to the new file so emails already sent keep
+  their logo.
+- **Kept, on purpose:** names other apps sign or send (`vnd.bettersign.*`
+  content types, `bettersign-message-v1/v2`, `bettersign-fill/v1/`, the
+  extension's `bettersign-extension` / `bettersign-page` messages), the
+  `/auth/bettersign/callback` path registered in bs-id, the migration
+  `20261114120000-create_bettersign_api_classes` (its name is recorded in the
+  database), the BetterSignApps repo name, the Fly app names, and the old-name
+  redirect.
+- **Database:** the four accounts whose `Company` was "BetterSign" (it fills
+  `{{company_name}}` in request and completion emails) now say "BetterID".
+  Signed documents keep their recorded `BetterSign` values.
 
 ### 2026-11-22: service hosts and contact address move to betterid.net
 
@@ -44,7 +79,7 @@ operations are covered in [DEPLOYMENT.md](DEPLOYMENT.md).
   "BetterID identity (VLAD)" label, and new seal fields (`BetterID seal <time>`).
   New audit entries record `SignedWith: 'BetterID'` / `'BetterID phone'`; older
   documents keep `BetterSign`, and nothing reads that value back.
-- **Logos.** `public/bettersign-logo.png` (emails), `src/assets/images/logo.png`
+- **Logos.** `public/betterid-logo.png` (emails), `src/assets/images/logo.png`
   (header, sign-in) and the server's `images/logo.png` (completion certificate) are
   the same app icon with "BetterID™" in brand ink. Same pixel sizes as before, so
   nothing that draws them at a fixed size moves. File names are unchanged.
@@ -61,12 +96,12 @@ operations are covered in [DEPLOYMENT.md](DEPLOYMENT.md).
   wordmark link, the footer's site and privacy links, and the terms page's site link
   point there.
 - **Not renamed, on purpose:** code identifiers and file names (`bs-*`,
-  `bettersignlogin`, `BetterSignSignInButton`, `<bettersign-sign-in>`, the
+  `betteridlogin`, `BetterIDSignInButton`, `<betterid-sign-in>`, the
   `/auth/bettersign/callback` path, `vnd.bettersign.*` content types and
   `bettersign-message-v2`, which the phone and desktop apps sign), database classes,
   this file's name, and the other `bettersign.ing` hosts (`id.`, `relay.`,
   `verify.`, `www.`, `send.`, `contact@`), which move with their own services.
-  The vendored sign-in button (`src/vendor/signInWithBetterSignButton/`) has its
+  The vendored sign-in button (`src/vendor/signInWithBetterIDButton/`) has its
   label changed here; BetterSignApps' copy needs the same change.
 
 ### 2026-11-17: upstream's Docker Hub workflow is turned off
@@ -80,19 +115,19 @@ operations are covered in [DEPLOYMENT.md](DEPLOYMENT.md).
   `apps/OpenSignServer/Dockerfile`, and the frontend goes out with wrangler.
 - When to turn it back on: see [Follow-ups](#follow-ups).
 
-### 2026-11-16: BetterSign name and logo instead of OpenSign's
+### 2026-11-16: BetterID name and logo instead of OpenSign's
 
-- **Emails.** Subjects, bodies and the sender name say BetterSign. The logo is the
-  BetterSign wordmark from `https://docsign.bettersign.ing/bettersign-logo.png`,
+- **Emails.** Subjects, bodies and the sender name say BetterID. The logo is the
+  BetterID wordmark from `https://docsign.bettersign.ing/bettersign-logo.png`,
   not OpenSign's image on their CDN. The "report spam" line under every email
   went to `complaints@opensignlabs.com`; it now goes to `contact@bettersign.ing`
   (`SUPPORT_EMAIL` on the server).
-- **Web app.** BetterSign name, wordmark, favicon and manifest; "BetterSign Drive";
+- **Web app.** BetterID name, wordmark, favicon and manifest; "BetterID Drive";
   all seven languages. The sidebar's social links (OpenSign's GitHub, LinkedIn, X,
   Discord) are now just our GitHub.
-- **Signed PDFs.** The seal's name is BetterSign, the field is
-  `BetterSign seal <time>`, the contact is `contact@bettersign.ing`, and the
-  completion certificate carries the BetterSign wordmark.
+- **Signed PDFs.** The seal's name is BetterID, the field is
+  `BetterID seal <time>`, the contact is `contact@bettersign.ing`, and the
+  completion certificate carries the BetterID wordmark.
 - **AGPL source offer.** The footer now links to this repository's source and its
   AGPL-3.0 license, and still says "Built on OpenSign". "All rights reserved" is
   gone from the copyright line.
@@ -103,14 +138,14 @@ operations are covered in [DEPLOYMENT.md](DEPLOYMENT.md).
   option is gone and the `newsletter` cloud function does nothing.
 - Details: [Branding: name, logo and contacts](#branding-name-logo-and-contacts).
 
-### 2026-11-15: the home page uses the shared Sign in with BetterSign button
+### 2026-11-15: the home page uses the shared Sign in with BetterID button
 
-- **The real drop-in button.** The home page now shows `<bettersign-sign-in>`,
-  the custom element from BetterSignApps `server/signInWithBetterSignButton`
+- **The real drop-in button.** The home page now shows `<betterid-sign-in>`,
+  the custom element from BetterSignApps `server/signInWithBetterIDButton`
   (`button.js`, vendored with `browser.js` into
-  `apps/OpenSign/src/vendor/signInWithBetterSignButton/`). Our own MUI button
+  `apps/OpenSign/src/vendor/signInWithBetterIDButton/`). Our own MUI button
   and its status line are gone.
-- **Same server side.** `components/BetterSignSignInButton.jsx` mounts the
+- **Same server side.** `components/BetterIDSignInButton.jsx` mounts the
   element with hooks that send each step to the existing cloud functions
   (`bsextchallenge`, `bsextlogin`, `bsidlogin`) instead of the kit's
   `/bettersign` routes. `constant/bsid.js` now gives those hooks and this
@@ -124,14 +159,14 @@ operations are covered in [DEPLOYMENT.md](DEPLOYMENT.md).
   the button, not as a toast.
 - **Still translated.** The label comes from `home.sign-in-button`. The
   button writes its status and passkey link in English, so
-  `BetterSignSignInButton` swaps them (its `texts` prop) for `home.status-*`,
+  `BetterIDSignInButton` swaps them (its `texts` prop) for `home.status-*`,
   `home.sign-in-denied` and the new `home.use-passkey-instead` (all seven
   languages). Server errors (refused, not linked) stay as the server words them.
 
 ### 2026-11-15: home page in every language; working language dropdown
 
 - **The home page is translated.** The hero text, the three feature lines, the
-  Sign in with BetterSign button and the signing-link hint now come from
+  Sign in with BetterID button and the signing-link hint now come from
   `home.*` and `signer-link-hint` in all seven languages (en, es, fr, it, de, hi,
   kr). They used to be English whatever language was picked. So are the
   extension sign-in messages ("Approve on your phone…", "Signing in…", "denied
@@ -149,19 +184,19 @@ operations are covered in [DEPLOYMENT.md](DEPLOYMENT.md).
   now "Español".
 - **`<html lang>` follows the chosen language**, for screen readers and fonts.
 
-### 2026-11-15: "Sign on phone" pushes to the BetterSign app
+### 2026-11-15: "Sign on phone" pushes to the BetterID app
 
 - **No more phone number.** "Sign on phone" sends the field straight to the
-  signer's BetterSign app, addressed by the VLAD they signed in with. The
+  signer's BetterID app, addressed by the VLAD they signed in with. The
   phone-number box and its coordinator Worker (`bs-opensign-sign`,
   `REACT_APP_BS_SIGN_URL`) are gone. Design and protocol:
-  [docs/BetterSignPhoneSign.md](docs/BetterSignPhoneSign.md).
-- **Only for Sign in with BetterSign.** `bsidlogin` now records the session and
+  [docs/BetterIDPhoneSign.md](docs/BetterIDPhoneSign.md).
+- **Only for Sign in with BetterID.** `bsidlogin` now records the session and
   its VLAD in `bs_WebSession`. The button shows only while that session is the
   current one, and the server refuses everyone else. Recipients on the emailed
   link never see it.
 - **Delivered over the app's own connection.** The request goes through the
-  BetterSign relay (`relay.bettersign.ing`): straight to the app if it's open,
+  BetterID relay (`relay.bettersign.ing`): straight to the app if it's open,
   otherwise the relay wakes the phone with FCM. The modal shows which happened.
 - **Checked like any VLAD signature.** The app signs a new `bs-docsign-field`
   statement in the canonical bs-message form. It names the document, the field,
@@ -172,7 +207,7 @@ operations are covered in [DEPLOYMENT.md](DEPLOYMENT.md).
   declined document, or when it isn't the user's turn.
 - **The request carries no document title.** It isn't encrypted, and anyone who
   claims the user's relay address first would read it; the app looks the title
-  up itself. That risk is described in docs/BetterSignPhoneSign.md §8.
+  up itself. That risk is described in docs/BetterIDPhoneSign.md §8.
 - **Stored server-wide values can't split.** `bs_ApiConfig` (the receiver VLAD,
   and now the relay key) gets a unique index on `Key`, so two machines starting
   at once can't end up with different values.
@@ -181,8 +216,8 @@ operations are covered in [DEPLOYMENT.md](DEPLOYMENT.md).
   - `GET /api/v1/relay-key`, the key docsign signs requests with;
   - settings `BS_RELAY_URL` and `BS_RELAY_SIGNING_KEY` (optional);
   - migration `20261115180000-create_bs_phonesign_classes.cjs`.
-- **Needs the BetterSign app.** The app doesn't handle these requests yet
-  ([docs/BetterSignPhoneSign.md §6](docs/BetterSignPhoneSign.md#6-what-the-bettersign-app-needs)).
+- **Needs the BetterID app.** The app doesn't handle these requests yet
+  ([docs/BetterIDPhoneSign.md §6](docs/BetterIDPhoneSign.md#6-what-the-betterid-app-needs)).
   Until it does, the button says the app hasn't connected.
 - **The Sign on phone button used to send the field key as the document id.**
   It now sends the real document id.
@@ -206,7 +241,7 @@ operations are covered in [DEPLOYMENT.md](DEPLOYMENT.md).
   one.
 - **No personal email in source:** the move migration names the built-in link's
   account by the SHA-256 of its email (the repo is public).
-- **Tests:** Sign in with BetterSign against a mock bs-id (`bsidlogin.spec.js`),
+- **Tests:** Sign in with BetterID against a mock bs-id (`bsidlogin.spec.js`),
   the rate limit, attempts by turned-off links, simultaneous attempts, org
   admins, user-edit edge cases, and frontend tests for `BsIdentities.jsx` and
   `EditUser.jsx`. Two pending specs describe the known issues below.
@@ -228,7 +263,7 @@ operations are covered in [DEPLOYMENT.md](DEPLOYMENT.md).
 
 ### 2026-11-15: manage VLAD links on the Users page; unknown VLADs are recorded
 
-- The Users page has a **BetterSign identities** section (admins only,
+- The Users page has a **BetterID identities** section (admins only,
   `apps/OpenSign/src/components/BsIdentities.jsx`). An admin can add a VLAD,
   choose its account, give it a label, switch it on or off, or remove it. It
   shows the links to accounts in the admin's tenant and the unassigned
@@ -237,7 +272,7 @@ operations are covered in [DEPLOYMENT.md](DEPLOYMENT.md).
 - A VLAD that signs in without an active link is added to `bs_Identity`
   **turned off, with no account**, label `Sign-in attempt`, and `LastSeenAt` set
   (bumped on later attempts). It's still refused. It's only recorded once the
-  identity is proven: bs-id's signed `id_token` for Sign in with BetterSign, the
+  identity is proven: bs-id's signed `id_token` for Sign in with BetterID, the
   verifier's signature check for the desktop API. So nobody can fill the table by
   posting random VLADs.
 - The desktop API now gives an unlinked VLAD a challenge (so its signature can be
@@ -251,7 +286,7 @@ operations are covered in [DEPLOYMENT.md](DEPLOYMENT.md).
 ### 2026-11-15: VLAD links live only in MongoDB (`bs_Identity`)
 
 - `BS_ID_USERS` is gone. Which account a VLAD signs in to, for both Sign in with
-  BetterSign and the desktop API, is now read only from the master-key-only
+  BetterID and the desktop API, is now read only from the master-key-only
   `bs_Identity` class (`apps/OpenSignServer/utils/bsIdentity.js`).
 - Migration `20261115140000-move_bs_id_users_to_bs_identity.cjs` copies the old
   `fly.toml` list (and `BS_ID_USERS`, if a deployment still sets it) into
@@ -267,24 +302,24 @@ operations are covered in [DEPLOYMENT.md](DEPLOYMENT.md).
 
 ### 2026-11-15: a wrong verifier secret is reported as such
 
-- When the BetterSign verifier refuses this server's `BS_VERIFIER_SECRET`
+- When the BetterID verifier refuses this server's `BS_VERIFIER_SECRET`
   (`401 bad_secret`: wrong or not set), the desktop API's sign-in and uploads now
-  return `502 verifier_misconfigured` ("This server's BetterSign verifier secret
+  return `502 verifier_misconfigured` ("This server's BetterID verifier secret
   is wrong or not set") and log an error. They used to return `401
   access_denied`, "The identity's signature didn't verify", which sent people
   looking at the identity instead of the server's settings.
 
-### 2026-11-15: seal completed documents with docsign's BetterSign identity
+### 2026-11-15: seal completed documents with docsign's BetterID identity
 
 - OpenSign's seal on a completed document, and on its completion certificate,
-  can now come from **bs-service-identity**. That's docsign's own BetterSign
+  can now come from **bs-service-identity**. That's docsign's own BetterID
   identity, a private Fly app (`bs-service-identity`, BetterSignApps
   `server/bs-service-identity`, PR #200). The demo PFX is no longer needed for
   that seal. Plan and reasons: [docs/BsServiceIdentitySealing.md](docs/BsServiceIdentitySealing.md).
 - All sealing goes through `apps/OpenSignServer/utils/seal.js`. `SEAL_BACKEND`
   chooses `p12` (the default, today's behaviour) or `bs-service-identity`. A
   tenant that uploaded its own certificate is always sealed with it.
-- A seal by the service also produces a `.sig` file, the BetterSign proof needed
+- A seal by the service also produces a `.sig` file, the BetterID proof needed
   to verify it later. It's stored next to the PDF, and the document records how
   it was sealed in two new server-only fields:
   - `Seal` (the signed PDF) and `CertificateSeal` (the certificate):
@@ -298,13 +333,13 @@ operations are covered in [DEPLOYMENT.md](DEPLOYMENT.md).
 - The seal no longer carries a reason, location or contact. bs-sdk writes the
   signature itself and has no fields for them yet. The certificate's name is
   the service's `BS_SERVICE_SIGNER_NAME`, and the field is named
-  `OpenSign seal <time>` (`BetterSign seal <time>` since 2026-11-16).
+  `OpenSign seal <time>` (`BetterID seal <time>` since 2026-11-16).
 - Flattening and sealing a normal (not append-only) document are now two steps:
   `processPdf` only flattens, then the seal is added.
 
 ### 2026-11-15: VLAD sign-in signs the canonical bs-message form
 
-- The desktop API (`/api/v1`, [docs/BetterSignAPI.md](docs/BetterSignAPI.md)) now
+- The desktop API (`/api/v1`, [docs/BetterIDAPI.md](docs/BetterIDAPI.md)) now
   requires sign-in and upload statements to be signed as bs-auth signs messages:
   `DOMAIN_SEP ‖ sender_vlad ‖ sender_key_path ‖ receiver_vlad ‖ content_type ‖ body`.
   See [What a VLAD signs to log in](#what-a-vlad-signs-to-log-in).
@@ -318,14 +353,14 @@ operations are covered in [DEPLOYMENT.md](DEPLOYMENT.md).
 - Signatures over the old `SHA-256("bs-login/v1/statement\n" ‖ statement)` digest
   are refused.
 
-### 2026-11-14: BetterSign desktop API (`/api/v1`) and append-only signing
+### 2026-11-14: BetterID desktop API (`/api/v1`) and append-only signing
 
-- A REST API for the BetterSign desktop app, which holds the user's VLAD and keys:
-  sign in by signing a challenge (checked by the BetterSign verifier), list and
+- A REST API for the BetterID desktop app, which holds the user's VLAD and keys:
+  sign in by signing a challenge (checked by the BetterID verifier), list and
   download documents, and upload a PDF signed on the desktop. Reference:
-  [docs/BetterSignAPI.md](docs/BetterSignAPI.md).
+  [docs/BetterIDAPI.md](docs/BetterIDAPI.md).
 - VLAD -> account links moved to the master-key-only `bs_Identity` class
-  (`utils/bsIdentity.js`), shared with Sign in with BetterSign.
+  (`utils/bsIdentity.js`), shared with Sign in with BetterID.
 - Once a VLAD has signed a document, it's **append-only**: online signers and
   OpenSign's seal add incremental updates instead of rewriting the PDF, so the
   desktop signature stays valid (`utils/appendOnlyPdf.js` on both server and
@@ -335,11 +370,11 @@ operations are covered in [DEPLOYMENT.md](DEPLOYMENT.md).
 - Desktop uploads email the next signer for in-order documents, as browser
   signing does.
 - Tests: `npm run test:bsapi` and `npm run test:bsapi:integration`
-  (`apps/OpenSignServer`), also run in CI (`.github/workflows/bettersign-tests.yml`).
+  (`apps/OpenSignServer`), also run in CI (`.github/workflows/betterid-tests.yml`).
 
 ### 2026-11-13: sign-in lockdown and one-time code hardening
 
-- **Home page:** Sign in with BetterSign is the only way to sign in. The
+- **Home page:** Sign in with BetterID is the only way to sign in. The
   email/password form, the "Forgot password?" link and the code sign-in were removed.
   A hint points recipients to the link in their email.
 - **Password sign-in blocked on the server** with a `beforeLogin` hook, including
@@ -360,11 +395,11 @@ operations are covered in [DEPLOYMENT.md](DEPLOYMENT.md).
   - recipients' passwords were their email address
 - **Account deletion** codes share the same rules and generator.
 
-### 2026-11-06: BetterSign brand UI and Sign in with BetterSign
+### 2026-11-06: BetterID brand UI and Sign in with BetterID
 
 - The web app was restyled to the bettersign.ing brand. See [Brand UI](#brand-ui).
-- "Sign in with BetterSign" through bs-id (OIDC + PKCE) replaced the push-to-phone
-  login button. See [Sign in with BetterSign](#sign-in-with-bettersign).
+- "Sign in with BetterID" through bs-id (OIDC + PKCE) replaced the push-to-phone
+  login button. See [Sign in with BetterID](#sign-in-with-betterid).
 
 ### 2026-10-09: Material Design 3 web UI
 
@@ -385,16 +420,16 @@ operations are covered in [DEPLOYMENT.md](DEPLOYMENT.md).
 ### 2026-10-06: sign on phone
 
 - "Sign on phone" for a signature field (`src/components/pdf/PhoneSign.jsx`) and the
-  `bettersignlogin` cloud function, both through the bs-opensign signing Worker. The
+  `betteridlogin` cloud function, both through the bs-opensign signing Worker. The
   push-to-phone login button was later replaced by bs-id (2026-11-06);
-  `bettersignlogin` stays for that Worker.
+  `betteridlogin` stays for that Worker.
 
 ---
 
 ## Home page and sign-in
 
 The home page (`apps/OpenSign/src/pages/Login.jsx`) has one way to sign in:
-**Sign in with BetterSign**. Below it, a hint tells people who were asked to sign a
+**Sign in with BetterID**. Below it, a hint tells people who were asked to sign a
 document to open the link in their email.
 
 There is no email, password or code field on the home page.
@@ -403,15 +438,15 @@ All home page text is translated (`home.*` in `public/locales/<lng>/translation.
 The language dropdown under the sign-in card switches it straight away and the
 choice is remembered in the browser (`i18nextLng`).
 
-### Sign in with BetterSign
+### Sign in with BetterID
 
-Sign-in goes through **bs-id** (`https://id.bettersign.ing`), the BetterSign OIDC
+Sign-in goes through **bs-id** (`https://id.betterid.net`), the BetterID OIDC
 provider. The user approves with the passkey on their phone (QR scan, or the same
 device), so there is no password to steal.
 
-- The button is the shared `<bettersign-sign-in>` element, vendored from
-  BetterSignApps (`apps/OpenSign/src/vendor/signInWithBetterSignButton/button.js`)
-  and mounted by `src/components/BetterSignSignInButton.jsx` with this site's
+- The button is the shared `<betterid-sign-in>` element, vendored from
+  BetterSignApps (`apps/OpenSign/src/vendor/signInWithBetterIDButton/button.js`)
+  and mounted by `src/components/BetterIDSignInButton.jsx` with this site's
   settings and hooks (`apps/OpenSign/src/constant/bsid.js`).
 - The browser runs an authorization code + PKCE flow. The button keeps the state,
   nonce and PKCE verifier in `sessionStorage` and redirects to bs-id.
@@ -425,23 +460,23 @@ device), so there is no password to steal.
   `vlad` maps to.
 - **Who may sign in:** a VLAD needs an active row in the `bs_Identity` class
   (master key only) pointing at an existing account. Admins manage these on the
-  Users page (BetterSign identities); an unknown VLAD that signs in shows up there,
-  turned off. Or [docs/BetterSignAPI.md §3](docs/BetterSignAPI.md#3-linking-a-vlad-to-an-account). Unknown VLADs
+  Users page (BetterID identities); an unknown VLAD that signs in shows up there,
+  turned off. Or [docs/BetterIDAPI.md §3](docs/BetterIDAPI.md#3-linking-a-vlad-to-an-account). Unknown VLADs
   are refused and logged as `{"event":"bsidlogin_denied","vlad":…}`.
 - **Configuration:** `BS_ID_URL` and `BS_ID_CLIENT_ID` on the server;
   `REACT_APP_BS_ID_URL` and `REACT_APP_BS_ID_CLIENT_ID` at frontend build time.
-  Defaults are `https://id.bettersign.ing` and `bs-opensign`.
+  Defaults are `https://id.betterid.net` and `bs-opensign`.
 
 ### After the first time: a tap on the phone, no QR
 
-If the BetterSign browser extension is installed and paired, bs-id's passkey page
+If the BetterID browser extension is installed and paired, bs-id's passkey page
 offers **Remember this browser** (the `bs-opensign` clients have `extensionLogin`).
-That links the extension to this site. From then on, **Sign in with BetterSign**
+That links the extension to this site. From then on, **Sign in with BetterID**
 asks the extension first, and the user approves on their phone with one tap
 (BetterSignApps `docs/Technical/extension-login-design.md` §4.3):
 
-- The browser half is the shared button vendored from BetterSignApps `server/signInWithBetterSignButton`
-  (`apps/OpenSign/src/vendor/signInWithBetterSignButton/button.js` and `browser.js`); `constant/bsid.js`
+- The browser half is the shared button vendored from BetterSignApps `server/signInWithBetterIDButton`
+  (`apps/OpenSign/src/vendor/signInWithBetterIDButton/button.js` and `browser.js`); `constant/bsid.js`
   gives it this site's settings and points its hooks at the cloud functions below. If
   the extension isn't there, this browser isn't linked, or the phone doesn't answer,
   it goes to bs-id's passkey page as before ("Use passkey instead" skips the wait).
@@ -449,9 +484,9 @@ asks the extension first, and the user approves on their phone with one tap
   only, 3 minutes). The phone signs a bs-login statement naming this origin
   (`BS_API_ORIGIN`), the bs-id client (`BS_ID_CLIENT_ID`) and that challenge.
 - `bsextlogin` (`cloud/parsefunction/bsextlogin.js`) uses up the challenge, checks the
-  statement with the vendored `apps/OpenSignServer/vendor/signInWithBetterSignButton/server.js` and the
+  statement with the vendored `apps/OpenSignServer/vendor/signInWithBetterIDButton/server.js` and the
   signature through the verifier, then signs in the account the VLAD maps to, exactly
-  as `bsidlogin` does (same `bs_Identity` rules, same BetterSign session).
+  as `bsidlogin` does (same `bs_Identity` rules, same BetterID session).
 - Both functions are limited per IP (`BS_API_AUTH_RATE_PER_MIN`), using Fly's
   `Fly-Client-IP`. Hosting off Fly behind a proxy needs `PARSE_SERVER_TRUST_PROXY`,
   or every client shares one limit: see DEPLOYMENT.md item 14, "Rate limit off Fly".
@@ -462,14 +497,14 @@ asks the extension first, and the user approves on their phone with one tap
   `src/constant/bsid.test.js` and `src/pages/Login.test.jsx` (frontend, `npm test`
   in `apps/OpenSign`).
 - To update the vendored copies, run BetterSignApps
-  `server/signInWithBetterSignButton/scripts/vendor.mjs` (see its README): the
-  `button` set into `apps/OpenSign/src/vendor/signInWithBetterSignButton`, the
-  `server` set into `apps/OpenSignServer/vendor/signInWithBetterSignButton`.
+  `server/signInWithBetterIDButton/scripts/vendor.mjs` (see its README): the
+  `button` set into `apps/OpenSign/src/vendor/signInWithBetterIDButton`, the
+  `server` set into `apps/OpenSignServer/vendor/signInWithBetterIDButton`.
   `--check` reports copies that have fallen behind.
 
-- This replaced the earlier push-to-phone "Log in with BetterSign" button
-  (`BetterSignLogin.jsx`, removed). The `bettersignlogin` cloud function stays for the
-  BetterSign Worker, and `bsidlogin` reuses its `/loginAs` helper.
+- This replaced the earlier push-to-phone "Log in with BetterID" button
+  (`BetterIDLogin.jsx`, removed). The `betteridlogin` cloud function stays for the
+  BetterID Worker, and `bsidlogin` reuses its `/loginAs` helper.
 
 ### What a VLAD signs to log in
 
@@ -497,7 +532,7 @@ OpenSign checks bs-id's `id_token`.
 
 ### Recipients: the emailed signing link
 
-Only a signed-in BetterSign user can send a document. The people they send it to
+Only a signed-in BetterID user can send a document. The people they send it to
 (recipients) don't sign in on the home page. They open the signing link from their
 email (`/login/<link>`, `GuestLogin.jsx`), which takes them straight to that document.
 
@@ -515,7 +550,7 @@ Password sign-in is turned off everywhere, not just hidden:
 
 - **Server:** a `Parse.Cloud.beforeLogin` hook (`apps/OpenSignServer/cloud/main.js`)
   rejects every password sign-in: Parse's `/login` REST endpoint and the `loginuser`
-  cloud function. BetterSign and the recipient code still work, because they get
+  cloud function. BetterID and the recipient code still work, because they get
   their sessions from `/loginAs`, which doesn't run that hook. Sign-up
   (`usersignup`, `addadmin`) is also unaffected.
 - **Why it matters:** when a contact or recipient gets an account, upstream OpenSign
@@ -538,7 +573,7 @@ The web app is restyled to match the bettersign.ing sites (BetterSignApps
   a system font stack with heavy headings, pill gradient buttons, 16px soft cards and
   brand table headers. Dark mode uses the same ink palette. The `bs` tokens are
   exported for components.
-- A dark ink top bar with the BetterSign wordmark and product pill (`BrandMark`), a
+- A dark ink top bar with the BetterID wordmark and product pill (`BrandMark`), a
   light sidebar with green active pills, and a dark brand footer.
 - The login page sits on the brand hero band (`BrandHero.jsx`), with the "Sign
   documents with an identity you hold." pitch beside the sign-in card.
@@ -549,7 +584,7 @@ The web app is restyled to match the bettersign.ing sites (BetterSignApps
 
 OpenSign is AGPL-3.0. The license covers the code, not the OpenSign name or logo
 (§7(e) lets the authors keep their trademarks), and a changed version has to be
-marked as changed (§5(a)). So this deployment calls itself BetterSign and credits
+marked as changed (§5(a)). So this deployment calls itself BetterID and credits
 OpenSign. What we keep: OpenSign's copyright notices and `LICENSE`, "Built on
 OpenSign" in the footer, and a link to our source for everyone who uses the
 hosted app (§13).
@@ -561,14 +596,14 @@ hosted app (§13).
   (`SUPPORT_EMAIL`), `emailLogoUrl` (`EMAIL_LOGO_URL`) and `spamReportMsg` in
   `apps/OpenSignServer/Utils.js`; the email templates in `files/` already use
   `{{appName}}`.
-- **Logos.** `src/assets/images/logo.png` (header, sign-in), `public/bettersign-logo.png`
+- **Logos.** `src/assets/images/logo.png` (header, sign-in), `public/betterid-logo.png`
   (emails; the frontend must be deployed for the image to load),
   `public/logo192.png`, `logo512.png` (manifest), the favicon in
   `src/constant/appinfo.js`, and `apps/OpenSignServer/images/logo.png`
-  (completion certificate). The wordmark is the BetterSign app icon plus the name
+  (completion certificate). The wordmark is the BetterID app icon plus the name
   in brand ink (`#0f2b3d`).
 - **Translations.** Values in every `public/locales/*/translation.json` say
-  BetterSign and `contact@bettersign.ing`. Keys keep upstream's names
+  BetterID and `contact@betterid.net`. Keys keep upstream's names
   (`sidebar.OpenSign™ Drive`, `subscribe-to-opensign`) so upstream merges line up.
 - **Left as OpenSign, on purpose:** links to OpenSign's help docs
   (`docs.opensignlabs.com`, still the right docs), the fonts on
@@ -605,7 +640,7 @@ Where the codes are used:
 Codes are never a way to sign in from the home page. Without a signed-in user, the
 server refuses to send or accept a code unless the email is a signer of the given
 document (`assertDocRecipient`). This stops someone using the code flow to get into
-a BetterSign user's account.
+a BetterID user's account.
 
 Why 6 digits and not 9: the recipient's email is already part of the code check (a
 code only works for the email it was sent to), and the per-code and per-day caps limit
@@ -645,7 +680,7 @@ already updated.
 
 | Endpoint | Before | Now |
 |---|---|---|
-| `POST /login`, `loginuser` | Signed in with email and password | Always refused: "Password sign-in is disabled. Sign in with BetterSign." |
+| `POST /login`, `loginuser` | Signed in with email and password | Always refused: "Password sign-in is disabled. Sign in with BetterID." |
 | `SendOTPMailV1` | Sent a 4-digit code to any email; returned `"Otp send"` | Without a session: needs `docId`, and `email` must be a signer of it. With a session: always sends to the signed-in user's email and ignores `email`. Returns `{ cooldownSec, expiresInMin }`. Errors during the cooldown. |
 | `AuthLoginAsMail` | `{ email, otp }`; returned `"Invalid Otp"` or `"user not found!"` as results | Needs `{ email, otp, docId }`; `email` must be a signer of `docId`. Wrong, expired or locked codes return an error. |
 | `verifyemail` | `{ email, otp }`; checked the code against `email` | `{ otp }`; the code is checked against the signed-in user's email. `email` is ignored. |
@@ -655,9 +690,9 @@ Added by this fork (none of these exist upstream):
 
 | Endpoint or class | What it is |
 |---|---|
-| `/api/v1/*` (REST) | Desktop API; see [docs/BetterSignAPI.md](docs/BetterSignAPI.md) |
-| `bsidlogin` | Sign in with BetterSign: exchanges a bs-id code for a session |
-| `bettersignlogin` | Session for an identity verified by the BetterSign Worker |
+| `/api/v1/*` (REST) | Desktop API; see [docs/BetterIDAPI.md](docs/BetterIDAPI.md) |
+| `bsidlogin` | Sign in with BetterID: exchanges a bs-id code for a session |
+| `betteridlogin` | Session for an identity verified by the BetterID Worker |
 | `bsidentitylist`, `bsidentitysave`, `bsidentitydelete` | Users page: manage VLAD links (admins) |
 | `updateuserbyadmin` | Users page: edit a user's name, phone, role, teams (admins) |
 | `bs_Identity`, `bs_ApiChallenge`, `bs_ApiToken`, `bs_ApiConfig` classes | Master key only. VLAD links, sign-in challenges, API tokens, generated settings |
@@ -678,7 +713,7 @@ Later changes list their own deploy steps in their PRs and in the change log.
 3. **Codes requested before the deploy stop working.** Recipients just request a new
    one.
 4. **Check after deploying:**
-   - Sign in with BetterSign works.
+   - Sign in with BetterID works.
    - A password sign-in is refused, for example:
      `curl -X POST <API>/login -H 'X-Parse-Application-Id: <appId>' -d '{"username":"<email>","password":"<email>"}'`
      should fail with "Password sign-in is disabled".
@@ -749,7 +784,7 @@ Server (`apps/OpenSignServer/`):
 | File | What we changed | Since |
 |---|---|---|
 | `index.js` | Public file uploads (`FILE_UPLOAD_PUBLIC`), `Content-Length` exposed cross-origin | 2026-10-07 |
-| `cloud/main.js` | Registers our cloud functions (`bettersignlogin`, `bsidlogin`, `bsidentity*`, `updateuserbyadmin`, `bsphonesign*`) and the `bs_Identity` save hook; `beforeLogin` hook blocking password sign-in ("Sign in with BetterID") | 2026-10-06 → 11-22 |
+| `cloud/main.js` | Registers our cloud functions (`betteridlogin`, `bsidlogin`, `bsidentity*`, `updateuserbyadmin`, `bsphonesign*`) and the `bs_Identity` save hook; `beforeLogin` hook blocking password sign-in ("Sign in with BetterID") | 2026-10-06 → 11-22 |
 | `cloud/customRoute/customApp.js` | Mounts the desktop API router (`bsapi`) at `/api/v1` | 2026-11-14 |
 | `cloud/parsefunction/pdf/PDF.js` | Append-only signing once a VLAD signed; signing commits as a compare-and-swap on `SignRevision`; the seal goes through `utils/seal.js`; email logo is `emailLogoUrl` | 2026-11-14 → 11-16 |
 | `Utils.js` | `appName` is BetterID (was BetterSign); adds `supportEmail` (default `contact@betterid.net`), `emailLogoUrl` (default `docsign.betterid.net`), `spamReportMsg`; `mailTemplate` logo | 2026-11-16 → 11-22 |
@@ -776,16 +811,16 @@ changes:
 
 | File | What we changed | Since |
 |---|---|---|
-| `src/pages/Login.jsx` | BetterSign-only sign-in card (bs-id) with the shared `<bettersign-sign-in>` button; password form, code form and "additional info" modal removed; marks a Sign in with BetterSign session (`bsSession`) for Sign on phone; hero text translated (`home.*`) | 2026-10-06 → 11-22 |
+| `src/pages/Login.jsx` | BetterID-only sign-in card (bs-id) with the shared `<betterid-sign-in>` button; password form, code form and "additional info" modal removed; marks a Sign in with BetterID session (`bsSession`) for Sign on phone; hero text translated (`home.*`) | 2026-10-06 → 11-22 |
 | `src/i18n.js` | `supportedLngs` instead of the removed `whitelist`; `ko` → `kr`; sets `<html lang>` | 2026-11-15 |
 | `src/components/pdf/SelectLanguage.jsx` | Value read from i18n (no local copy); "Language" label and globe icon; "Español" spelling | 2026-11-15 |
 | `src/pages/GuestLogin.jsx` | 6-digit code input; sends `docId`; shows server errors | 2026-11-13 |
-| `src/pages/UserList.jsx` | Reset-password action removed; Edit user action; BetterSign identities section | 2026-11-13 → 11-15 |
+| `src/pages/UserList.jsx` | Reset-password action removed; Edit user action; BetterID identities section | 2026-11-13 → 11-15 |
 | `src/json/ReportJson.js` | `usersActions`: reset password removed, Edit added | 2026-11-13 → 11-15 |
 | `src/pages/UserProfile.jsx` | Change Password button removed; "code sent" only on success | 2026-11-13 |
 | `src/pages/SignyourselfPdf.jsx`, `src/components/pdf/VerifyEmail.jsx` | 6-digit codes; "code sent" only on success; `SignyourselfPdf` passes the document id to Sign on phone | 2026-11-13 → 11-15 |
 | `src/pages/PdfRequestFiles.jsx` | Append-only signing for documents a VLAD signed; passes the document id to Sign on phone | 2026-11-14 → 11-15 |
-| `src/components/pdf/WidgetsValueModal.jsx` | "Sign on phone" (PhoneSign), only for a Sign in with BetterSign session on a saved document | 2026-10-06 → 11-15 |
+| `src/components/pdf/WidgetsValueModal.jsx` | "Sign on phone" (PhoneSign), only for a Sign in with BetterID session on a saved document | 2026-10-06 → 11-15 |
 | `src/constant/Utils.js` | `runPublicCloudFn`; `handleSendOTP` sends the session; keeps signature fields when flattening an append-only PDF; app name, email logo and support address from `brand.js` | 2026-11-13 → 11-16 |
 | Files that hard-coded `"OpenSign™"`: `src/components/Title.jsx`, `bulksend/BulkSendUi.jsx`, `pdf/EditTemplate.jsx`, `preferences/MailTemplateEditor.jsx`, `shared/fields/FolderModal.jsx`, `shared/fields/SelectFolder.jsx`, `emailbuilder/getConfiguration/sample/{request,completion}-email.ts`, `src/pages/Form.jsx`, `Opensigndrive.jsx`, `Preferences.jsx`, `UpdateExistUserAdmin.jsx`, `src/primitives/DownloadPdfZip.jsx`, `RenderReportCell.jsx`, `src/reports/document/DocumentsReport.jsx`, `src/reports/template/TemplatesReport.jsx` (also `Login.jsx`, `GuestLogin.jsx`, `SignyourselfPdf.jsx`, `PdfRequestFiles.jsx` and the brand files above) | Import `APP_NAME` from `src/constant/brand.js`; the email samples use `EMAIL_LOGO_URL`. On merge, any new `"OpenSign™"` from upstream becomes `APP_NAME` | 2026-11-16 |
 | `src/pages/AddAdmin.jsx` | Terms link is `TERMS_URL` (betterid.net/sign/terms); OpenSign newsletter opt-in removed |  2026-11-16 → 11-22 |
@@ -815,23 +850,23 @@ changes them, drop the change; if upstream adds new imports of them, remove thos
 ### Files only this fork has (no conflicts expected)
 
 - **Desktop API:** `apps/OpenSignServer/cloud/customRoute/bsapi/*`,
-  `utils/bsIdentity.js`, `utils/appendOnlyPdf.js`, docs `docs/BetterSignAPI.md`.
+  `utils/bsIdentity.js`, `utils/appendOnlyPdf.js`, docs `docs/BetterIDAPI.md`.
 - **Sign on phone:** `cloud/parsefunction/bsPhoneSign.js`, `utils/bsWebSession.js`,
   the relay client `cloud/customRoute/bsapi/relay.js`, docs
-  `docs/BetterSignPhoneSign.md`.
+  `docs/BetterIDPhoneSign.md`.
 - **Sealing:** `apps/OpenSignServer/utils/seal.js`, `docs/BsServiceIdentitySealing.md`.
 - **Sign-in and admin cloud functions:** `cloud/parsefunction/bsidlogin.js`,
-  `bettersignlogin.js`, `emailOtp.js`, `bsIdentityAdmin.js`, `updateUserByAdmin.js`.
+  `betteridlogin.js`, `emailOtp.js`, `bsIdentityAdmin.js`, `updateUserByAdmin.js`.
 - **Frontend:** `src/theme/md3Theme.js`, `src/theme/ThemeModeProvider.jsx`,
-  `src/constant/bsid.js` (+ test), `src/components/BetterSignSignInButton.jsx`,
-  `src/vendor/signInWithBetterSignButton/*` (vendored), `src/components/BrandHero.jsx`, `BsIdentities.jsx`,
+  `src/constant/bsid.js` (+ test), `src/components/BetterIDSignInButton.jsx`,
+  `src/vendor/signInWithBetterIDButton/*` (vendored), `src/components/BrandHero.jsx`, `BsIdentities.jsx`,
   `EditUser.jsx` (both with `*.test.jsx`), `pdf/PhoneSign.jsx` (+ test), `src/utils/appendOnlyPdf.js` (+ test),
-  `src/assets/images/bettersign-icon.png`, `src/constant/brand.js`,
-  `public/bettersign-logo.png`, `public/logo192.png`, `public/logo512.png`,
+  `src/assets/images/betterid-icon.png`, `src/constant/brand.js`,
+  `public/betterid-logo.png`, `public/logo192.png`, `public/logo512.png`,
   `patches/parse+8.6.0.patch`,
   `MD3_MIGRATION.md`.
 - **Tests and CI:** `apps/OpenSignServer/spec/bsapi/*`, `spec/bsapi-integration/*`,
-  `spec/support/bsapi*.json`, `.github/workflows/bettersign-tests.yml`.
+  `spec/support/bsapi*.json`, `.github/workflows/betterid-tests.yml`.
 - **Deployment:** `deploy/*`, `apps/OpenSignServer/Dockerfile`,
   `apps/OpenSignServer/fly.toml`, `DEPLOYMENT.md`.
 - **Database migrations** (`apps/OpenSignServer/databases/migrations/`, run in
@@ -865,7 +900,7 @@ changes them, drop the change; if upstream adds new imports of them, remove thos
 Known issues, found in review on 2026-11-15:
 
 - **An org admin can sign in as the tenant admin (security, fix first).** The
-  BetterSign identities functions (`cloud/parsefunction/bsIdentityAdmin.js`) let
+  BetterID identities functions (`cloud/parsefunction/bsIdentityAdmin.js`) let
   org admins in and offer every account in the tenant. So an org admin can link a
   VLAD they hold to the tenant admin's account, turn it on and sign in as them. They
   can also change or remove the tenant admin's links and link to users in other
@@ -897,7 +932,7 @@ Known issues, found in review on 2026-11-15:
 Other follow-ups:
 
 - **New team members can't sign in until they're linked.** Adding a user creates the
-  account, but they can only sign in once an admin links their BetterSign VLAD on the
+  account, but they can only sign in once an admin links their BetterID VLAD on the
   Users page. Their first sign-in attempt puts the VLAD there, turned off.
 - **Admins can't change a user's email.** It's also the username, and documents
   and contacts find people by it; changing it needs those updated together.
@@ -922,24 +957,24 @@ Other follow-ups:
   `--resolve-plugins-relative-to .`, a copy of its config without
   `react-hooks`, and `--rule react/react-in-jsx-scope:off` (the app uses the
   automatic JSX runtime).
-- **Docker images of BetterSign aren't published.** Upstream's `ci` workflow
+- **Docker images of BetterID aren't published.** Upstream's `ci` workflow
   (`.github/workflows/Docker.yml`) is turned off in GitHub, since it pushes to
   upstream's Docker Hub images. The repo-root `docker-compose.yml` still pulls
-  those images, so it runs plain OpenSign, not BetterSign. Turn the workflow back
-  on once we want BetterSign images, e.g. to offer one-command self-hosting or to
+  those images, so it runs plain OpenSign, not BetterID. Turn the workflow back
+  on once we want BetterID images, e.g. to offer one-command self-hosting or to
   deploy from a prebuilt image instead of building on Fly. First:
   - point `matrix.image` at our own registry, e.g. `ghcr.io/ixiom-software/…`
     (GitHub's registry: log in with `GITHUB_TOKEN` and add `packages: write`, so
     no new secrets), or add Docker Hub secrets for our own account;
   - check `apps/OpenSign/Dockerhubfile` and `apps/OpenSignServer/Dockerhubfile`
-    build BetterSign as we deploy it (Fly uses `apps/OpenSignServer/Dockerfile`);
+    build BetterID as we deploy it (Fly uses `apps/OpenSignServer/Dockerfile`);
   - point `docker-compose.yml` at the new images;
   - then `gh workflow enable Docker.yml --repo Ixiom-Software/BetterOpenSign`.
 - **The new `signer-link-hint` text is English only.** Other languages fall back to
   English.
-- **"Sign on phone" needs the BetterSign app to handle it.** The app has to
+- **"Sign on phone" needs the BetterID app to handle it.** The app has to
   register with the relay for the identity and handle `docsign-sign-request`
-  ([docs/BetterSignPhoneSign.md §6](docs/BetterSignPhoneSign.md#6-what-the-bettersign-app-needs)).
+  ([docs/BetterIDPhoneSign.md §6](docs/BetterIDPhoneSign.md#6-what-the-betterid-app-needs)).
   Other gaps are listed in §8 of that doc:
   - an approval isn't yet a VLAD entry in the audit trail;
   - the request isn't sealed;
@@ -950,5 +985,5 @@ Other follow-ups:
   the bare digest `SHA-256("bs-login/v1/statement\n" ‖ statement)`, as it does for
   oauthService, not the canonical bs-message form
   ([What a VLAD signs to log in](#what-a-vlad-signs-to-log-in)). The check lives in
-  one place (BetterSignApps `server/signInWithBetterSignButton`, vendored here), so moving to the
+  one place (BetterSignApps `server/signInWithBetterIDButton`, vendored here), so moving to the
   canonical form is a change to the phone and that package, then a re-vendor.

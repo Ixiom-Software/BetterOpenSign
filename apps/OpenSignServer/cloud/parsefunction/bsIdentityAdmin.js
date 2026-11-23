@@ -1,4 +1,4 @@
-// Users page: BetterSign identities (VLAD -> account links, bs_Identity, see
+// Users page: BetterID identities (VLAD -> account links, bs_Identity, see
 // utils/bsIdentity.js). Admins only (contracts_Admin / contracts_OrgAdmin).
 //
 // An admin sees and edits links to accounts in their own tenant, plus the

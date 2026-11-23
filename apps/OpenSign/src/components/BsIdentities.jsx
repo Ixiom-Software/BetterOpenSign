@@ -1,4 +1,4 @@
-// Users page: BetterSign identities (VLAD -> account links). Admins link a
+// Users page: BetterID identities (VLAD -> account links). Admins link a
 // VLAD to an account and turn it on; a VLAD that tried to sign in without a
 // link shows up here unassigned and off. Server side:
 // apps/OpenSignServer/cloud/parsefunction/bsIdentityAdmin.js.

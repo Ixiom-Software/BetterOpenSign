@@ -178,7 +178,7 @@ export function toPublicDocument(doc, userId) {
       email: s.get?.('Email') || null,
       name: s.get?.('Name') || null,
       signed: signedBy.has(s.id),
-      signedWithBetterSign: audit.some(
+      signedWithBetterID: audit.some(
         a => (a?.UserPtr?.objectId || a?.UserPtr?.id) === s.id && a?.Vlad
       ),
     })),

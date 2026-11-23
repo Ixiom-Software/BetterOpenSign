@@ -1,39 +1,39 @@
 # Sign on phone
 
-A signer approves a signature or initials field in their BetterSign phone app
+A signer approves a signature or initials field in their BetterID phone app
 instead of drawing it. This replaced the phone-number box, which went through a
 separate coordinator Worker (`bs-opensign-sign`, `REACT_APP_BS_SIGN_URL`) whose
 phone-number registry no longer exists.
 
 **v2**, where the phone's own key signs the whole PDF as a PAdES signature, is
-in [BetterSignPhoneSignV2.md](./BetterSignPhoneSignV2.md). This document is v1.
+in [BetterIDPhoneSignV2.md](./BetterIDPhoneSignV2.md). This document is v1.
 
 - [Rules](#1-rules)
 - [How a request reaches the phone](#2-how-a-request-reaches-the-phone)
 - [The flow](#3-the-flow)
 - [Messages](#4-messages)
 - [What docsign checks](#5-what-docsign-checks)
-- [What the BetterSign app needs](#6-what-the-bettersign-app-needs)
+- [What the BetterID app needs](#6-what-the-betterid-app-needs)
 - [Settings](#7-settings)
 - [Limits and follow-ups](#8-limits-and-follow-ups)
 
 ## 1. Rules
 
-1. **The button is only there for someone who signed in with BetterSign.**
+1. **The button is only there for someone who signed in with BetterID.**
    - `bsidlogin` records the session in `bs_WebSession` with the VLAD from the
      bs-id `id_token` (`apps/OpenSignServer/utils/bsWebSession.js`).
    - The browser keeps that session token as `bsSession` and shows the button
-     only while it is the current session (`isBetterSignSession`, `PhoneSign.jsx`).
+     only while it is the current session (`isBetterIDSession`, `PhoneSign.jsx`).
      Recipients who opened the emailed link never have it.
-   - The server enforces the same rule. Without a BetterSign session,
+   - The server enforces the same rule. Without a BetterID session,
      `bsphonesignstart` refuses (`119`).
 2. **The request goes straight to the app over its own connection to the
-   BetterSign relay.** If the app isn't reachable, the relay wakes the phone with
+   BetterID relay.** If the app isn't reachable, the relay wakes the phone with
    FCM. There is nothing to type: the server already knows the VLAD.
 
 ## 2. How a request reaches the phone
 
-The BetterSign relay (`https://relay.betterid.net`, BetterSignApps
+The BetterID relay (`https://relay.betterid.net`, BetterSignApps
 `server/bs-fill-relay`) is the connection the app already uses for the browser
 extension and Agent Gate. A request is addressed to the identity:
 `to = sha256(VLAD bytes)`. Delivery follows the relay's "open app first, push
@@ -80,7 +80,7 @@ Cloud functions (`apps/OpenSignServer/cloud/parsefunction/bsPhoneSign.js`):
 | Code | When |
 |---|---|
 | `101` | No such document, or the app has never connected to the relay (`unknown-recipient`: "Open the app on your phone, then try again") |
-| `119` | The session isn't from Sign in with BetterSign, or the user can't sign the document now. A signer needs a pending field and their turn (as the desktop API's `signerState`); a document you sign yourself needs to be yours and unfinished |
+| `119` | The session isn't from Sign in with BetterID, or the user can't sign the document now. A signer needs a pending field and their turn (as the desktop API's `signerState`); a document you sign yourself needs to be yours and unfinished |
 | `155` | The relay's rate limit. A sender the phone hasn't answered yet shares 10 requests an hour per identity |
 | `100` | The relay is unreachable |
 
@@ -160,7 +160,7 @@ The envelope around the answer can't vouch for it: HPKE base mode doesn't
 authenticate the sender, and docsign doesn't know the app's `id.sign`.
 
 It is wrapped in bs-message's canonical form, like every VLAD signature to
-docsign (BetterSignUpdates.md, "What a VLAD signs to log in"):
+docsign (BetterIDUpdates.md, "What a VLAD signs to log in"):
 
 ```
 "bettersign-message-v2" ‖ vlad ‖ Varbytes("/keys/primary") ‖ receiverVlad
@@ -205,7 +205,7 @@ The request's one-time X25519 key is stored encrypted:
 
 Unsigned rows are swept 10 minutes after they expire.
 
-## 6. What the BetterSign app needs
+## 6. What the BetterID app needs
 
 None of this is in the app yet. Until it is, `bsphonesignstart` answers that
 the app hasn't connected (the relay has no binding for the identity).
@@ -250,7 +250,7 @@ Server (`apps/OpenSignServer`, all optional):
 |---|---|---|
 | `BS_RELAY_URL` | `https://relay.betterid.net` | The relay |
 | `BS_RELAY_SIGNING_KEY` | generated once, kept in `bs_ApiConfig` | docsign's relay key, an Ed25519 seed in hex. Published at `GET /api/v1/relay-key` |
-| `BS_API_ORIGIN`, `BS_API_RP`, `BS_API_RECEIVER_VLAD` | as for the desktop API | What the statement must name (docs/BetterSignAPI.md) |
+| `BS_API_ORIGIN`, `BS_API_RP`, `BS_API_RECEIVER_VLAD` | as for the desktop API | What the statement must name (docs/BetterIDAPI.md) |
 | `BS_VERIFIER_URL` | `https://verify.betterid.net` | Checks `vladSig` |
 
 Migration `20261115180000-create_bs_phonesign_classes.cjs` creates
@@ -260,7 +260,7 @@ The frontend has no settings. `REACT_APP_BS_SIGN_URL` is no longer read.
 
 ## 8. Limits and follow-ups
 
-- **Sessions from before this change aren't BetterSign sessions.** Someone
+- **Sessions from before this change aren't BetterID sessions.** Someone
   signed in before the deploy has to sign in again to see the button.
 - **The approval doesn't go into the document's audit trail as a VLAD
   signature yet.** The image is applied through the normal online signing path,

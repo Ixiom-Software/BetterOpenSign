@@ -1,5 +1,5 @@
 // Jasmine helper: runs OpenSign's server in-process on :8080/app (Utils.js
-// calls itself there), with mock BetterSign services (verifier :8799, bs-id
+// calls itself there), with mock BetterID services (verifier :8799, bs-id
 // :8798, relay :8796), against a throwaway database on MONGODB_URI (set by
 // `mongodb-runner exec`).
 //

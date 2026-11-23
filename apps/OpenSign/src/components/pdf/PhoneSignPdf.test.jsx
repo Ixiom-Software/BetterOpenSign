@@ -50,7 +50,7 @@ beforeEach(() => {
 const sig = (key) => ({ key, type: "signature" });
 
 describe("canSignPdfOnPhone", () => {
-  it("needs a BetterSign session, a document and one signature widget", () => {
+  it("needs a BetterID session, a document and one signature widget", () => {
     const widgets = [
       { pageNumber: 1, pos: [sig(1), { key: 2, type: "date" }] }
     ];

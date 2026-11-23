@@ -1,6 +1,6 @@
 /**
  * Published certificates (cloud/customRoute/bsapi/certs.js), master key only:
- * bs_PublishedCert, one row per certificate a BetterSign identity signed a
+ * bs_PublishedCert, one row per certificate a BetterID identity signed a
  * completed document with (or a CA above one), read from the signed PDF. The
  * public routes serve it with the master key. Sha256 is made unique when the
  * server first stores one (Parse's schema API can't declare a unique index).

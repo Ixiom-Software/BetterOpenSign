@@ -1,22 +1,22 @@
-// Vendored from BetterSignApps server/signInWithBetterSignButton/src/button.js (commit f7aeadb).
+// Vendored from BetterSignApps server/signInWithBetterIDButton/src/button.js (commit cac8260a).
 // Don't edit here: change it there and run
-//   node server/signInWithBetterSignButton/scripts/vendor.mjs <this folder> button
+//   node server/signInWithBetterIDButton/scripts/vendor.mjs <this folder> button
 // --- end of vendoring note ---
-// <bettersign-sign-in>: the Sign in with BetterSign button, as a standard
+// <betterid-sign-in>: the Sign in with BetterID button, as a standard
 // custom element, so it works in plain HTML and in any framework.
 //
 //   <script type="module">
-//     import { defineSignInButton } from "@bettersign/sign-in-button/button";
+//     import { defineSignInButton } from "@betterid/sign-in-button/button";
 //     defineSignInButton();
 //   </script>
-//   <bettersign-sign-in client-id="my-site"></bettersign-sign-in>
+//   <betterid-sign-in client-id="my-site"></betterid-sign-in>
 //
-// Clicking it tries the BetterSign extension (a tap on the phone) and falls
+// Clicking it tries the BetterID extension (a tap on the phone) and falls
 // back to the passkey at bs-id. When bs-id sends the browser back, the same
 // element on that page finishes the sign-in by itself. Either way it fires
-// `bettersign-signed-in` with what the site's server returned.
+// `betterid-signed-in` with what the site's server returned.
 //
-// By default it talks to the routes from routes.js under /bettersign; set
+// By default it talks to the routes from routes.js under /betterid; set
 // the getChallenge / completeExtension / completePasskey properties to use
 // your own endpoints instead.
 
@@ -28,27 +28,27 @@ const DEFAULT_LABEL = "Sign in with BetterID";
 const CALLBACK_PARAMS = ["code", "state", "error", "error_description", "iss"];
 
 const STYLE = `
-:host { display: inline-block; font-family: var(--bettersign-font, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif); }
+:host { display: inline-block; font-family: var(--betterid-font, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif); }
 :host([full-width]) { display: block; }
 :host([hidden]) { display: none; }
 button {
   display: inline-flex; align-items: center; justify-content: center; gap: 10px;
   width: 100%; min-height: 44px; padding: 0 20px; cursor: pointer;
   font: 600 15px/1 inherit; font-family: inherit;
-  color: var(--bettersign-fg, #fff); background: var(--bettersign-bg, #0b5c8a);
-  border: 1px solid var(--bettersign-border, transparent); border-radius: var(--bettersign-radius, 10px);
+  color: var(--betterid-fg, #fff); background: var(--betterid-bg, #0b5c8a);
+  border: 1px solid var(--betterid-border, transparent); border-radius: var(--betterid-radius, 10px);
 }
-:host([theme="light"]) button { color: var(--bettersign-fg, #0b5c8a); background: var(--bettersign-bg, #fff); border-color: var(--bettersign-border, #d5dee5); }
-:host([theme="outline"]) button { color: var(--bettersign-fg, #0b5c8a); background: var(--bettersign-bg, transparent); border-color: var(--bettersign-border, currentColor); }
+:host([theme="light"]) button { color: var(--betterid-fg, #0b5c8a); background: var(--betterid-bg, #fff); border-color: var(--betterid-border, #d5dee5); }
+:host([theme="outline"]) button { color: var(--betterid-fg, #0b5c8a); background: var(--betterid-bg, transparent); border-color: var(--betterid-border, currentColor); }
 button:hover:not(:disabled) { filter: brightness(1.08); }
-button:focus-visible { outline: 3px solid var(--bettersign-focus, #4bbf9a); outline-offset: 2px; }
+button:focus-visible { outline: 3px solid var(--betterid-focus, #4bbf9a); outline-offset: 2px; }
 button:disabled { cursor: progress; opacity: .7; }
 svg { width: 18px; height: 18px; flex: none; }
-.status { margin: 8px 0 0; font-size: 13px; line-height: 1.4; color: var(--bettersign-status, #5b6b76); text-align: center; }
-.status.error { color: var(--bettersign-error, #b3261e); }
+.status { margin: 8px 0 0; font-size: 13px; line-height: 1.4; color: var(--betterid-status, #5b6b76); text-align: center; }
+.status.error { color: var(--betterid-error, #b3261e); }
 .status:empty { display: none; }
 .fallback { display: block; margin: 4px auto 0; padding: 0; border: 0; background: none; cursor: pointer;
-  font: inherit; font-size: 13px; color: var(--bettersign-link, #0b5c8a); text-decoration: underline; min-height: 0; width: auto; }
+  font: inherit; font-size: 13px; color: var(--betterid-link, #0b5c8a); text-decoration: underline; min-height: 0; width: auto; }
 .fallback[hidden] { display: none; }
 `;
 
@@ -60,7 +60,7 @@ const ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-
 // So importing this file on a server (SSR) doesn't throw.
 const Base = globalThis.HTMLElement ?? class {};
 
-export class BetterSignSignInButton extends Base {
+export class BetterIDSignInButton extends Base {
   static observedAttributes = ["label", "disabled"];
 
   #root;
@@ -86,7 +86,7 @@ export class BetterSignSignInButton extends Base {
 
   get clientId() { return this.getAttribute("client-id") || ""; }
   get bsIdUrl() { return (this.getAttribute("bs-id-url") || "https://id.betterid.net").replace(/\/$/, ""); }
-  get apiBase() { return (this.getAttribute("api-base") || "/bettersign").replace(/\/$/, ""); }
+  get apiBase() { return (this.getAttribute("api-base") || "/betterid").replace(/\/$/, ""); }
   get redirectUri() { return this.getAttribute("redirect-uri") || location.origin + location.pathname; }
   get label() { return this.getAttribute("label") || DEFAULT_LABEL; }
 
@@ -158,7 +158,7 @@ export class BetterSignSignInButton extends Base {
   #failed(method, error) {
     this.#setBusy(false);
     this.#show((error && error.message) || "Sign-in failed. Please try again.", true);
-    this.#emit("bettersign-error", { method, error });
+    this.#emit("betterid-error", { method, error });
   }
 
   async #post(path, body) {
@@ -178,7 +178,7 @@ export class BetterSignSignInButton extends Base {
   /** Start a sign-in, as a click does. */
   async signIn() {
     if (this.#busy) return;
-    if (!this.clientId) return this.#failed("extension", new Error("bettersign-sign-in: client-id is not set"));
+    if (!this.clientId) return this.#failed("extension", new Error("betterid-sign-in: client-id is not set"));
     this.#setBusy(true);
     this.#show("");
     let challengeId;
@@ -189,7 +189,7 @@ export class BetterSignSignInButton extends Base {
       onStatus: (m) => {
         this.#show(m);
         this.#fallback.hidden = false;
-        this.#emit("bettersign-status", { message: m });
+        this.#emit("betterid-status", { message: m });
       },
       getChallenge: async () => {
         if (this.getChallenge) return this.getChallenge();
@@ -204,11 +204,11 @@ export class BetterSignSignInButton extends Base {
     if (r.result === "ok") {
       this.#setBusy(false);
       this.#show("");
-      this.#emit("bettersign-signed-in", { method: "extension", value: r.value });
+      this.#emit("betterid-signed-in", { method: "extension", value: r.value });
     } else if (r.result === "denied") {
       this.#setBusy(false);
       this.#show("Sign-in was denied on your phone.", true);
-      this.#emit("bettersign-denied", {});
+      this.#emit("betterid-denied", {});
     } else if (r.result === "failed") {
       this.#failed("extension", r.error);
     } else {
@@ -244,7 +244,7 @@ export class BetterSignSignInButton extends Base {
         : await this.#post("/passkey", cb);
       this.#setBusy(false);
       this.#show("");
-      this.#emit("bettersign-signed-in", { method: "passkey", value });
+      this.#emit("betterid-signed-in", { method: "passkey", value });
     } catch (e) {
       this.#failed("passkey", e);
     }
@@ -252,8 +252,8 @@ export class BetterSignSignInButton extends Base {
 }
 
 /** Register the element (once). Returns the tag name. */
-export function defineSignInButton(tagName = "bettersign-sign-in") {
-  if (!customElements.get(tagName)) customElements.define(tagName, class extends BetterSignSignInButton {});
+export function defineSignInButton(tagName = "betterid-sign-in") {
+  if (!customElements.get(tagName)) customElements.define(tagName, class extends BetterIDSignInButton {});
   return tagName;
 }
 
@@ -274,9 +274,9 @@ export function mountSignInButton(container, options = {}) {
   for (const [k, v] of Object.entries(attrs)) if (v) el.setAttribute(k, v);
   if (options.fullWidth) el.setAttribute("full-width", "");
   for (const k of ["getChallenge", "completeExtension", "completePasskey"]) if (options[k]) el[k] = options[k];
-  if (options.onSignedIn) el.addEventListener("bettersign-signed-in", (e) => options.onSignedIn(e.detail.value, e.detail.method));
-  if (options.onError) el.addEventListener("bettersign-error", (e) => options.onError(e.detail.error));
-  if (options.onDenied) el.addEventListener("bettersign-denied", () => options.onDenied());
+  if (options.onSignedIn) el.addEventListener("betterid-signed-in", (e) => options.onSignedIn(e.detail.value, e.detail.method));
+  if (options.onError) el.addEventListener("betterid-error", (e) => options.onError(e.detail.error));
+  if (options.onDenied) el.addEventListener("betterid-denied", () => options.onDenied());
   container.append(el);
   return el;
 }

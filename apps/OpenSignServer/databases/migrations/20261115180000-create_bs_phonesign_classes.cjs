@@ -1,6 +1,6 @@
 /**
  * "Sign on phone" (cloud/parsefunction/bsPhoneSign.js), both master key only:
- * bs_WebSession, which web sessions came from Sign in with BetterSign
+ * bs_WebSession, which web sessions came from Sign in with BetterID
  * (utils/bsWebSession.js), and bs_PhoneSignRequest, a request pushed to the
  * signer's phone and, once signed, the statement and signature that approved it.
  *

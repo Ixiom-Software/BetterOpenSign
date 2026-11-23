@@ -1,9 +1,9 @@
-# BetterSign API (`/api/v1`)
+# BetterID API (`/api/v1`)
 
-OpenSign's API for the **BetterSign desktop app**. The app holds the user's
+OpenSign's API for the **BetterID desktop app**. The app holds the user's
 VLAD and keys and talks to OpenSign directly: no browser, no bs-id. It proves
 who it is by signing a challenge with the identity's `/keys/primary`, and
-OpenSign checks that signature through the BetterSign verifier
+OpenSign checks that signature through the BetterID verifier
 (`verify.betterid.net`, BetterSignApps `server/OrgIdP/bs-verifier`).
 
 bs-id stays for passkey sign-in on the website only.
@@ -143,7 +143,7 @@ Errors are `{ "error": "<code>", "message": "…" }`.
 | `GET /documents/:id` | `Document` if you own it or are a signer, else 404 |
 | `GET /documents/:id/file?version=current\|original` | the PDF. `X-Content-SHA256` is its hash |
 | `POST /documents/:id/signatures` | your desktop-signed PDF (section 5). `201` + `Document` + `signedSha256`; `409` with `stale_base`, `locked` (someone is signing it on their phone), `already_signed`, `not_your_turn`, `not_a_signer`, `completed`, `expired`…; `400 not_appended`/`no_signature`; `401 access_denied`; `502 verifier_misconfigured`; `503 verifier_unavailable` |
-| `GET /phone-sign/:reqId/file` | Sign on phone v2: the base PDF for an approve request, the prepared PDF for a sign request, with `X-Content-SHA256`; only to the identity it was sent to, while it runs; else `404` ([BetterSignPhoneSignV2.md](./BetterSignPhoneSignV2.md)) |
+| `GET /phone-sign/:reqId/file` | Sign on phone v2: the base PDF for an approve request, the prepared PDF for a sign request, with `X-Content-SHA256`; only to the identity it was sent to, while it runs; else `404` ([BetterIDPhoneSignV2.md](./BetterIDPhoneSignV2.md)) |
 | `GET /certs/:sha256.cer`, `GET /certs/:sha256`, `GET /identities/:vlad/certs` | Published certificates: public, no token. The DER, its summary, an identity's roots and leaves ([PublishedCertificates.md](./PublishedCertificates.md)) |
 
 ```jsonc
@@ -153,8 +153,8 @@ Errors are `{ "error": "<code>", "message": "…" }`.
   "status": "in_progress", "role": "owner",
   "owner": { "email": "…", "name": "…" },
   "signers": [{ "id": "…", "email": "…", "name": "…", "signed": false,
-                 "signedWithBetterSign": false }],
-  "appendOnly": false,            // a BetterSign identity has signed (section 5)
+                 "signedWithBetterID": false }],
+  "appendOnly": false,            // a BetterID identity has signed (section 5)
   "canSign": true,                // your turn, now
   "cannotSignReason": null,       // else not_your_turn, already_signed, not_a_signer, …
   "myFields": [                   // where to put your signature (when canSign)
@@ -174,7 +174,7 @@ OpenSign's `getWidgetPosition` applies.
 ## 3. Linking a VLAD to an account
 
 A VLAD signs in only to an existing account an admin linked it to. The same
-list serves the website's Sign in with BetterSign (`bsidlogin`). It's the
+list serves the website's Sign in with BetterID (`bsidlogin`). It's the
 `bs_Identity` class (master key only), read by `utils/bsIdentity.js`:
 `{ vlad, UserId, Label, Active, LastSeenAt }`. The VLAD's active row
 (`Active: true`) gives the account; with none, it's blocked. A save hook keeps
@@ -186,13 +186,13 @@ migration `20261115140000-move_bs_id_users_to_bs_identity.cjs` moved it into
 `bs_Identity`.)
 
 A VLAD that proves itself (its `/auth/token` signature verifies, or bs-id
-vouches for it at Sign in with BetterSign) but has no active link is refused
+vouches for it at Sign in with BetterID) but has no active link is refused
 and recorded: a new row with `Active: false`, no account, `Label`
 `Sign-in attempt` and `LastSeenAt`. Later attempts bump `LastSeenAt` on that
 row, or, for a VLAD whose link is turned off, on its newest row. Simultaneous
 first attempts are reduced to one row.
 
-Admins manage links on the Users page (BetterSign identities), through the
+Admins manage links on the Users page (BetterID identities), through the
 cloud functions `bsidentitylist`, `bsidentitysave` and `bsidentitydelete`
 (`cloud/parsefunction/bsIdentityAdmin.js`). An admin sees links to accounts in
 their tenant plus unassigned rows, and can link only to accounts in their
@@ -291,7 +291,7 @@ or the full `message`.
    deleted.
 
 Then it's recorded like any signature (audit trail `Signed`, with `Vlad` and
-`SignedWith: "BetterSign"`), plus an entry in the document's `VladSignatures`.
+`SignedWith: "BetterID"`), plus an entry in the document's `VladSignatures`.
 If the document is sent in order, the next signer gets the "your turn to
 sign" email the browser would otherwise send, with a link to `BS_API_ORIGIN`.
 
@@ -338,4 +338,4 @@ cd ../OpenSign && npm test      # the signing page's append-only helpers
 The integration specs run the server on `localhost:8080/app` (where
 `Utils.js` expects to reach itself), so that port must be free, and a mock
 verifier on `:8799`. `mongodb-runner exec` downloads and starts MongoDB.
-`.github/workflows/bettersign-tests.yml` runs all three on pull requests.
+`.github/workflows/betterid-tests.yml` runs all three on pull requests.

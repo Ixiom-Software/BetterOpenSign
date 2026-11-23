@@ -1,5 +1,5 @@
-// The BetterSign relay (BetterSignApps server/bs-fill-relay,
-// https://relay.betterid.net): how docsign reaches a signer's BetterSign
+// The BetterID relay (BetterSignApps server/bs-fill-relay,
+// https://relay.betterid.net): how docsign reaches a signer's BetterID
 // phone app for "Sign on phone". The relay is the app's built-in connection:
 //
 //   - a request is addressed to the identity, to = sha256(VLAD bytes);
@@ -11,7 +11,7 @@
 // The relay is untrusted: it only sees signed, opaque envelopes. Contract:
 // BetterSignApps client/browserExtension/docs/PROTOCOL.md §1 and §5.3, and
 // DELIVERY.md. The docsign request and response are in
-// docs/BetterSignPhoneSign.md (repo root).
+// docs/BetterIDPhoneSign.md (repo root).
 //
 // Env:
 //   BS_RELAY_URL          default https://relay.betterid.net
@@ -206,7 +206,7 @@ const bytes = (v, len, what) => {
 
 // docsign → app. Not sealed: docsign doesn't know the identity's /keys/encrypt,
 // so the body holds nothing the relay shouldn't see for its 3 minutes (see
-// docs/BetterSignPhoneSign.md). Signed by docsign's relay key.
+// docs/BetterIDPhoneSign.md). Signed by docsign's relay key.
 //   { header: { v, ct, to, from, reqId, iat, exp }, body: CBOR(request), sig }
 //   sig = Ed25519("bs-docsign/v1/env\n" ‖ CBOR(header) ‖ sha256(body))
 // v2 passes its own `ct` and a `body` already encoded (by bs-service-identity).

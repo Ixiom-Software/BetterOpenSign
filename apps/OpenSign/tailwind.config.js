@@ -80,7 +80,7 @@ module.exports = {
     themes: [
       {
         opensigndark: {
-          // BetterSign brand, dark (matches src/theme/md3Theme.js darkColors)
+          // BetterID brand, dark (matches src/theme/md3Theme.js darkColors)
           primary: "#15C79A", // brand green, bright - CTA & highlight color
           "primary-content": "#042019",
 
@@ -123,7 +123,7 @@ module.exports = {
       },
       {
         opensigncss: {
-          // BetterSign brand, light (matches src/theme/md3Theme.js lightColors)
+          // BetterID brand, light (matches src/theme/md3Theme.js lightColors)
           primary: "#0E7A5F",
           "primary-content": "#FFFFFF",
           secondary: "#0F2B3D",

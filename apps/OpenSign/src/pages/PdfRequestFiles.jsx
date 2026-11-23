@@ -772,7 +772,7 @@ function PdfRequestFiles(
               setHandleError("Document not Found!");
             }
             try {
-              // Signed with BetterSign: append this signature, don't rewrite.
+              // Signed with BetterID: append this signature, don't rewrite.
               const pdfDoc = await loadPdfForSigning(
                 pdfArrBuffer,
                 isAppendOnlyDoc(pdfDetails[0])
@@ -1004,7 +1004,7 @@ function PdfRequestFiles(
       window.location.href = `/success?${params}`;
     }
   };
-  // Sign with your BetterSign phone (v2): the current signer's widgets.
+  // Sign with your BetterID phone (v2): the current signer's widgets.
   const currentSignerWidgets = () =>
     signerPos.find((data) => data.signerObjId === signerObjectId)
       ?.placeHolder || [];
