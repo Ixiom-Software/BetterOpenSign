@@ -680,7 +680,7 @@ export default async function GenerateCertificate(docDetails, { signatures } = {
       field('Valid', `${dateOf(s.notBefore)} to ${dateOf(s.notAfter)}`, { size: smallText });
       field('Signed at', dateOf(s.signingTime), { size: smallText });
       field('Status', status(s), { size: smallText });
-      if (s.vlad) field('BetterSign identity (VLAD)', shortVlad(s.vlad), { size: smallText });
+      if (s.vlad) field('BetterID identity (VLAD)', shortVlad(s.vlad), { size: smallText });
       if (s.rootDownloadUrl) {
         field('Root certificate', s.rootDownloadUrl, { url: s.rootDownloadUrl, size: smallText });
       }

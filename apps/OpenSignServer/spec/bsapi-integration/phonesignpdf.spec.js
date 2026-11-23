@@ -348,10 +348,10 @@ describe('sign on phone v2 (PAdES)', () => {
     expect(d.VladSignatures.length).toBe(1);
     expect(d.VladSignatures[0].vlad).toBe(bob.vlad);
     expect(d.VladSignatures[0].signerId).toBe(bobC);
-    expect(d.VladSignatures[0].signedWith).toBe('BetterSign phone');
+    expect(d.VladSignatures[0].signedWith).toBe('BetterID phone');
     const audit = d.AuditTrail.find(a => a.UserPtr.objectId === bobC);
     expect(audit.Vlad).toBe(bob.vlad);
-    expect(audit.SignedWith).toBe('BetterSign phone');
+    expect(audit.SignedWith).toBe('BetterID phone');
     expect(d.PhoneSignLockId).toBeUndefined();
     expect(d.IsCompleted).toBeFalse();
     const signed = await currentFile(docId);
@@ -444,7 +444,7 @@ describe('sign on phone v2 (PAdES)', () => {
     expect(d.IsCompleted).toBeTrue();
     expect(d.Seal).toBeTruthy();
     expect(d.VladSignatures[0].vlad).toBe(carol.vlad);
-    expect(d.AuditTrail[0].SignedWith).toBe('BetterSign phone');
+    expect(d.AuditTrail[0].SignedWith).toBe('BetterID phone');
     expect(await certificateOf(docId)).toBeTruthy();
     const final = await currentFile(docId);
     // The seal is appended: the phone's signature still covers its bytes.

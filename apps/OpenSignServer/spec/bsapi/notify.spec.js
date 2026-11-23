@@ -2,7 +2,7 @@
 // email a desktop upload sends, as the browser does after an online signature.
 import { nextSignerMail } from '../../cloud/customRoute/bsapi/notify.js';
 
-const SITE = 'https://docsign.bettersign.ing';
+const SITE = 'https://docsign.betterid.net';
 
 function doc(overrides = {}) {
   return {
@@ -59,7 +59,7 @@ describe('nextSignerMail', () => {
     };
     const m = nextSignerMail(d, 'c1', SITE);
     expect(m.subject).toBe('Sign NDA');
-    expect(m.html).toContain('Hi Second, sign at https://docsign.bettersign.ing/login/');
+    expect(m.html).toContain('Hi Second, sign at https://docsign.betterid.net/login/');
   });
 
   it("prefers the document's own template, and its sender details", () => {

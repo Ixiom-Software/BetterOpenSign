@@ -211,7 +211,7 @@ describe('desktop signing', () => {
       expect(row.VladSignatures[0].fileSha256).toBe(sha(signed).toString('hex'));
       expect(row.SignRevision).toBe(1);
       expect(row.AuditTrail).toContain(
-        jasmine.objectContaining({ Activity: 'Signed', Vlad: bob.vlad, SignedWith: 'BetterSign' })
+        jasmine.objectContaining({ Activity: 'Signed', Vlad: bob.vlad, SignedWith: 'BetterID' })
       );
     });
 
@@ -457,7 +457,7 @@ describe('desktop signing', () => {
 
         const docCall = sealService.calls[0];
         expect(docCall.query.append_only).toBe('true');
-        expect(docCall.query.field_name).toMatch(/^BetterSign seal [^.]+Z$/);
+        expect(docCall.query.field_name).toMatch(/^BetterID seal [^.]+Z$/);
 
         const row = await docRow(docId);
         expect(row.Seal).toEqual(

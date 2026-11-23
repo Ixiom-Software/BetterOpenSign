@@ -19,11 +19,11 @@ export const cloudServerUrl = 'http://localhost:8080/app';
 export const serverAppId = process.env.APP_ID || 'opensign';
 // Branding (BetterSignUpdates.md, "Branding"). Upstream says OpenSign™ and
 // points emails at opensignlabs.com; this deployment is BetterSign.
-export const appName = 'BetterSign';
+export const appName = 'BetterID';
 export const supportEmail = process.env.SUPPORT_EMAIL || 'contact@bettersign.ing';
 // Emails need an absolute URL: the frontend serves public/bettersign-logo.png.
 export const emailLogoUrl =
-  process.env.EMAIL_LOGO_URL || 'https://docsign.bettersign.ing/bettersign-logo.png';
+  process.env.EMAIL_LOGO_URL || 'https://docsign.betterid.net/bettersign-logo.png';
 
 // The line under every email a user sends, so a recipient can report abuse.
 // It names the sender's account (extUserId) so we can find it.

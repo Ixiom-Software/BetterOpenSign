@@ -122,13 +122,13 @@ published is `404 not_found` (cached 60 s).
   "is_ca": false, "vlad": "8724…", "issuer_sha256": "…",
   "not_before": "…", "not_after": "…",
   "download_url": "https://…/api/v1/certs/<sha256>.cer",
-  "page_url": "https://docsign.bettersign.ing/certs/<vlad or sha256>"
+  "page_url": "https://docsign.betterid.net/certs/<vlad or sha256>"
 }
 ```
 
 ## 5. The page
 
-`https://docsign.bettersign.ing/certs/<vlad>` (an identity) or
+`https://docsign.betterid.net/certs/<vlad>` (an identity) or
 `/certs/<sha256>` (one certificate and the root that issued it). No sign-in.
 It shows each root's name, fingerprint and validity with a download button,
 the signing certificates, and the steps to trust a root in Adobe Acrobat:
@@ -177,6 +177,6 @@ certificate's name and VLAD here. Withdraw a row as in section 3.
 |---|---|
 | `BS_SERVICE_IDENTITY_URL`, `BS_SERVICE_IDENTITY_TOKEN` | the service (as for the seal). Unset: no section, nothing published |
 | `SERVER_URL` | the download links' base: its origin + `/api/v1` (+ `/api` before it when `SERVER_URL` ends in `/api/app`, behind the Caddy proxy) |
-| `BS_API_ORIGIN` | the page links' base, default `https://docsign.bettersign.ing` |
+| `BS_API_ORIGIN` | the page links' base, default `https://docsign.betterid.net` |
 
 Frontend: the page calls the API beside `REACT_APP_SERVERURL`'s `/app`.

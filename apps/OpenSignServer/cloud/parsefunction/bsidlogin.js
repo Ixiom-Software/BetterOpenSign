@@ -122,7 +122,7 @@ export default async function bsidlogin(request) {
     tokens = res.data;
   } catch (e) {
     console.log('bsidlogin: token exchange failed', e?.response?.data || e?.message);
-    throw fail('BetterSign sign-in failed. Please try again.');
+    throw fail('BetterID sign-in failed. Please try again.');
   }
 
   // 2. Verify the id_token.
@@ -131,7 +131,7 @@ export default async function bsidlogin(request) {
     claims = await verifyIdToken(c, tokens?.id_token, nonce);
   } catch (e) {
     console.log('bsidlogin: id_token rejected:', e.message);
-    throw fail('BetterSign sign-in could not be verified.');
+    throw fail('BetterID sign-in could not be verified.');
   }
 
   // 3 and 4: the account and its session.
@@ -146,14 +146,14 @@ export async function signInVlad(vlad, event) {
   const account = await accountForVlad(vlad);
   if (account.reason === 'no_account') {
     console.log(JSON.stringify({ event: `${event}_no_account`, vlad }));
-    throw fail('The account linked to this BetterSign identity does not exist.');
+    throw fail('The account linked to this BetterID identity does not exist.');
   }
   if (!account.user) {
     console.log(JSON.stringify({ event: `${event}_denied`, vlad, reason: account.reason }));
     // The VLAD proved itself: list it on the Users page for an admin.
     if (account.reason !== 'ambiguous') await recordSignInAttempt(vlad);
     throw fail(
-      `This BetterSign identity isn't linked to an account. Ask an admin to add it (VLAD ${vlad.slice(0, 16)}…).`
+      `This BetterID identity isn't linked to an account. Ask an admin to add it (VLAD ${vlad.slice(0, 16)}…).`
     );
   }
   const { user, email } = account;

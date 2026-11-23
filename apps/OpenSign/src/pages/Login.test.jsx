@@ -60,7 +60,7 @@ const widget = async () => {
   });
   return within(el.shadowRoot);
 };
-const button = async () => (await widget()).getByRole("button", { name: /Sign in with BetterSign/ });
+const button = async () => (await widget()).getByRole("button", { name: /Sign in with BetterID/ });
 const status = async () => (await widget()).getByRole("status");
 
 const run = Parse.Cloud.run;
@@ -127,7 +127,7 @@ describe("Sign in with BetterSign button", () => {
   it("refused by the server: shows its message", async () => {
     kit.extensionSignIn.mockResolvedValue({
       result: "failed",
-      error: new Error("This BetterSign identity isn't linked to an account.")
+      error: new Error("This BetterID identity isn't linked to an account.")
     });
     vi.spyOn(console, "error").mockImplementation(() => {});
     render(<Login />);

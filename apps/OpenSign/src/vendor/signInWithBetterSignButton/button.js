@@ -24,7 +24,7 @@ import {
   extensionSignIn, hasPendingPasskeySignIn, startPasskeySignIn, takePasskeyCallback,
 } from "./browser.js";
 
-const DEFAULT_LABEL = "Sign in with BetterSign";
+const DEFAULT_LABEL = "Sign in with BetterID";
 const CALLBACK_PARAMS = ["code", "state", "error", "error_description", "iss"];
 
 const STYLE = `

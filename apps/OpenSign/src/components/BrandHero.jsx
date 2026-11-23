@@ -7,7 +7,7 @@ import { bs } from "../theme/md3Theme";
  * the bettersign.ing top bars (brand.css `.wordmark` + `.product-mark`).
  * Pass `href` for a link, or `onClick` to handle navigation in-app.
  */
-export const BrandMark = ({ href, onClick, label = "BetterSign home" }) => {
+export const BrandMark = ({ href, onClick, label = "BetterID home" }) => {
   const linkProps = href
     ? { component: "a", href }
     : {
@@ -44,7 +44,7 @@ export const BrandMark = ({ href, onClick, label = "BetterSign home" }) => {
           sx={{ borderRadius: "8px", display: "block" }}
         />
         <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>
-          BetterSign
+          BetterID
           <Box
             component="span"
             sx={{ fontSize: 10, opacity: 0.7, position: "relative", top: -6, ml: "1px" }}

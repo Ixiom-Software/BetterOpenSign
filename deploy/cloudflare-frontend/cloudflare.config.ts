@@ -7,6 +7,6 @@ export default defineConfig({
     assets: {
       notFoundHandling: "single-page-application"
     },
-    domains: ["docsign.bettersign.ing"]
+    domains: ["docsign.betterid.net", "docsign.bettersign.ing"]
   }
 });

@@ -18,7 +18,7 @@
 //
 // Env:
 //   BS_API_ORIGIN    the origin statements must name (this site, as the browser
-//                    sees it). Default https://docsign.bettersign.ing
+//                    sees it). Default https://docsign.betterid.net
 //   BS_ID_CLIENT_ID  the rp statements must name: this app's bs-id client,
 //                    which the link was made for. Default bs-opensign
 //   BS_API_AUTH_RATE_PER_MIN  per-IP limit on both functions. Default 30
@@ -37,7 +37,7 @@ const DEFAULT_PER_MIN = 30;
 
 function config() {
   return {
-    origin: (process.env.BS_API_ORIGIN || 'https://docsign.bettersign.ing').replace(/\/$/, ''),
+    origin: (process.env.BS_API_ORIGIN || 'https://docsign.betterid.net').replace(/\/$/, ''),
     rp: process.env.BS_ID_CLIENT_ID || 'bs-opensign',
   };
 }
@@ -135,9 +135,9 @@ export async function bsextlogin(request) {
   if (!v.ok) {
     log('denied', { status: v.status, error: v.error, why: v.description });
     if (v.status === 503) {
-      throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'BetterSign could not check the sign-in right now. Please try again.');
+      throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'BetterID could not check the sign-in right now. Please try again.');
     }
-    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'BetterSign sign-in could not be verified.');
+    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'BetterID sign-in could not be verified.');
   }
   return signInVlad(v.vladHex, 'bsextlogin');
 }

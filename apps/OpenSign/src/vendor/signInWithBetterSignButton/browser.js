@@ -171,7 +171,7 @@ export function takePasskeyCallback(search, { redirectUri }) {
   }
   sessionStorage.removeItem(FLOW_KEY);
   if (q.get("error")) return { error: q.get("error_description") || q.get("error") };
-  if (!q.get("code")) return { error: "BetterSign returned no sign-in code." };
+  if (!q.get("code")) return { error: "BetterID returned no sign-in code." };
   return { code: q.get("code"), codeVerifier: flow.verifier, nonce: flow.nonce, redirectUri };
 }
 
