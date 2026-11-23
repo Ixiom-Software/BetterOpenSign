@@ -105,7 +105,7 @@ const notLinked = res =>
     res,
     403,
     'not_linked',
-    "This BetterID identity isn't linked to an OpenSign account. Ask an admin to add it."
+    "This BetterID identity isn't linked to a Better DocSign account. Ask an admin to add it."
   );
 
 // POST /auth/challenge

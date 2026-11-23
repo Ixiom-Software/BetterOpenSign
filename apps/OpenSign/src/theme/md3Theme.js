@@ -1,7 +1,7 @@
 import { createTheme } from "@mui/material/styles";
 
 /**
- * Open BetterID theme: Material UI v7 dressed in the BetterID brand.
+ * Better DocSign theme: Material UI v7 dressed in the BetterID brand.
  *
  * Tokens come from the betterid.net sites (BetterSignApps
  * website/brand/brand.css), so the app shares their look: deep ink top bar and
@@ -395,7 +395,7 @@ const components = {
 };
 
 /**
- * Build the Open BetterID theme for the given mode.
+ * Build the Better DocSign theme for the given mode.
  * @param {"light"|"dark"} mode
  */
 export function createMd3Theme(mode) {

@@ -24,6 +24,7 @@ import { appInfo } from "../constant/appinfo";
 import { useDispatch } from "react-redux";
 import { toggleSidebar } from "../redux/reducers/sidebarReducer";
 import { sessionStatus } from "../redux/reducers/userReducer";
+import { APP_NAME } from "../constant/brand";
 
 const Header = ({ isConsole, setIsLoggingOut }) => {
   const { t, i18n } = useTranslation();
@@ -150,7 +151,7 @@ const Header = ({ isConsole, setIsLoggingOut }) => {
           sx={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 1.25 }}
         >
           <BrandMark
-            label="Open BetterID home"
+            label={`${APP_NAME} home`}
             onClick={() => navigate("/dashboard/35KBoSgoAK")}
           />
           {isCustomLogo && (

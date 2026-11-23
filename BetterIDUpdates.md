@@ -1,6 +1,6 @@
 # BetterID Updates
 
-Changes this fork (Open BetterID) makes on top of upstream OpenSign. Hosting and
+Changes this fork (Better DocSign) makes on top of upstream OpenSign. Hosting and
 operations are covered in [DEPLOYMENT.md](DEPLOYMENT.md).
 
 - [Change log](#change-log)
@@ -25,6 +25,27 @@ operations are covered in [DEPLOYMENT.md](DEPLOYMENT.md).
 Entries before 2026-11-23 were written when the product was BetterSign; their
 product names now read BetterID. Old addresses and stored values in them are kept
 as they were.
+
+### 2026-11-23: the site is Better DocSign
+
+- **Name.** `APP_NAME` / `appName` are "Better DocSign" (was "BetterID"): page
+  titles, the manifest (short name "DocSign"), email sender name and subjects, the
+  header wordmark, new seal fields (`Better DocSign seal <time>`), and the strings
+  that name the site in all seven languages (newsletter, account, integration,
+  quota, billing contact, security, Drive, plan benefits, the home page tagline).
+  "Open BetterID" in docs and comments is now "Better DocSign".
+- **Still BetterID:** everything about the identity: Sign in with BetterID,
+  BetterID identities (VLADs), the BetterID phone app, relay and verifier
+  messages, "Other apps by BetterID team", and `SignedWith` in audit entries.
+- **Copyright stays BetterID.** New `COMPANY_NAME` (frontend) and `companyName`
+  (server) are "BetterID". The footer and the email copyright lines use them.
+- **Header.** The icon plus "Better DocSign"; the "Sign" pill and ™ are gone.
+- **Logos.** The email, sign-in and certificate logos are the icon plus "Better
+  DocSign", at the same pixel sizes. File names are unchanged.
+- **Message.** "isn't linked to an OpenSign account" now says "a Better DocSign
+  account".
+- Not renamed: the GitHub repository (`Ixiom-Software/BetterOpenSign`,
+  `SOURCE_URL`), and BetterSignApps' "Better OpenSign" (apps and www.betterid.net).
 
 ### 2026-11-23: footer copyright is BetterID
 
@@ -591,15 +612,16 @@ The web app is restyled to match the bettersign.ing sites (BetterSignApps
 
 OpenSign is AGPL-3.0. The license covers the code, not the OpenSign name or logo
 (§7(e) lets the authors keep their trademarks), and a changed version has to be
-marked as changed (§5(a)). So this deployment calls itself BetterID and credits
+marked as changed (§5(a)). So this deployment calls itself Better DocSign (a BetterID product) and credits
 OpenSign. What we keep: OpenSign's copyright notices and `LICENSE`, "Built on
 OpenSign" in the footer, and a link to our source for everyone who uses the
 hosted app (§13).
 
 - **One place for the name.** Frontend: `apps/OpenSign/src/constant/brand.js`
-  (`APP_NAME`, `SUPPORT_EMAIL`, `WEBSITE_URL`, `TERMS_URL`, `EMAIL_LOGO_URL`,
-  `SOURCE_URL`, `UPSTREAM_URL`). Upstream hard-codes `"OpenSign™"` in about 30
-  files; ours import `APP_NAME` instead. Server: `appName`, `supportEmail`
+  (`APP_NAME` = Better DocSign, `COMPANY_NAME` = BetterID for copyright lines,
+  `SUPPORT_EMAIL`, `WEBSITE_URL`, `TERMS_URL`, `EMAIL_LOGO_URL`, `SOURCE_URL`,
+  `UPSTREAM_URL`). Upstream hard-codes `"OpenSign™"` in about 30
+  files; ours import `APP_NAME` instead. Server: `appName`, `companyName`, `supportEmail`
   (`SUPPORT_EMAIL`), `emailLogoUrl` (`EMAIL_LOGO_URL`) and `spamReportMsg` in
   `apps/OpenSignServer/Utils.js`; the email templates in `files/` already use
   `{{appName}}`.
@@ -607,7 +629,7 @@ hosted app (§13).
   (emails; the frontend must be deployed for the image to load),
   `public/logo192.png`, `logo512.png` (manifest), the favicon in
   `src/constant/appinfo.js`, and `apps/OpenSignServer/images/logo.png`
-  (completion certificate). The wordmark is the BetterID app icon plus the name
+  (completion certificate). The wordmark is the BetterID app icon plus "Better DocSign"
   in brand ink (`#0f2b3d`).
 - **Translations.** Values in every `public/locales/*/translation.json` say
   BetterID and `contact@betterid.net`. Keys keep upstream's names
@@ -794,18 +816,19 @@ Server (`apps/OpenSignServer/`):
 | `cloud/main.js` | Registers our cloud functions (`betteridlogin`, `bsidlogin`, `bsidentity*`, `updateuserbyadmin`, `bsphonesign*`) and the `bs_Identity` save hook; `beforeLogin` hook blocking password sign-in ("Sign in with BetterID") | 2026-10-06 → 11-22 |
 | `cloud/customRoute/customApp.js` | Mounts the desktop API router (`bsapi`) at `/api/v1` | 2026-11-14 |
 | `cloud/parsefunction/pdf/PDF.js` | Append-only signing once a VLAD signed; signing commits as a compare-and-swap on `SignRevision`; the seal goes through `utils/seal.js`; email logo is `emailLogoUrl` | 2026-11-14 → 11-16 |
-| `Utils.js` | `appName` is BetterID (was BetterSign); adds `supportEmail` (default `contact@betterid.net`), `emailLogoUrl` (default `docsign.betterid.net`), `spamReportMsg`; `mailTemplate` logo | 2026-11-16 → 11-22 |
+| `Utils.js` | `appName` is Better DocSign (BetterSign, then BetterID, until 2026-11-23); adds `companyName` (BetterID, for copyright lines), `supportEmail` (default `contact@betterid.net`), `emailLogoUrl` (default `docsign.betterid.net`), `spamReportMsg`; `mailTemplate` logo | 2026-11-16 → 11-22 |
 | `cloud/parsefunction/sendMailv3.js`, `sendMailWithAttachment.js`, `sendSystemMail.js` | Spam-report footer from `spamReportMsg` (to `supportEmail`, not `complaints@opensignlabs.com`) | 2026-11-16 |
 | `cloud/parsefunction/declinedocument.js`, `ForwardDoc.js` | Email logo is `emailLogoUrl` | 2026-11-16 |
 | `cloud/parsefunction/Newsletter.js` | Does nothing (upstream posts to `app.opensignlabs.com`) | 2026-11-16 |
 | `cloud/customRoute/docxtopdf.js` | Error messages name `supportEmail` | 2026-11-16 |
-| `images/logo.png` | BetterID wordmark (completion certificate) | 2026-11-16 → 11-22 |
+| `images/logo.png` | Better DocSign wordmark (completion certificate) | 2026-11-16 → 11-23 |
 | `cloud/parsefunction/pdf/GenerateCertificate.js` | Completion certificate lists the PDF's digital signatures and their VLADs ("BetterID identity (VLAD)") | 2026-11-17 → 11-22 |
 | `cloud/parsefunction/pdf/Placeholder.js` | Signature placeholder keeps indirect AcroForm `/Fields` and `/SigFlags` (needed for incremental updates) | 2026-11-14 |
 | `cloud/parsefunction/DocumentBeforesave.js` | `VladSignatures`, `SignRevision`, `Seal`, `CertificateSeal` writable only with the master key (creates checked with `has()`) | 2026-11-14 → 11-15 |
 | `cloud/parsefunction/generateCertificatebydocId.js` | Certificate sealed through `utils/seal.js` | 2026-11-15 |
 | `cloud/parsefunction/SendMailOTPv1.js`, `AuthLoginAsMail.js`, `VerifyEmail.js` | Rewritten on `emailOtp.js` (recipient-only, hashed 6-digit codes) | 2026-11-13 |
 | `cloud/customRoute/deleteAccount/deleteUtils.js`, `deleteUser.js` | Share `emailOtp.js` constants; constant-time code comparison | 2026-11-13 |
+| `cloud/parsefunction/sendDeleteUserMail.js`, `cloud/customRoute/deleteAccount/deleteUtils.js` | Copyright line names `companyName` (BetterID), not the app | 2026-11-23 |
 | `package.json`, `package-lock.json` | `@cantoo/pdf-lib`; test scripts `test:bsapi`, `test:bsapi:integration` | 2026-11-14 |
 | `.env.example` (repo root) | Seal settings (`SEAL_BACKEND`, `BS_SERVICE_IDENTITY_*`) | 2026-11-15 |
 
@@ -833,13 +856,13 @@ changes:
 | `src/pages/AddAdmin.jsx` | Terms link is `TERMS_URL` (betterid.net/sign/terms); OpenSign newsletter opt-in removed |  2026-11-16 → 11-22 |
 | `src/components/pdf/AgreementContent.jsx` | Site link is www.betterid.net; support address is `SUPPORT_EMAIL` (contact@betterid.net) | 2026-11-16 → 11-22 |
 | `src/components/SocialMedia.jsx` | Only a GitHub link, to this repository | 2026-11-16 |
-| `src/constant/appinfo.js`, `src/assets/images/logo.png` | App-icon favicon; BetterID wordmark | 2026-11-16 → 11-22 |
+| `src/constant/appinfo.js`, `src/assets/images/logo.png` | App-icon favicon; Better DocSign wordmark | 2026-11-16 → 11-23 |
 | `src/App.jsx` | `/auth/bettersign/callback` route; `/forgetpassword`, `/changepassword` removed | 2026-11-06 → 11-13 |
 | `src/components/Header.jsx`, `Footer.jsx`, `FullScreenButton.jsx`, `ThemeToggle.jsx`, `sidebar/Menu.jsx`, `Sidebar.jsx`, `SubMenu.jsx`, `src/layout/HomeLayout.jsx` | BetterID brand (ink top bar, wordmark, green pills, brand footer); Change Password menu item removed; footer links our source and AGPL-3.0 license, "Built on OpenSign", copyright `© 2026 BetterID` | 2026-11-06 → 11-23 |
-| `src/index.css`, `src/styles/dark-theme-improvements.css`, `tailwind.config.js`, `index.html`, `public/manifest.json` | Brand colours and DaisyUI themes, theme-color; manifest name BetterID | 2026-11-06 → 11-22 |
+| `src/index.css`, `src/styles/dark-theme-improvements.css`, `tailwind.config.js`, `index.html`, `public/manifest.json` | Brand colours and DaisyUI themes, theme-color; manifest name Better DocSign (short name DocSign) | 2026-11-06 → 11-22 |
 | `public/locales/en/translation.json` | `signer-link-hint`, `bs-identities.*`, edit-user strings, `phone-sign.*` (English only; other languages fall back); `home.*` | 2026-11-13 → 11-15 |
 | `public/locales/{es,fr,it,de,hi,kr}/translation.json` | `signer-link-hint`, `home.*` (home page), appended at the end | 2026-11-15 |
-| `public/locales/*/translation.json` (all seven) | Values say BetterID (BetterSign until 2026-11-22) instead of OpenSign / OpenSign™, and `contact@betterid.net` (`contact@bettersign.ing` until 2026-11-22) instead of `*@opensignlabs.com`; keys unchanged | 2026-11-16 → 11-22 |
+| `public/locales/*/translation.json` (all seven) | Values name the site Better DocSign and the identity BetterID (BetterSign until 2026-11-22) instead of OpenSign / OpenSign™, and `contact@betterid.net` (`contact@bettersign.ing` until 2026-11-22) instead of `*@opensignlabs.com`; keys unchanged | 2026-11-16 → 11-22 |
 | `package.json`, `package-lock.json` | MUI v7, `@cantoo/pdf-lib`, `patch-package` postinstall | 2026-10-07 → 11-14 |
 
 Repo root: `README.md` (link to this file), `.gitignore`.

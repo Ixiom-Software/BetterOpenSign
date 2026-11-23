@@ -1,13 +1,14 @@
 import Box from "@mui/material/Box";
 import betteridIcon from "../assets/images/betterid-icon.png";
 import { bs } from "../theme/md3Theme";
+import { APP_NAME } from "../constant/brand";
 
 /**
- * The BetterID wordmark (logo + name) and the product pill beside it, as in
- * the betterid.net top bars (brand.css `.wordmark` + `.product-mark`).
+ * The Better DocSign wordmark (BetterID icon + the site's name), styled like
+ * the betterid.net top bars (brand.css `.wordmark`).
  * Pass `href` for a link, or `onClick` to handle navigation in-app.
  */
-export const BrandMark = ({ href, onClick, label = "BetterID home" }) => {
+export const BrandMark = ({ href, onClick, label = `${APP_NAME} home` }) => {
   const linkProps = href
     ? { component: "a", href }
     : {
@@ -44,31 +45,8 @@ export const BrandMark = ({ href, onClick, label = "BetterID home" }) => {
           sx={{ borderRadius: "8px", display: "block" }}
         />
         <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>
-          BetterID
-          <Box
-            component="span"
-            sx={{ fontSize: 10, opacity: 0.7, position: "relative", top: -6, ml: "1px" }}
-          >
-            &trade;
-          </Box>
+          {APP_NAME}
         </Box>
-      </Box>
-      <Box
-        component="span"
-        sx={{
-          fontWeight: 700,
-          fontSize: 12,
-          letterSpacing: "0.14em",
-          textTransform: "uppercase",
-          color: bs.teal,
-          border: "1px solid rgba(127,240,207,0.4)",
-          borderRadius: 9999,
-          px: 1.125,
-          py: 0.375,
-          whiteSpace: "nowrap"
-        }}
-      >
-        Sign
       </Box>
     </Box>
   );

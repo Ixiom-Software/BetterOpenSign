@@ -1,4 +1,4 @@
-import { appName, smtpenable } from '../../Utils.js';
+import { appName, companyName, smtpenable } from '../../Utils.js';
 
 export const errHtml = err => {
   return `<html><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8" /><title>Reset Password</title></head>
@@ -88,7 +88,7 @@ const sendDeleteUserMail = async req => {
             If you have any questions or need assistance, please contact our support team.
         </p>
         <p style="font-size:12px; color:#999;">
-            &copy; ${new Date().getFullYear()} ${app}. All rights reserved.
+            &copy; ${new Date().getFullYear()} ${companyName}. All rights reserved.
         </p>
     </div>
 </body>
