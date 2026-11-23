@@ -4,7 +4,7 @@ OpenSign's API for the **BetterSign desktop app**. The app holds the user's
 VLAD and keys and talks to OpenSign directly: no browser, no bs-id. It proves
 who it is by signing a challenge with the identity's `/keys/primary`, and
 OpenSign checks that signature through the BetterSign verifier
-(`verify.bettersign.ing`, BetterSignApps `server/OrgIdP/bs-verifier`).
+(`verify.betterid.net`, BetterSignApps `server/OrgIdP/bs-verifier`).
 
 bs-id stays for passkey sign-in on the website only.
 
@@ -218,7 +218,7 @@ only by migration `20261114120000-create_bettersign_api_classes.cjs`, and
 
 | Variable | Default | |
 | --- | --- | --- |
-| `BS_VERIFIER_URL` | `https://verify.bettersign.ing` | |
+| `BS_VERIFIER_URL` | `https://verify.betterid.net` | |
 | `BS_VERIFIER_SECRET` | none | the verifier droplet's `BS_VERIFIER_SECRET`. **Required in production** |
 | `BS_API_ORIGIN` | `https://docsign.betterid.net` | the `origin` statements must name, and the website that emailed links open |
 | `BS_API_RP` | `bs-opensign-api` | the `rp` statements must name |

@@ -85,7 +85,7 @@ export class BetterSignSignInButton extends Base {
   // --- configuration -------------------------------------------------------------
 
   get clientId() { return this.getAttribute("client-id") || ""; }
-  get bsIdUrl() { return (this.getAttribute("bs-id-url") || "https://id.bettersign.ing").replace(/\/$/, ""); }
+  get bsIdUrl() { return (this.getAttribute("bs-id-url") || "https://id.betterid.net").replace(/\/$/, ""); }
   get apiBase() { return (this.getAttribute("api-base") || "/bettersign").replace(/\/$/, ""); }
   get redirectUri() { return this.getAttribute("redirect-uri") || location.origin + location.pathname; }
   get label() { return this.getAttribute("label") || DEFAULT_LABEL; }

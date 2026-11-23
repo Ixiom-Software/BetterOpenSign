@@ -141,7 +141,7 @@ describe("Sign in with BetterSign button", () => {
     render(<Login />);
     fireEvent.click(await button());
     await waitFor(() => expect(kit.startPasskeySignIn).toHaveBeenCalledWith({
-      bsIdUrl: "https://id.bettersign.ing",
+      bsIdUrl: "https://id.betterid.net",
       clientId: "bs-opensign",
       redirectUri: window.location.origin + "/auth/bettersign/callback"
     }));

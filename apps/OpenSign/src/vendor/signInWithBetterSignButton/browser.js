@@ -124,7 +124,7 @@ async function s256(verifier) {
  * server exchanges the code with the verifier from takePasskeyCallback()).
  * Keeps state, nonce and the PKCE verifier in sessionStorage.
  *
- *   bsIdUrl      e.g. https://id.bettersign.ing
+ *   bsIdUrl      e.g. https://id.betterid.net
  *   clientId     the site's bs-id client id
  *   redirectUri  registered with bs-id for that client
  */

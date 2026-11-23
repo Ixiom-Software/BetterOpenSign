@@ -2,7 +2,7 @@
 // Upstream OpenSign hard-codes "OpenSign™" in each file; ours point here
 // (see BetterSignUpdates.md, "Branding").
 export const APP_NAME = "BetterID";
-export const SUPPORT_EMAIL = "contact@bettersign.ing";
+export const SUPPORT_EMAIL = "contact@betterid.net";
 export const WEBSITE_URL = "https://www.betterid.net/";
 export const TERMS_URL = "https://www.betterid.net/sign/terms";
 // Emails need an absolute URL. The file is public/bettersign-logo.png.
