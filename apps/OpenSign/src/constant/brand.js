@@ -3,8 +3,8 @@
 // (see BetterSignUpdates.md, "Branding").
 export const APP_NAME = "BetterID";
 export const SUPPORT_EMAIL = "contact@bettersign.ing";
-export const WEBSITE_URL = "https://www.bettersign.ing/";
-export const TERMS_URL = "https://www.bettersign.ing/sign/terms";
+export const WEBSITE_URL = "https://www.betterid.net/";
+export const TERMS_URL = "https://www.betterid.net/sign/terms";
 // Emails need an absolute URL. The file is public/bettersign-logo.png.
 export const EMAIL_LOGO_URL =
   "https://docsign.betterid.net/bettersign-logo.png";

@@ -76,11 +76,11 @@ const Footer = () => {
         <Typography variant="body2" component="p" sx={{ fontSize: "inherit", m: 0 }}>
           &copy; 2021&ndash;{new Date().getFullYear()} Cryptid Technologies, Inc.
           &nbsp;&middot;&nbsp;
-          <a href="https://www.bettersign.ing/" target="_blank" rel="noreferrer">
-            bettersign.ing
+          <a href="https://www.betterid.net/" target="_blank" rel="noreferrer">
+            betterid.net
           </a>
           &nbsp;&middot;&nbsp;
-          <a href="https://www.bettersign.ing/privacy/" target="_blank" rel="noreferrer">
+          <a href="https://www.betterid.net/privacy/" target="_blank" rel="noreferrer">
             Privacy
           </a>
           &nbsp;&middot;&nbsp;

@@ -44,9 +44,12 @@ links). The move went in this order, which still applies to a fresh setup:
    points at the old name, so it reaches the new one in two hops; repoint it in
    the dashboard when convenient. Extension sign-in and phone signing check the
    origin, so they only work on the new name.
-6. **Not moved yet:** `id.`, `relay.`, `verify.`, `www.` and `send.bettersign.ing`,
-   `contact@bettersign.ing`, and the Fly app names. Change each with its own service
-   when it moves.
+6. **Website links:** `www.betterid.net` (home, privacy, terms) already serves
+   BetterID, so `WEBSITE_URL`, `TERMS_URL` and the footer and header links point there.
+7. **Not moved yet:** `id.`, `relay.`, `verify.` and `send.bettersign.ing`, and
+   `contact@bettersign.ing` (`betterid.net` has no MX records, so mail there would
+   bounce). None of these exist on `betterid.net` yet. The Fly app names keep
+   `bettersign` too. Change each with its own service when it moves.
 
 Health checks:
 - `curl https://docsign.betterid.net/` → app shell (HTTP 200)
@@ -89,7 +92,7 @@ Health checks:
 **Why the frontend talks to `*.fly.dev` directly (not a branded API subdomain):**
 Fly auto-provisions valid TLS for `*.fly.dev`. A branded two-level host like
 `api.docsign.betterid.net` is **not** covered by Cloudflare's universal cert
-(`*.bettersign.ing` only covers one label deep), which would need Advanced Certificate
+(`*.betterid.net` only covers one label deep), which would need Advanced Certificate
 Manager or a Fly custom-domain cert. For a test this adds failure points with no
 functional benefit. The backend sends open CORS (`Access-Control-Allow-Origin: *`), so the
 cross-origin call from `docsign.betterid.net` → `docsign-bettersign-api.fly.dev` works.
@@ -289,10 +292,10 @@ fly secrets set MONGODB_URI="mongodb+srv://user:pass@cluster/opensign?retryWrite
 ```
 
 ### Add a branded API domain later (optional)
-Use a **one-label** host like `docsign-api.bettersign.ing` (covered by the universal cert):
-`fly certs add docsign-api.bettersign.ing --app docsign-bettersign-api`, add a DNS-only
+Use a **one-label** host like `docsign-api.betterid.net` (covered by the universal cert):
+`fly certs add docsign-api.betterid.net --app docsign-bettersign-api`, add a DNS-only
 (grey-cloud) CNAME → `docsign-bettersign-api.fly.dev`, then rebuild the frontend with
-`REACT_APP_SERVERURL=https://docsign-api.bettersign.ing/app` and update the backend
+`REACT_APP_SERVERURL=https://docsign-api.betterid.net/app` and update the backend
 `SERVER_URL` secret to match.
 
 ---
@@ -300,7 +303,7 @@ Use a **one-label** host like `docsign-api.bettersign.ing` (covered by the unive
 ## 8. Reproducing from scratch
 
 Prereqs: `cf` authenticated (`cf auth whoami`), `flyctl` authenticated (`fly auth whoami`),
-the `bettersign.ing` zone in the Cloudflare account.
+the `betterid.net` zone in the Cloudflare account (and `bettersign.ing` for the old-name redirect).
 
 1. **Generate secrets:** `APP_ID` (12 hex), `MASTER_KEY` (strong random), Mongo user/pass.
 2. **Mongo app:** `fly apps create docsign-bettersign-mongo`; `fly volumes create mongo_data --size 1 --region sjc`; `fly secrets set MONGO_INITDB_ROOT_USERNAME/PASSWORD --stage`; deploy with `deploy/fly-mongo/fly.toml` (command must include `--ipv6`).

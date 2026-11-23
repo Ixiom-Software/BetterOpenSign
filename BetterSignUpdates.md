@@ -42,6 +42,10 @@ operations are covered in [DEPLOYMENT.md](DEPLOYMENT.md).
   and query. bs-id's `bs-opensign` client accepts both callbacks (BetterSignApps
   PR #498). Moved and deployed 2026-11-22; steps in DEPLOYMENT.md, "Moving to
   docsign.betterid.net".
+- **Website links.** The marketing site already serves BetterID at
+  `www.betterid.net`, so `WEBSITE_URL`, `TERMS_URL` (`/sign/terms`), the header
+  wordmark link, the footer's site and privacy links, and the terms page's site link
+  point there.
 - **Not renamed, on purpose:** code identifiers and file names (`bs-*`,
   `bettersignlogin`, `BetterSignSignInButton`, `<bettersign-sign-in>`, the
   `/auth/bettersign/callback` path, `vnd.bettersign.*` content types and
@@ -770,8 +774,8 @@ changes:
 | `src/components/pdf/WidgetsValueModal.jsx` | "Sign on phone" (PhoneSign), only for a Sign in with BetterSign session on a saved document | 2026-10-06 → 11-15 |
 | `src/constant/Utils.js` | `runPublicCloudFn`; `handleSendOTP` sends the session; keeps signature fields when flattening an append-only PDF; app name, email logo and support address from `brand.js` | 2026-11-13 → 11-16 |
 | Files that hard-coded `"OpenSign™"`: `src/components/Title.jsx`, `bulksend/BulkSendUi.jsx`, `pdf/EditTemplate.jsx`, `preferences/MailTemplateEditor.jsx`, `shared/fields/FolderModal.jsx`, `shared/fields/SelectFolder.jsx`, `emailbuilder/getConfiguration/sample/{request,completion}-email.ts`, `src/pages/Form.jsx`, `Opensigndrive.jsx`, `Preferences.jsx`, `UpdateExistUserAdmin.jsx`, `src/primitives/DownloadPdfZip.jsx`, `RenderReportCell.jsx`, `src/reports/document/DocumentsReport.jsx`, `src/reports/template/TemplatesReport.jsx` (also `Login.jsx`, `GuestLogin.jsx`, `SignyourselfPdf.jsx`, `PdfRequestFiles.jsx` and the brand files above) | Import `APP_NAME` from `src/constant/brand.js`; the email samples use `EMAIL_LOGO_URL`. On merge, any new `"OpenSign™"` from upstream becomes `APP_NAME` | 2026-11-16 |
-| `src/pages/AddAdmin.jsx` | Terms link is `TERMS_URL` (bettersign.ing/sign/terms); OpenSign newsletter opt-in removed | 2026-11-16 |
-| `src/components/pdf/AgreementContent.jsx` | Support link and address are bettersign.ing | 2026-11-16 |
+| `src/pages/AddAdmin.jsx` | Terms link is `TERMS_URL` (betterid.net/sign/terms); OpenSign newsletter opt-in removed |  2026-11-16 → 11-22 |
+| `src/components/pdf/AgreementContent.jsx` | Site link is www.betterid.net; support address is contact@bettersign.ing | 2026-11-16 → 11-22 |
 | `src/components/SocialMedia.jsx` | Only a GitHub link, to this repository | 2026-11-16 |
 | `src/constant/appinfo.js`, `src/assets/images/logo.png` | App-icon favicon; BetterID wordmark | 2026-11-16 → 11-22 |
 | `src/App.jsx` | `/auth/bettersign/callback` route; `/forgetpassword`, `/changepassword` removed | 2026-11-06 → 11-13 |
