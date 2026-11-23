@@ -1,4 +1,4 @@
-import { appName } from '../../../Utils.js';
+import { appName, companyName } from '../../../Utils.js';
 import sendSystemMail from '../../parsefunction/sendSystemMail.js';
 import { OTP_EXPIRES_MIN } from '../../parsefunction/emailOtp.js';
 
@@ -46,7 +46,7 @@ export async function sendDeleteOtpEmail(extUser, otp) {
           </table>
 
           <div style="font-size:11px;color:#94a3b8;margin-top:12px;">
-            &copy; ${new Date().getFullYear()} ${appName}. All rights reserved.
+            &copy; ${new Date().getFullYear()} ${companyName}. All rights reserved.
           </div>
         </td>
       </tr>

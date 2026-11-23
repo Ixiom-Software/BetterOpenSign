@@ -10,7 +10,7 @@
 // and only an HMAC of the code is stored in `defaultdata_Otp`, which is
 // master-key only (migration 20261113000000-lock_defaultdata_otp).
 import crypto from 'node:crypto';
-import { appName, smtpenable } from '../../Utils.js';
+import { appName, companyName, smtpenable } from '../../Utils.js';
 
 export const OTP_LENGTH = 6;
 export const OTP_EXPIRES_MIN = 10; // code validity in minutes
@@ -96,7 +96,7 @@ export function otpEmailHtml(otp) {
             </tr>
           </table>
           <div style="font-size:11px;color:#94a3b8;margin-top:12px;">
-            &copy; ${new Date().getFullYear()} ${appName}. All rights reserved.
+            &copy; ${new Date().getFullYear()} ${companyName}. All rights reserved.
           </div>
         </td>
       </tr>

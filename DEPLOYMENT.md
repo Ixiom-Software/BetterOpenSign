@@ -1,4 +1,4 @@
-# OpenSign Deployment — `docsign.betterid.net`
+# Better DocSign deployment — `docsign.betterid.net`
 
 **Status:** ✅ Live (moved from `docsign.bettersign.ing` on 2026-11-22) · **Deployed:** 2026-10-06 · **Owner:** brendon@ixiomsoftware.com
 

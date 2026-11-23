@@ -8,7 +8,7 @@ import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import { openInNewTab } from "../constant/Utils";
 import { useTranslation } from "react-i18next";
 import { bs } from "../theme/md3Theme";
-import { APP_NAME, SOURCE_URL, SUPPORT_EMAIL, UPSTREAM_URL } from "../constant/brand";
+import { COMPANY_NAME, SOURCE_URL, SUPPORT_EMAIL, UPSTREAM_URL } from "../constant/brand";
 const Footer = () => {
   const { t } = useTranslation();
   const [showButton, setShowButton] = useState(false);
@@ -74,7 +74,7 @@ const Footer = () => {
         }}
       >
         <Typography variant="body2" component="p" sx={{ fontSize: "inherit", m: 0 }}>
-          &copy; 2026 {APP_NAME}
+          &copy; 2026 {COMPANY_NAME}
           &nbsp;&middot;&nbsp;
           <a href="https://www.betterid.net/" target="_blank" rel="noreferrer">
             betterid.net

@@ -39,7 +39,8 @@
 6. [License](#license)
 7. [Acknowledgments](#acknowledgments)
 
-> **BetterID fork:** this repository is Open BetterID. Its changes to OpenSign,
+> **Better DocSign:** this repository is BetterID's fork of OpenSign, hosted at
+> [docsign.betterid.net](https://docsign.betterid.net). Its changes to OpenSign,
 > including Sign in with BetterID as the only home page sign-in, recipients signing
 > through the emailed link, the hardened 6-digit one-time code rules, the BetterID
 > desktop API and VLAD management on the Users page, are described in

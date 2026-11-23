@@ -1,7 +1,9 @@
 // The product name, logo and contacts this deployment shows, in one place.
 // Upstream OpenSign hard-codes "OpenSign™" in each file; ours point here
 // (see BetterIDUpdates.md, "Branding").
-export const APP_NAME = "BetterID";
+export const APP_NAME = "Better DocSign";
+// Who the copyright belongs to (the footer): the company, not the site.
+export const COMPANY_NAME = "BetterID";
 export const SUPPORT_EMAIL = "contact@betterid.net";
 export const WEBSITE_URL = "https://www.betterid.net/";
 export const TERMS_URL = "https://www.betterid.net/sign/terms";

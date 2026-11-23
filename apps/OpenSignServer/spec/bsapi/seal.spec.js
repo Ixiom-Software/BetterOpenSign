@@ -117,8 +117,8 @@ describe('seal', () => {
 
   it('names the field without a dot, and differently on a retry', () => {
     const now = new Date('2026-11-15T10:11:12.345Z');
-    expect(sealFieldName(now)).toBe('BetterID seal 2026-11-15T10:11:12Z');
-    expect(sealFieldName(now, 1)).toBe('BetterID seal 2026-11-15T10:11:12Z 2');
+    expect(sealFieldName(now)).toBe('Better DocSign seal 2026-11-15T10:11:12Z');
+    expect(sealFieldName(now, 1)).toBe('Better DocSign seal 2026-11-15T10:11:12Z 2');
     expect(sealFieldName(now)).not.toContain('.');
   });
 
@@ -137,7 +137,7 @@ describe('seal', () => {
     expect(call.query.format).toBe('json');
     expect(call.query.append_only).toBe('true');
     expect(call.query.filename).toBe('a.pdf');
-    expect(call.query.field_name).toMatch(/^BetterID seal \S+Z$/);
+    expect(call.query.field_name).toMatch(/^Better DocSign seal \S+Z$/);
     expect(call.body.equals(pdf)).toBe(true);
 
     expect(extendsPdf(pdf, res.pdf)).toBe(true);
