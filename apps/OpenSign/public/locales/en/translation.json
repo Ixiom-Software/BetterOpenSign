@@ -83,6 +83,7 @@
     "Dashboard": "Dashboard",
     "Sign yourself": "Sign yourself",
     "Request signatures": "Request signatures",
+    "Sign in person": "Sign in person",
     "Templates": "Templates",
     "Analytics": "Analytics",
     "Branding": "Branding",
@@ -1717,5 +1718,25 @@
     "not-found": "No published certificates here.",
     "invalid": "This isn't a certificate or identity link.",
     "failed": "Couldn't load the certificates. Try again later."
+  },
+  "in-person": {
+    "title": "Prepare a PDF for signing in person",
+    "intro": "Mark where people sign, then download the PDF and open it in the BetterID app. On the phone, anyone can draw their signature in a box, and you seal the PDF with your BetterID signature. The PDF stays on this device; nothing is uploaded.",
+    "change-file": "Choose another PDF",
+    "next-name": "Who signs in the next box",
+    "click-hint": "Then click on the page where they sign. Drag a box to move it, or its edges to resize it.",
+    "default-name": "Signer {{n}}",
+    "signer-name": "Who signs here",
+    "boxes-title": "Signature boxes",
+    "page-n": "Page {{n}}",
+    "remove": "Remove box",
+    "download": "Download PDF",
+    "downloaded": "Downloaded, with signature fields: {{names}}.",
+    "existing": "This PDF already has signature fields: {{names}}. The BetterID app lists them too.",
+    "phone-steps": "On your phone: open the downloaded PDF in the BetterID app (Sign → Sign a PDF in person, or Share / Open with). For each box choose Me, In person or Leave blank; hand the phone over for each In person box, then seal the PDF with your signature.",
+    "encrypted": "This PDF is password-protected. Remove the protection and try again.",
+    "certified": "This PDF is certified, so signatures drawn in person can't be added to it.",
+    "load-error": "Couldn't read this PDF.",
+    "save-error": "Couldn't add the signature fields to this PDF."
   }
 }

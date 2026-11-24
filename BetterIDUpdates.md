@@ -26,6 +26,40 @@ Entries before 2026-11-23 were written when the product was BetterSign; their
 product names now read BetterID. Old addresses and stored values in them are kept
 as they were.
 
+### 2026-11-24: prepare a PDF for signing in person
+
+- **New page, "Sign in person"** (`/in-person`, in the sidebar after "Request
+  signatures"). Choose a PDF, click on a page wherever someone signs, name the
+  box (e.g. "Homeowner"), drag or resize it, and download the PDF. Each box
+  becomes a blank, visible signature field (`/FT /Sig`, no `/V`) named for
+  the signer, with a `/TU` tooltip ("Signature: Homeowner") and a dashed
+  outline showing the name. All in the browser: the PDF is never uploaded and
+  no document is created.
+- **For the BetterID app's "Sign a PDF in person"** (BetterSignApps #566). The
+  phone lists the PDF's blank signature fields by name; for each the owner
+  picks Me, In person or Leave blank. Someone without BetterID draws on the
+  phone for an In person field, the drawing is stamped into the field's box,
+  and the owner's PAdES signature seals the PDF.
+- **Field names:** no `.` (it separates field name parts), at most 100
+  characters, unique in the PDF (" 2", " 3", ... appended), including the
+  top-level names of field groups ("Homeowner" of `Homeowner.phone`); any
+  language (text strings).
+- **PDFs it refuses:** password-protected, and certified ones (`/Perms
+  /DocMDP`), which the phone refuses too. A PDF that already carries a
+  signature (a signature field with a `/V`, wherever it's stored, object
+  streams included) or usage rights (`/Perms /UR3`, Reader extensions) gets
+  the fields as an incremental update, so its signatures stay valid; any other
+  is re-saved with a classic cross-reference table.
+- **Placement matches pdf.js:** boxes are placed on the crop box clipped to the
+  media box, and a `/Rotate` that isn't a multiple of 90 counts as 0. Letting
+  go of a dragged or resized box outside it (against the page's edge) doesn't
+  place a new box.
+- **Code:** `src/utils/inPersonFields.js` (fields, coordinates incl. rotated
+  pages), `src/pages/InPersonFields.jsx`, tests next to both.
+  `addBlankSignatureField` moved from `phoneSignBase.js` to `appendOnlyPdf.js`
+  so the new code doesn't pull in `constant/Utils.js`. Strings `in-person.*`
+  and `sidebar.Sign in person` (English; other languages fall back).
+
 ### 2026-11-23: the site is Better DocSign
 
 - **Name.** `APP_NAME` / `appName` are "Better DocSign" (was "BetterID"): page
@@ -857,10 +891,11 @@ changes:
 | `src/components/pdf/AgreementContent.jsx` | Site link is www.betterid.net; support address is `SUPPORT_EMAIL` (contact@betterid.net) | 2026-11-16 → 11-22 |
 | `src/components/SocialMedia.jsx` | Only a GitHub link, to this repository | 2026-11-16 |
 | `src/constant/appinfo.js`, `src/assets/images/logo.png` | App-icon favicon; Better DocSign wordmark | 2026-11-16 → 11-23 |
-| `src/App.jsx` | `/auth/bettersign/callback` route; `/forgetpassword`, `/changepassword` removed | 2026-11-06 → 11-13 |
+| `src/App.jsx` | `/auth/bettersign/callback` route; `/forgetpassword`, `/changepassword` removed; `/in-person` route | 2026-11-06 → 11-24 |
+| `src/json/menuJson.js` | "Sign in person" sidebar item (`/in-person`) | 2026-11-24 |
 | `src/components/Header.jsx`, `Footer.jsx`, `FullScreenButton.jsx`, `ThemeToggle.jsx`, `sidebar/Menu.jsx`, `Sidebar.jsx`, `SubMenu.jsx`, `src/layout/HomeLayout.jsx` | BetterID brand (ink top bar, wordmark, green pills, brand footer); Change Password menu item removed; footer links our source and AGPL-3.0 license, "Built on OpenSign", copyright `© 2026 BetterID` | 2026-11-06 → 11-23 |
 | `src/index.css`, `src/styles/dark-theme-improvements.css`, `tailwind.config.js`, `index.html`, `public/manifest.json` | Brand colours and DaisyUI themes, theme-color; manifest name Better DocSign (short name DocSign) | 2026-11-06 → 11-22 |
-| `public/locales/en/translation.json` | `signer-link-hint`, `bs-identities.*`, edit-user strings, `phone-sign.*` (English only; other languages fall back); `home.*` | 2026-11-13 → 11-15 |
+| `public/locales/en/translation.json` | `signer-link-hint`, `bs-identities.*`, edit-user strings, `phone-sign.*`, `in-person.*`, `sidebar.Sign in person` (English only; other languages fall back); `home.*` | 2026-11-13 → 11-24 |
 | `public/locales/{es,fr,it,de,hi,kr}/translation.json` | `signer-link-hint`, `home.*` (home page), appended at the end | 2026-11-15 |
 | `public/locales/*/translation.json` (all seven) | Values name the site Better DocSign and the identity BetterID (BetterSign until 2026-11-22) instead of OpenSign / OpenSign™, and `contact@betterid.net` (`contact@bettersign.ing` until 2026-11-22) instead of `*@opensignlabs.com`; keys unchanged | 2026-11-16 → 11-22 |
 | `package.json`, `package-lock.json` | MUI v7, `@cantoo/pdf-lib`, `patch-package` postinstall | 2026-10-07 → 11-14 |
@@ -891,6 +926,8 @@ changes them, drop the change; if upstream adds new imports of them, remove thos
   `src/constant/bsid.js` (+ test), `src/components/BetterIDSignInButton.jsx`,
   `src/vendor/signInWithBetterIDButton/*` (vendored), `src/components/BrandHero.jsx`, `BsIdentities.jsx`,
   `EditUser.jsx` (both with `*.test.jsx`), `pdf/PhoneSign.jsx` (+ test), `src/utils/appendOnlyPdf.js` (+ test),
+  `src/utils/phoneSignBase.js` (+ test), in-person signing `src/pages/InPersonFields.jsx` and
+  `src/utils/inPersonFields.js` (both + test),
   `src/assets/images/betterid-icon.png`, `src/constant/brand.js`,
   `public/betterid-logo.png`, `public/logo192.png`, `public/logo512.png`,
   `patches/parse+8.6.0.patch`,

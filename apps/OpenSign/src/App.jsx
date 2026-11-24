@@ -35,6 +35,7 @@ const Login = lazyWithRetry(() => import("./pages/Login"));
 const VerifyDocument = lazyWithRetry(() => import("./pages/VerifyDocument"));
 const EmailBuilder = lazyWithRetry(() => import("./pages/EmailBuilder"));
 const PublishedCerts = lazyWithRetry(() => import("./pages/PublishedCerts"));
+const InPersonFields = lazyWithRetry(() => import("./pages/InPersonFields"));
 
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/legacy/build/pdf.worker.min.mjs`;
 const AppLoader = () => {
@@ -127,6 +128,11 @@ function App() {
               <Route
                 path="/verify-document"
                 element={<Lazy Page={VerifyDocument} />}
+              />
+              {/* prepare a PDF for signing in person on a BetterID phone */}
+              <Route
+                path="/in-person"
+                element={<Lazy Page={InPersonFields} />}
               />
               <Route
                 path="/preferences"

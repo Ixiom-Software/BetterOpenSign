@@ -9,7 +9,9 @@
 import { PDFDocument } from "pdf-lib";
 import {
   PDFDocument as IncrementalPDFDocument,
-  PDFSignature
+  PDFNumber,
+  PDFSignature,
+  PDFString
 } from "@cantoo/pdf-lib";
 
 // True once any BetterID identity has signed the document.
@@ -59,4 +61,25 @@ export const flattenExceptSignatures = (form) => {
     }
     form.removeField(field);
   }
+};
+
+// Adds a blank, visible signature field named `name` at `rect` on `page`:
+// field and widget in one dictionary (/FT /Sig, no /V, no appearance), in the
+// page's /Annots and the AcroForm's /Fields. Used by Sign on phone
+// (phoneSignBase.js) and in-person signing (inPersonFields.js).
+export const addBlankSignatureField = (pdfDoc, page, rect, name) => {
+  const field = pdfDoc.context.register(
+    pdfDoc.context.obj({
+      Type: "Annot",
+      Subtype: "Widget",
+      FT: "Sig",
+      Rect: rect.map((n) => PDFNumber.of(n)),
+      T: PDFString.of(name),
+      F: 4, // Print
+      P: page.ref
+    })
+  );
+  page.node.addAnnot(field);
+  pdfDoc.getForm().acroForm.addField(field);
+  return field;
 };
