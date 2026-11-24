@@ -12,9 +12,9 @@
 // (flattenExceptSignatures).
 //
 // Server side: bsphonesignpdfstart { docId, fieldName, base, caption? }.
-import { PDFNumber, PDFString, toDegrees } from "@cantoo/pdf-lib";
+import { toDegrees } from "@cantoo/pdf-lib";
 import { embedWidgetsToDoc, imageWidgetDrawOptions } from "../constant/Utils";
-import { loadPdfForSigning } from "./appendOnlyPdf";
+import { addBlankSignatureField, loadPdfForSigning } from "./appendOnlyPdf";
 
 // The /T of the blank signature field: no '.' (it separates field name
 // parts) and at most 100 characters.
@@ -68,26 +68,6 @@ export const imageWidgetRect = (page, position, scale) => {
   const xs = corners.map((c) => round(c[0]));
   const ys = corners.map((c) => round(c[1]));
   return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
-};
-
-// Adds a blank, visible signature field named `name` at `rect` on `page`:
-// field and widget in one dictionary (/FT /Sig, no /V, no appearance), in the
-// page's /Annots and the AcroForm's /Fields.
-export const addBlankSignatureField = (pdfDoc, page, rect, name) => {
-  const field = pdfDoc.context.register(
-    pdfDoc.context.obj({
-      Type: "Annot",
-      Subtype: "Widget",
-      FT: "Sig",
-      Rect: rect.map((n) => PDFNumber.of(n)),
-      T: PDFString.of(name),
-      F: 4, // Print
-      P: page.ref
-    })
-  );
-  page.node.addAnnot(field);
-  pdfDoc.getForm().acroForm.addField(field);
-  return field;
 };
 
 // Builds the base: `bytes` (the document's current file) followed by an

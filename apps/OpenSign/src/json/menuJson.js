@@ -46,6 +46,14 @@ const sidebarList = [
     objectId: "8mZzFxbG1z"
   },
   {
+    icon: "fa-light fa-mobile",
+    title: "Sign in person",
+    target: "_self",
+    pageType: "",
+    description: "",
+    objectId: "in-person"
+  },
+  {
     icon: "fa-light fa-newspaper",
     title: "Templates",
     target: "_self",
