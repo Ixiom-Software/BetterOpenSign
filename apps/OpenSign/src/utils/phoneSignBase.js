@@ -19,6 +19,7 @@ import { addBlankSignatureField, loadPdfForSigning } from "./appendOnlyPdf";
 // The /T of the blank signature field: no '.' (it separates field name
 // parts) and at most 100 characters.
 // The server takes `bs-phone-` and at most 91 of [A-Za-z0-9_:-].
+// In-person fields follow the same rule (fieldNameFor, inPersonFields.js).
 export const phoneSignFieldName = (key) =>
   `bs-phone-${String(key)
     .replace(/[^A-Za-z0-9_:-]/g, "-")

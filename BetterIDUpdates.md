@@ -41,12 +41,19 @@ as they were.
   phone for an In person field, the drawing is stamped into the field's box,
   and the owner's PAdES signature seals the PDF.
 - **Field names:** no `.` (it separates field name parts), at most 100
-  characters, unique in the PDF (" 2", " 3", ... appended); any language
-  (text strings).
+  characters, unique in the PDF (" 2", " 3", ... appended), including the
+  top-level names of field groups ("Homeowner" of `Homeowner.phone`); any
+  language (text strings).
 - **PDFs it refuses:** password-protected, and certified ones (`/Perms
   /DocMDP`), which the phone refuses too. A PDF that already carries a
-  signature gets the fields as an incremental update, so its signatures stay
-  valid; any other is re-saved with a classic cross-reference table.
+  signature (a signature field with a `/V`, wherever it's stored, object
+  streams included) or usage rights (`/Perms /UR3`, Reader extensions) gets
+  the fields as an incremental update, so its signatures stay valid; any other
+  is re-saved with a classic cross-reference table.
+- **Placement matches pdf.js:** boxes are placed on the crop box clipped to the
+  media box, and a `/Rotate` that isn't a multiple of 90 counts as 0. Letting
+  go of a dragged or resized box outside it (against the page's edge) doesn't
+  place a new box.
 - **Code:** `src/utils/inPersonFields.js` (fields, coordinates incl. rotated
   pages), `src/pages/InPersonFields.jsx`, tests next to both.
   `addBlankSignatureField` moved from `phoneSignBase.js` to `appendOnlyPdf.js`

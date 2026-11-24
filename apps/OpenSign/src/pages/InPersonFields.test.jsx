@@ -13,8 +13,13 @@ vi.mock("react-pdf", () => ({
   Document: ({ children }) => <div>{children}</div>,
   Page: () => <div />
 }));
+// A mouseup on a box ends a drag that didn't move it.
 vi.mock("react-rnd", () => ({
-  Rnd: ({ children }) => <div data-testid="box">{children}</div>
+  Rnd: ({ children, onDragStop, position }) => (
+    <div data-testid="box" onMouseUp={(e) => onDragStop?.(e, position)}>
+      {children}
+    </div>
+  )
 }));
 
 let downloaded;
@@ -108,6 +113,21 @@ describe("InPersonFields", () => {
     expect(
       screen.getByText("in-person.download").closest("button")
     ).toBeDisabled();
+  });
+
+  it("doesn't add a box when a drag ends outside the box", async () => {
+    const { container } = render(<InPersonFields />);
+    choose(container, pdfFile(await onePagePdf()));
+    const page = await screen.findByTestId("in-person-page-0");
+    fireEvent.click(page, { clientX: 100, clientY: 100 });
+    // The drag ends, then the browser clicks the page under the pointer.
+    fireEvent.mouseUp(screen.getByTestId("box"));
+    fireEvent.click(page, { clientX: 400, clientY: 400 });
+    expect(screen.getAllByTestId("box")).toHaveLength(1);
+    // A later click places a box as usual.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    fireEvent.click(page, { clientX: 400, clientY: 400 });
+    expect(screen.getAllByTestId("box")).toHaveLength(2);
   });
 
   it("refuses a certified PDF", async () => {

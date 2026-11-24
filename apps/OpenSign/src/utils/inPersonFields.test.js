@@ -3,6 +3,7 @@ import {
   PDFDict,
   PDFDocument,
   PDFName,
+  PDFNumber,
   PDFSignature,
   degrees
 } from "@cantoo/pdf-lib";
@@ -12,6 +13,7 @@ import {
   fieldNameFor,
   readPdf
 } from "./inPersonFields";
+import { addBlankSignatureField } from "./appendOnlyPdf";
 
 const startsWith = (bytes, prefix) =>
   bytes.length > prefix.length && prefix.every((byte, i) => bytes[i] === byte);
@@ -24,6 +26,24 @@ async function fixturePdf() {
   const text = doc.getForm().createTextField("Customer");
   text.addToPage(page, { x: 50, y: 700, width: 200, height: 20 });
   return doc.save();
+}
+
+// One page with a signed signature field "Seller": enough of a signature for
+// the check, a /V on the field. The signature dictionary has no /Type (it's
+// optional), so pdf-lib may put it in an object stream.
+async function signedPdf(useObjectStreams) {
+  const doc = await PDFDocument.create();
+  const page = doc.addPage([600, 800]);
+  const field = addBlankSignatureField(doc, page, [10, 10, 190, 70], "Seller");
+  doc.context
+    .lookup(field)
+    .set(
+      PDFName.of("V"),
+      doc.context.register(
+        doc.context.obj({ Filter: "Adobe.PPKLite", ByteRange: [0, 0, 0, 0] })
+      )
+    );
+  return doc.save({ useObjectStreams });
 }
 
 const fieldDict = (doc, name) =>
@@ -167,19 +187,76 @@ describe("addInPersonFields", () => {
   });
 
   it("appends to a signed PDF, leaving its bytes as they were", async () => {
+    // With the signature in a classic file and in an object stream.
+    for (const useObjectStreams of [false, true]) {
+      const input = await signedPdf(useObjectStreams);
+      // In an object stream, /ByteRange is compressed out of sight.
+      expect(
+        new TextDecoder("latin1").decode(input).includes("/ByteRange")
+      ).toBe(!useObjectStreams);
+      const { bytes } = await addInPersonFields(input, [
+        { page: 0, x: 10, y: 10, width: 180, height: 60, name: "Customer" }
+      ]);
+      expect(startsWith(bytes, Array.from(input))).toBe(true);
+      const reloaded = await PDFDocument.load(bytes);
+      expect(fieldDict(reloaded, "Customer")).toBeDefined();
+      expect(fieldDict(reloaded, "Seller")).toBeDefined();
+    }
+  });
+
+  it("appends to a PDF with usage rights (/Perms /UR3)", async () => {
     const doc = await PDFDocument.create();
     doc.addPage([600, 800]);
-    // Enough of a signature for the check: a /ByteRange in the file.
-    doc.context.register(
-      doc.context.obj({ Type: "Sig", ByteRange: [0, 0, 0, 0] })
+    doc.catalog.set(
+      PDFName.of("Perms"),
+      doc.context.obj({ UR3: doc.context.obj({}) })
     );
-    const input = await doc.save({ useObjectStreams: false });
+    const input = await doc.save();
     const { bytes } = await addInPersonFields(input, [
       { page: 0, x: 10, y: 10, width: 180, height: 60, name: "Customer" }
     ]);
     expect(startsWith(bytes, Array.from(input))).toBe(true);
+  });
+
+  it("re-saves a PDF whose signature field is still blank", async () => {
+    const doc = await PDFDocument.create();
+    const page = doc.addPage([600, 800]);
+    addBlankSignatureField(doc, page, [10, 10, 190, 70], "Seller");
+    const input = await doc.save();
+    const { bytes } = await addInPersonFields(input, [
+      { page: 0, x: 300, y: 10, width: 180, height: 60, name: "Customer" }
+    ]);
+    expect(startsWith(bytes, Array.from(input))).toBe(false);
+  });
+
+  it("doesn't take the name of a field group", async () => {
+    const doc = await PDFDocument.create();
+    const page = doc.addPage([600, 800]);
+    doc
+      .getForm()
+      .createTextField("Homeowner.phone")
+      .addToPage(page, { x: 50, y: 700, width: 200, height: 20 });
+    const { names } = await addInPersonFields(await doc.save(), [
+      { page: 0, x: 10, y: 10, width: 180, height: 60, name: "Homeowner" }
+    ]);
+    expect(names).toEqual(["Homeowner 2"]);
+  });
+
+  it("places boxes on the part of the page shown", async () => {
+    // A crop box reaching past the media box: pdf.js shows the overlap.
+    const doc = await PDFDocument.create();
+    const page = doc.addPage([600, 800]);
+    page.setCropBox(-100, 100, 800, 1000);
+    // Not a multiple of 90: pdf.js shows the page upright.
+    page.node.set(PDFName.of("Rotate"), PDFNumber.of(45));
+    const input = await doc.save();
+    const info = await readPdf(input);
+    expect(info.pages).toEqual([{ width: 600, height: 700 }]);
+    const { bytes } = await addInPersonFields(input, [
+      { page: 0, x: 0, y: 0, width: 180, height: 60, name: "A" }
+    ]);
     const reloaded = await PDFDocument.load(bytes);
-    expect(fieldDict(reloaded, "Customer")).toBeDefined();
+    expect(rectOf(fieldDict(reloaded, "A"))).toEqual([0, 740, 180, 800]);
   });
 
   it("keeps a name in any language", async () => {

@@ -39,10 +39,13 @@ export const MIN_BOX = { width: 40, height: 20 };
 // The /T limit the phone and docsign keep to.
 const MAX_NAME = 100;
 
-const normRotation = (degrees) => (((degrees || 0) % 360) + 360) % 360;
+// As pdf.js reads /Rotate: a multiple of 90, else 0.
+const normRotation = (degrees) =>
+  (degrees || 0) % 90 ? 0 : (((degrees || 0) % 360) + 360) % 360;
 
 // The field name for `label`: no '.', which separates field name parts, and
 // at most 100 characters; unique among `taken` (" 2", " 3", ... appended).
+// Like phoneSignFieldName (phoneSignBase.js), which the server limits further.
 export const fieldNameFor = (label, taken) => {
   const base =
     String(label || "")
@@ -59,9 +62,21 @@ export const fieldNameFor = (label, taken) => {
   }
 };
 
-// The page as pdf.js displays it: its crop box, rotation and display size.
+// The part of the page pdf.js shows: the crop box clipped to the media box,
+// or the media box if they don't overlap.
+const visibleBox = (page) => {
+  const media = page.getMediaBox();
+  const crop = page.getCropBox();
+  const x = Math.max(crop.x, media.x);
+  const y = Math.max(crop.y, media.y);
+  const width = Math.min(crop.x + crop.width, media.x + media.width) - x;
+  const height = Math.min(crop.y + crop.height, media.y + media.height) - y;
+  return width > 0 && height > 0 ? { x, y, width, height } : media;
+};
+
+// The page as pdf.js displays it: its visible box, rotation and display size.
 const pageGeometry = (page) => {
-  const { x, y, width, height } = page.getCropBox();
+  const { x, y, width, height } = visibleBox(page);
   const rotation = normRotation(page.getRotation().angle);
   const turned = rotation === 90 || rotation === 270;
   return {
@@ -106,17 +121,36 @@ const isCertified = (pdfDoc) => {
   return Boolean(perms?.get?.(PDFName.of("DocMDP")));
 };
 
-// True if the file carries a digital signature, which a full re-save would
-// break: then the fields are added as an incremental update.
-const hasSignature = (bytes) => {
-  const marker = [47, 66, 121, 116, 101, 82, 97, 110, 103, 101]; // "/ByteRange"
-  outer: for (let i = 0; i + marker.length <= bytes.length; i++) {
-    for (let j = 0; j < marker.length; j++) {
-      if (bytes[i + j] !== marker[j]) continue outer;
-    }
+// True if the PDF carries a digital signature, which a full re-save would
+// break: a signature field with a value (wherever its dictionary is stored,
+// object streams included), or usage rights (/Perms /UR3, Reader
+// extensions). Then the fields are added as an incremental update.
+const hasSignature = (pdfDoc) => {
+  const perms = pdfDoc.catalog.lookup(PDFName.of("Perms"));
+  if (perms?.get?.(PDFName.of("UR3")) || perms?.get?.(PDFName.of("UR"))) {
     return true;
   }
-  return false;
+  return pdfDoc
+    .getForm()
+    .getFields()
+    .some(
+      (field) =>
+        field instanceof PDFSignature &&
+        field.acroField.dict.get(PDFName.of("V")) !== undefined
+    );
+};
+
+// The names a new top-level field must not take: every field's full name,
+// and the top-level names of field groups ("Homeowner" of "Homeowner.sig"),
+// which getFields() doesn't list.
+const takenNames = (pdfDoc) => {
+  const form = pdfDoc.getForm();
+  const names = form.getFields().map((field) => field.getName());
+  for (const [field] of form.acroForm.getFields()) {
+    const name = field.getPartialName();
+    if (name) names.push(name);
+  }
+  return names;
 };
 
 // Reads `bytes` for the page: each page's display size, the form's field
@@ -206,21 +240,19 @@ const blankAppearance = (pdfDoc, font, rotation, width, height, label) => {
 // re-saved with a classic cross-reference table, as Acrobat and the phone
 // prefer. Answers { bytes, names } (the field names used, in box order).
 export const addInPersonFields = async (bytes, boxes) => {
-  const incremental = hasSignature(bytes);
-  const pdfDoc = await PDFDocument.load(
-    bytes,
-    incremental
-      ? { forIncrementalUpdate: true, updateMetadata: false }
-      : { updateMetadata: false }
-  );
+  let pdfDoc = await PDFDocument.load(bytes, { updateMetadata: false });
   if (isCertified(pdfDoc)) {
     throw Object.assign(new Error("certified"), { code: "certified" });
   }
+  const incremental = hasSignature(pdfDoc);
+  if (incremental) {
+    pdfDoc = await PDFDocument.load(bytes, {
+      forIncrementalUpdate: true,
+      updateMetadata: false
+    });
+  }
   const pages = pdfDoc.getPages();
-  const taken = pdfDoc
-    .getForm()
-    .getFields()
-    .map((field) => field.getName());
+  const taken = takenNames(pdfDoc);
   const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const names = [];
   for (const box of boxes) {

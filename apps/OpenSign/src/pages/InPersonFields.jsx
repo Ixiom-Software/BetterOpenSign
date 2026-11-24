@@ -42,6 +42,9 @@ function InPersonFields() {
   const [pageWidth, setPageWidth] = useState(MAX_PAGE_WIDTH);
   const nextId = useRef(1);
   const viewer = useRef(null);
+  // Set while a drag or resize ends: letting go outside the box (against the
+  // page's edge, or below the minimum size) clicks the page itself.
+  const justMoved = useRef(false);
 
   // pdf.js takes over the buffer it's given: hand it a copy.
   const file = useMemo(() => (bytes ? { data: bytes.slice() } : null), [bytes]);
@@ -95,7 +98,7 @@ function InPersonFields() {
 
   // A click on a page (not on a box) puts a box there, centred on the click.
   const handlePageClick = (pageIndex, event) => {
-    if (event.target !== event.currentTarget) return;
+    if (event.target !== event.currentTarget || justMoved.current) return;
     const scale = scaleOf(pageIndex);
     const page = info.pages[pageIndex];
     const rect = event.currentTarget.getBoundingClientRect();
@@ -120,6 +123,14 @@ function InPersonFields() {
     ]);
     setNextName("");
     setDone(null);
+  };
+
+  // The click, if any, comes straight after the mouseup that ends the move.
+  const endMove = () => {
+    justMoved.current = true;
+    setTimeout(() => {
+      justMoved.current = false;
+    }, 0);
   };
 
   const updateBox = (id, changes) => {
@@ -363,20 +374,22 @@ function InPersonFields() {
                               position={{ x: b.x * scale, y: b.y * scale }}
                               minWidth={MIN_BOX.width * scale}
                               minHeight={MIN_BOX.height * scale}
-                              onDragStop={(e, d) =>
+                              onDragStop={(e, d) => {
+                                endMove();
                                 updateBox(b.id, {
                                   x: d.x / scale,
                                   y: d.y / scale
-                                })
-                              }
-                              onResizeStop={(e, dir, ref, delta, pos) =>
+                                });
+                              }}
+                              onResizeStop={(e, dir, ref, delta, pos) => {
+                                endMove();
                                 updateBox(b.id, {
                                   width: ref.offsetWidth / scale,
                                   height: ref.offsetHeight / scale,
                                   x: pos.x / scale,
                                   y: pos.y / scale
-                                })
-                              }
+                                });
+                              }}
                               style={{
                                 border: "2px dashed #1f7a4d",
                                 background: "rgba(31, 122, 77, 0.12)",
