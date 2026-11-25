@@ -493,6 +493,14 @@ export default function reportJson(id) {
               action: "rename"
             },
             {
+              btnId: "2635",
+              btnLabel: "Sign in person",
+              hoverLabel: "Sign in person",
+              btnIcon: "fa-light fa-mobile",
+              redirectUrl: "in-person",
+              action: "inperson"
+            },
+            {
               btnId: "1834",
               btnLabel: "Delete",
               hoverLabel: "Delete",

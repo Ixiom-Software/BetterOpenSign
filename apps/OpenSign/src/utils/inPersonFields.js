@@ -114,6 +114,64 @@ export const displayBoxToRect = (geometry, { x, y, width, height }) => {
   ];
 };
 
+const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
+
+// OpenSign's default widget sizes (defaultWidthHeight, constant/Utils.js).
+const TEMPLATE_DEFAULT_SIZE = {
+  signature: { width: 150, height: 60 },
+  initials: { width: 50, height: 50 }
+};
+
+// A template widget's size, as OpenSign's placeholderWidth/placeholderHeight
+// read it: old widgets saved from the mobile view store it unscaled.
+const templateWidgetSize = (pos) => {
+  const fallback = TEMPLATE_DEFAULT_SIZE[pos.type];
+  const width = Number(pos.Width) || fallback.width;
+  const height = Number(pos.Height) || fallback.height;
+  const factor = pos.isMobile && pos.scale && !pos.IsResize ? pos.scale : 1;
+  return { width: width * factor, height: height * factor };
+};
+
+// In-person boxes for an OpenSign template's `Placeholders`, on a PDF whose
+// pages (display sizes) are `pages`. Template widgets are kept in the same
+// space as boxes (display space at scale 1, origin top left), so they carry
+// over as they are. Each signature widget becomes a box named for its role,
+// each initials widget one named "<role> (initials)"; prefill widgets and
+// other types are left out. Answers { boxes, skipped }: `skipped` counts the
+// widgets left out (prefill ones aside) and any on a page the PDF lacks.
+export const templateBoxes = (placeholders, pages) => {
+  const boxes = [];
+  let skipped = 0;
+  for (const role of placeholders || []) {
+    if (role?.Role === "prefill") continue;
+    const roleName = String(role?.Role || "").trim() || "Signature";
+    for (const placed of role?.placeHolder || []) {
+      const page = pages[Number(placed?.pageNumber) - 1];
+      for (const pos of placed?.pos || []) {
+        if (!TEMPLATE_DEFAULT_SIZE[pos?.type] || !page) {
+          skipped++;
+          continue;
+        }
+        const size = templateWidgetSize(pos);
+        const width = Math.min(Math.max(size.width, MIN_BOX.width), page.width);
+        const height = Math.min(
+          Math.max(size.height, MIN_BOX.height),
+          page.height
+        );
+        boxes.push({
+          page: Number(placed.pageNumber) - 1,
+          x: clamp(Number(pos.xPosition) || 0, 0, page.width - width),
+          y: clamp(Number(pos.yPosition) || 0, 0, page.height - height),
+          width,
+          height,
+          name: pos.type === "initials" ? `${roleName} (initials)` : roleName
+        });
+      }
+    }
+  }
+  return { boxes, skipped };
+};
+
 // True if the PDF is certified (/Perms /DocMDP): the phone refuses in-person
 // signatures on a certified PDF.
 const isCertified = (pdfDoc) => {

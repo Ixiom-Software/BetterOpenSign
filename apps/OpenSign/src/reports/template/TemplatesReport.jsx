@@ -385,6 +385,9 @@ const TemplatesReport = (props) => {
       setIsModal({ [`saveastemplate_${item.objectId}`]: true });
     } else if (act.action === "extendexpiry") {
       setIsModal({ [`extendexpiry_${item.objectId}`]: true });
+    } else if (act.action === "inperson") {
+      // prepare the template's PDF for signing in person on a BetterID phone
+      navigate(`/${act.redirectUrl}?templateId=${item.objectId}`);
     }
   });
   // Get current list

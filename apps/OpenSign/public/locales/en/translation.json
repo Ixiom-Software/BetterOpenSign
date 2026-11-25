@@ -155,6 +155,7 @@
     "Quick send": "Quick send",
     "Edit": "Edit",
     "Share with team": "Share with team",
+    "Sign in person": "Sign in person",
     "Share with user": "Share with colleague",
     "Share": "Share",
     "View": "View",
@@ -1737,6 +1738,13 @@
     "encrypted": "This PDF is password-protected. Remove the protection and try again.",
     "certified": "This PDF is certified, so signatures drawn in person can't be added to it.",
     "load-error": "Couldn't read this PDF.",
-    "save-error": "Couldn't add the signature fields to this PDF."
+    "save-error": "Couldn't add the signature fields to this PDF.",
+    "from-template": "Or start from a template",
+    "template-search": "Search templates",
+    "template-none": "No templates found",
+    "template-error": "Couldn't open this template. It may have been deleted, or it isn't shared with you.",
+    "template-no-signatures": "This template has no signature or initials fields. Click on a page to place boxes.",
+    "template-skipped_one": "1 other field in this template (text, date, checkbox, ...) isn't included: only signatures and initials are signed in person.",
+    "template-skipped_other": "{{count}} other fields in this template (text, date, checkbox, ...) aren't included: only signatures and initials are signed in person."
   }
 }
