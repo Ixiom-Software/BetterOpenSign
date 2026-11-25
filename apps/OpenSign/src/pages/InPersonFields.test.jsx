@@ -278,4 +278,116 @@ describe("InPersonFields", () => {
       expect(screen.queryAllByTestId("box")).toHaveLength(0);
     });
   });
+
+  describe("assigning", () => {
+    const people = [
+      {
+        id: "u1",
+        name: "Tess Tech",
+        email: "tess@example.com",
+        teams: ["Field"],
+        linked: true
+      },
+      {
+        id: "u2",
+        name: "Pat Nolink",
+        email: "pat@example.com",
+        teams: ["Field"],
+        linked: false
+      }
+    ];
+    let assignAnswer;
+
+    beforeEach(() => {
+      const session = {
+        baseUrl: "https://api.example/app/",
+        parseAppId: "app",
+        accesstoken: "r:session"
+      };
+      vi.stubGlobal("localStorage", { getItem: (key) => session[key] ?? null });
+      assignAnswer = async (params) => ({
+        data: {
+          result: {
+            id: "doc1",
+            name: params.name,
+            assignee: { email: "tess@example.com" }
+          }
+        }
+      });
+      axios.post.mockReset();
+      axios.post.mockImplementation(async (url, params) => {
+        if (url.endsWith("functions/inpersonassignees")) {
+          return { data: { result: people } };
+        }
+        if (url.endsWith("functions/inpersonassign")) {
+          return assignAnswer(params);
+        }
+        throw new Error(`unexpected ${url}`);
+      });
+    });
+
+    // A PDF with one box, and the assign dialog open.
+    const openDialog = async () => {
+      const { container } = renderPage();
+      choose(container, pdfFile(await onePagePdf(), "work-order.pdf"));
+      const page = await screen.findByTestId("in-person-page-0");
+      fireEvent.change(screen.getByLabelText("in-person.next-name"), {
+        target: { value: "Customer" }
+      });
+      fireEvent.click(page, { clientX: 100, clientY: 100 });
+      fireEvent.click(screen.getByText("in-person.assign"));
+      fireEvent.mouseDown(await screen.findByLabelText("in-person.assign-to"));
+    };
+
+    it("sends the PDF with its fields to a colleague with BetterID", async () => {
+      await openDialog();
+      expect(screen.getByLabelText("in-person.assign-doc-name").value).toBe(
+        "work-order"
+      );
+      // Someone without BetterID can't be picked.
+      expect(
+        (await screen.findByText("Pat Nolink")).closest("li")
+      ).toHaveAttribute("aria-disabled", "true");
+      fireEvent.click(screen.getByText("Tess Tech"));
+      fireEvent.click(screen.getByText("in-person.assign-send"));
+
+      await screen.findByText(/in-person.assigned/);
+      const [, params] = axios.post.mock.calls.find(([url]) =>
+        url.endsWith("functions/inpersonassign")
+      );
+      expect(params).toMatchObject({ name: "work-order", assigneeId: "u1" });
+      const sent = Uint8Array.from(atob(params.pdf), (c) => c.charCodeAt(0));
+      const doc = await PDFDocument.load(sent);
+      expect(
+        doc
+          .getForm()
+          .getFields()
+          .filter((field) => field instanceof PDFSignature)
+          .map((field) => field.getName())
+      ).toEqual(["Customer"]);
+      expect(
+        screen.getByText(
+          'in-person.assigned {"name":"work-order","to":"Tess Tech"}'
+        )
+      ).toBeInTheDocument();
+    });
+
+    it("shows the server's answer when it refuses", async () => {
+      assignAnswer = async () => {
+        const err = new Error("Request failed");
+        err.response = {
+          data: {
+            code: 119,
+            error: "You can't assign documents to this person."
+          }
+        };
+        throw err;
+      };
+      await openDialog();
+      fireEvent.click(await screen.findByText("Tess Tech"));
+      fireEvent.click(screen.getByText("in-person.assign-send"));
+      await screen.findByText("You can't assign documents to this person.");
+      expect(screen.queryByText(/in-person.assigned/)).toBeNull();
+    });
+  });
 });

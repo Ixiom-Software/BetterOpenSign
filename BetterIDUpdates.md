@@ -26,6 +26,36 @@ Entries before 2026-11-23 were written when the product was BetterSign; their
 product names now read BetterID. Old addresses and stored values in them are kept
 as they were.
 
+### 2026-11-25: assign a PDF for signing in person
+
+- **"Assign to…"** on the Sign in person page, next to Download. Pick a
+  colleague and name the document: the PDF, with its blank signature fields,
+  becomes a document they sign, in their "Need your sign" list and in their
+  BetterID app (`/api/v1`), and they get the usual request email.
+- **Who:** active members of your organization in one of your teams, or a team
+  under one (`TeamIds[].Ancestors`), you included, with an active BetterID
+  link (`bs_Identity`). People without one are listed but can't be picked:
+  only their phone can finish the document.
+- **The document** (`InPerson: true`, set only by the server) has the assignee
+  as its one signer, with one placeholder and no widgets, and the PDF stored as
+  sent (not through `savefile`, which flattens). Your contact for them is
+  reused, or made. The server checks the PDF: not password-protected or
+  certified, with at least one blank signature field.
+- **Signed only in the app.** Browser signing (`signPdf`) and Sign on phone
+  refuse it; the signing page shows "open it in the BetterID app" instead. The
+  app downloads it, runs its in-person flow and uploads the result
+  (`POST /api/v1/documents/:id/signatures`), which completes and seals it,
+  appended, so the in-person fields and drawings stay as they are.
+- **API:** documents carry `inPerson`; `GET /documents` takes
+  `inPerson=true|false`.
+- **Code:** server `cloud/parsefunction/inPersonAssign.js` (`inpersonassignees`,
+  `inpersonassign`; spec `spec/bsapi-integration/inperson.spec.js`), the
+  request email shared with `customRoute/bsapi/notify.js` (`signRequestMail`);
+  frontend `src/pages/InPersonFields.jsx`, `src/components/pdf/InPersonNotice.jsx`.
+- **The BetterID app** needs a "Documents to sign" list for these
+  (BetterSignApps); until then the assignee sees them on the site only. A push
+  when a document is assigned comes later (a new relay message type).
+
 ### 2026-11-25: sign in person from a template
 
 - **"Or start from a template"** on the Sign in person page: a search box over
@@ -870,9 +900,9 @@ Server (`apps/OpenSignServer/`):
 | File | What we changed | Since |
 |---|---|---|
 | `index.js` | Public file uploads (`FILE_UPLOAD_PUBLIC`), `Content-Length` exposed cross-origin | 2026-10-07 |
-| `cloud/main.js` | Registers our cloud functions (`betteridlogin`, `bsidlogin`, `bsidentity*`, `updateuserbyadmin`, `bsphonesign*`) and the `bs_Identity` save hook; `beforeLogin` hook blocking password sign-in ("Sign in with BetterID") | 2026-10-06 → 11-22 |
+| `cloud/main.js` | Registers our cloud functions (`betteridlogin`, `bsidlogin`, `bsidentity*`, `updateuserbyadmin`, `bsphonesign*`, `inpersonassign*`) and the `bs_Identity` save hook; `beforeLogin` hook blocking password sign-in ("Sign in with BetterID") | 2026-10-06 → 11-25 |
 | `cloud/customRoute/customApp.js` | Mounts the desktop API router (`bsapi`) at `/api/v1` | 2026-11-14 |
-| `cloud/parsefunction/pdf/PDF.js` | Append-only signing once a VLAD signed; signing commits as a compare-and-swap on `SignRevision`; the seal goes through `utils/seal.js`; email logo is `emailLogoUrl` | 2026-11-14 → 11-16 |
+| `cloud/parsefunction/pdf/PDF.js` | Append-only signing once a VLAD signed; signing commits as a compare-and-swap on `SignRevision`; the seal goes through `utils/seal.js`; email logo is `emailLogoUrl`; `signPdf` refuses `InPerson` documents | 2026-11-14 → 11-25 |
 | `Utils.js` | `appName` is Better DocSign (BetterSign, then BetterID, until 2026-11-23); adds `companyName` (BetterID, for copyright lines), `supportEmail` (default `contact@betterid.net`), `emailLogoUrl` (default `docsign.betterid.net`), `spamReportMsg`; `mailTemplate` logo | 2026-11-16 → 11-22 |
 | `cloud/parsefunction/sendMailv3.js`, `sendMailWithAttachment.js`, `sendSystemMail.js` | Spam-report footer from `spamReportMsg` (to `supportEmail`, not `complaints@opensignlabs.com`) | 2026-11-16 |
 | `cloud/parsefunction/declinedocument.js`, `ForwardDoc.js` | Email logo is `emailLogoUrl` | 2026-11-16 |
@@ -881,7 +911,7 @@ Server (`apps/OpenSignServer/`):
 | `images/logo.png` | Better DocSign wordmark (completion certificate) | 2026-11-16 → 11-23 |
 | `cloud/parsefunction/pdf/GenerateCertificate.js` | Completion certificate lists the PDF's digital signatures and their VLADs ("BetterID identity (VLAD)") | 2026-11-17 → 11-22 |
 | `cloud/parsefunction/pdf/Placeholder.js` | Signature placeholder keeps indirect AcroForm `/Fields` and `/SigFlags` (needed for incremental updates) | 2026-11-14 |
-| `cloud/parsefunction/DocumentBeforesave.js` | `VladSignatures`, `SignRevision`, `Seal`, `CertificateSeal` writable only with the master key (creates checked with `has()`) | 2026-11-14 → 11-15 |
+| `cloud/parsefunction/DocumentBeforesave.js` | `VladSignatures`, `SignRevision`, `Seal`, `CertificateSeal`, `PhoneSignLock*`, `InPerson` writable only with the master key (creates checked with `has()`) | 2026-11-14 → 11-25 |
 | `cloud/parsefunction/generateCertificatebydocId.js` | Certificate sealed through `utils/seal.js` | 2026-11-15 |
 | `cloud/parsefunction/SendMailOTPv1.js`, `AuthLoginAsMail.js`, `VerifyEmail.js` | Rewritten on `emailOtp.js` (recipient-only, hashed 6-digit codes) | 2026-11-13 |
 | `cloud/customRoute/deleteAccount/deleteUtils.js`, `deleteUser.js` | Share `emailOtp.js` constants; constant-time code comparison | 2026-11-13 |
@@ -906,7 +936,7 @@ changes:
 | `src/json/ReportJson.js` | `usersActions`: reset password removed, Edit added; Templates row menu: "Sign in person" (action `inperson`) | 2026-11-13 → 11-25 |
 | `src/pages/UserProfile.jsx` | Change Password button removed; "code sent" only on success | 2026-11-13 |
 | `src/pages/SignyourselfPdf.jsx`, `src/components/pdf/VerifyEmail.jsx` | 6-digit codes; "code sent" only on success; `SignyourselfPdf` passes the document id to Sign on phone | 2026-11-13 → 11-15 |
-| `src/pages/PdfRequestFiles.jsx` | Append-only signing for documents a VLAD signed; passes the document id to Sign on phone | 2026-11-14 → 11-15 |
+| `src/pages/PdfRequestFiles.jsx` | Append-only signing for documents a VLAD signed; passes the document id to Sign on phone; an `InPerson` document shows `InPersonNotice` instead of the signing page | 2026-11-14 → 11-25 |
 | `src/components/pdf/WidgetsValueModal.jsx` | "Sign on phone" (PhoneSign), only for a Sign in with BetterID session on a saved document | 2026-10-06 → 11-15 |
 | `src/constant/Utils.js` | `runPublicCloudFn`; `handleSendOTP` sends the session; keeps signature fields when flattening an append-only PDF; app name, email logo and support address from `brand.js` | 2026-11-13 → 11-16 |
 | Files that hard-coded `"OpenSign™"`: `src/components/Title.jsx`, `bulksend/BulkSendUi.jsx`, `pdf/EditTemplate.jsx`, `preferences/MailTemplateEditor.jsx`, `shared/fields/FolderModal.jsx`, `shared/fields/SelectFolder.jsx`, `emailbuilder/getConfiguration/sample/{request,completion}-email.ts`, `src/pages/Form.jsx`, `Opensigndrive.jsx`, `Preferences.jsx`, `UpdateExistUserAdmin.jsx`, `src/primitives/DownloadPdfZip.jsx`, `RenderReportCell.jsx`, `src/reports/document/DocumentsReport.jsx`, `src/reports/template/TemplatesReport.jsx` (also `Login.jsx`, `GuestLogin.jsx`, `SignyourselfPdf.jsx`, `PdfRequestFiles.jsx` and the brand files above) | Import `APP_NAME` from `src/constant/brand.js`; the email samples use `EMAIL_LOGO_URL`. On merge, any new `"OpenSign™"` from upstream becomes `APP_NAME` | 2026-11-16 |
@@ -944,6 +974,8 @@ changes them, drop the change; if upstream adds new imports of them, remove thos
   the relay client `cloud/customRoute/bsapi/relay.js`, docs
   `docs/BetterIDPhoneSign.md`.
 - **Sealing:** `apps/OpenSignServer/utils/seal.js`, `docs/BsServiceIdentitySealing.md`.
+- **Sign in person, assigned:** `cloud/parsefunction/inPersonAssign.js`,
+  `spec/bsapi-integration/inperson.spec.js`.
 - **Sign-in and admin cloud functions:** `cloud/parsefunction/bsidlogin.js`,
   `betteridlogin.js`, `emailOtp.js`, `bsIdentityAdmin.js`, `updateUserByAdmin.js`.
 - **Frontend:** `src/theme/md3Theme.js`, `src/theme/ThemeModeProvider.jsx`,
@@ -951,7 +983,7 @@ changes them, drop the change; if upstream adds new imports of them, remove thos
   `src/vendor/signInWithBetterIDButton/*` (vendored), `src/components/BrandHero.jsx`, `BsIdentities.jsx`,
   `EditUser.jsx` (both with `*.test.jsx`), `pdf/PhoneSign.jsx` (+ test), `src/utils/appendOnlyPdf.js` (+ test),
   `src/utils/phoneSignBase.js` (+ test), in-person signing `src/pages/InPersonFields.jsx` and
-  `src/utils/inPersonFields.js` (both + test),
+  `src/utils/inPersonFields.js` (both + test), `src/components/pdf/InPersonNotice.jsx`,
   `src/assets/images/betterid-icon.png`, `src/constant/brand.js`,
   `public/betterid-logo.png`, `public/logo192.png`, `public/logo512.png`,
   `patches/parse+8.6.0.patch`,
@@ -1009,7 +1041,9 @@ Known issues, found in review on 2026-11-15:
   `contracts_Users` row is writable with their session (the ACL `adduser` sets), and
   nothing checks saves to that class. So a user can set their own `UserRole` to
   `contracts_Admin` through the REST API, which also gets around
-  `updateuserbyadmin`'s rules. Fix: a `beforeSave` on `contracts_Users` that lets
+  `updateuserbyadmin`'s rules. The same goes for `TeamIds`, which
+  `inpersonassign` uses to decide who you may assign to: a user who adds a team
+  to their own row can assign to its members. Fix: a `beforeSave` on `contracts_Users` that lets
   only the master key change `UserRole`, `TenantId`, `OrganizationId` and `TeamIds`
   (check upstream's own pages that save this class first).
 - **Sign-in is refused for a moment after deploying the `Active` flag.** Migrations
@@ -1019,6 +1053,11 @@ Known issues, found in review on 2026-11-15:
   stop. If the migration fails partway, the remaining rows stay off. After that
   deploy, check `fly logs` for `Migrated 20261115150000` and sign in once. Longer
   term, run migrations before the server listens.
+- **`createdocumentfromapp` trusts what it's given (upstream, security).** It
+  stores the `CreatedBy`, `ExtUserPtr` and `Signers` the client sends, with the
+  master key, without checking they're the caller's. `inpersonassign` doesn't
+  use it; a check that `CreatedBy` is the caller and the signers are the
+  caller's contacts would close it for everything else.
 
 Other follow-ups:
 

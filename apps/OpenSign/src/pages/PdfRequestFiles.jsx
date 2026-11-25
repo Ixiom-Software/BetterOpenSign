@@ -60,6 +60,7 @@ import { useTranslation } from "react-i18next";
 import ModalUi from "../primitives/ModalUi";
 import TourContentWithBtn from "../primitives/TourContentWithBtn";
 import HandleError from "../primitives/HandleError";
+import InPersonNotice from "../components/pdf/InPersonNotice";
 import LoaderWithMsg from "../primitives/LoaderWithMsg";
 import DownloadPdfZip from "../primitives/DownloadPdfZip";
 import Loader from "../primitives/Loader";
@@ -140,6 +141,8 @@ function PdfRequestFiles(
   const [pdfLoad, setPdfLoad] = useState(false);
   const [isSigned, setIsSigned] = useState(false);
   const [isExpired, setIsExpired] = useState(false);
+  // Assigned for signing in person: the BetterID app signs it, not this page.
+  const [inPersonDoc, setInPersonDoc] = useState(null);
   const [alreadySign, setAlreadySign] = useState(false);
   const [containerWH, setContainerWH] = useState({ width: 0, height: 0 });
   const [widgetsTour, setWidgetsTour] = useState(false);
@@ -360,6 +363,14 @@ function PdfRequestFiles(
             ""; //signerObjectId is contactBookId refer from public template flow
         if (currUserId) {
           setSignerObjectId(currUserId);
+        }
+        if (
+          documentData[0]?.InPerson &&
+          !isCompleted &&
+          !declined &&
+          !(currDate > expireUpdateDate)
+        ) {
+          setInPersonDoc({ name: documentData[0]?.Name });
         }
         if (documentData[0].SignedUrl) {
           setPdfUrl(documentData[0].SignedUrl);
@@ -1924,6 +1935,8 @@ function PdfRequestFiles(
             <LoaderWithMsg isLoading={isLoading} />
           ) : handleError ? (
             <HandleError handleError={handleError} />
+          ) : inPersonDoc ? (
+            <InPersonNotice name={inPersonDoc.name} />
           ) : (
             <div>
               {!isAgree &&

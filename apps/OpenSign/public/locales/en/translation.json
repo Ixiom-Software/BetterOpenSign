@@ -1745,6 +1745,17 @@
     "template-error": "Couldn't open this template. It may have been deleted, or it isn't shared with you.",
     "template-no-signatures": "This template has no signature or initials fields. Click on a page to place boxes.",
     "template-skipped_one": "1 other field in this template (text, date, checkbox, ...) isn't included: only signatures and initials are signed in person.",
-    "template-skipped_other": "{{count}} other fields in this template (text, date, checkbox, ...) aren't included: only signatures and initials are signed in person."
+    "template-skipped_other": "{{count}} other fields in this template (text, date, checkbox, ...) aren't included: only signatures and initials are signed in person.",
+    "assign": "Assign to…",
+    "assign-title": "Assign for signing in person",
+    "assign-intro": "Send this PDF to someone in your teams. It appears in their list of documents to sign, on this site and in their BetterID app, and they get an email. They sign it in person on their phone.",
+    "assign-doc-name": "Document name",
+    "assign-to": "Assign to",
+    "assign-none": "Nobody in your teams",
+    "assign-no-betterid": "no BetterID linked",
+    "assign-send": "Assign",
+    "assign-list-error": "Couldn't load the people in your teams.",
+    "assigned": "\"{{name}}\" is assigned to {{to}}. It's in their list to sign, on the site and in their BetterID app.",
+    "assigned-notice": "This document is signed in person. Open it in the BetterID app on your phone: it's in your list of documents to sign there."
   }
 }

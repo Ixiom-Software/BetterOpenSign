@@ -509,6 +509,8 @@ async function continueWith(row, step, extra) {
 // Who signs: the signer contact whose turn it is, or for a document you sign
 // yourself, its owner (as signPdf without a userId).
 function signerOf(doc, user) {
+  // Signed in person in the BetterID app (/api/v1) instead.
+  if (doc.get('InPerson')) return null;
   const fallback = user.get('name') || user.get('email') || user.get('username') || 'Signer';
   if (doc.get('IsSignyourself')) {
     const ext = doc.get('ExtUserPtr');

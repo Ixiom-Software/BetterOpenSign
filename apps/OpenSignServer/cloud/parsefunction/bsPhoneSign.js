@@ -25,6 +25,7 @@ import { bsIdSessionVlad } from '../../utils/bsWebSession.js';
 import { config } from '../customRoute/bsapi/auth.js';
 import { findAccessibleDocument, signerState } from '../customRoute/bsapi/documents.js';
 import { ensureReceiverVlad } from '../customRoute/bsapi/receiverVlad.js';
+import { IN_PERSON_MESSAGE } from './pdf/PDF.js';
 import {
   buildRequestEnvelope,
   newX25519,
@@ -113,6 +114,8 @@ export async function siteConfig() {
 // you sign yourself has no signer contacts: its owner signs it until it's
 // finished. Everything else follows signerState (a pending signer, their turn).
 export function cannotSign(doc, userId, now = new Date()) {
+  // Signed in person in the BetterID app (/api/v1), not a field at a time.
+  if (doc.get('InPerson')) return IN_PERSON_MESSAGE;
   if (doc.get('IsSignyourself')) {
     if (doc.get('CreatedBy')?.id !== userId) return "You can't sign this document.";
     if (doc.get('IsArchive')) return 'This document was deleted.';

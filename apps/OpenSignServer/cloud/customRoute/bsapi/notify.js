@@ -1,7 +1,8 @@
 // "Your turn to sign" for documents sent in order. The browser sends this
 // itself after an online signature (apps/OpenSign PdfRequestFiles.jsx, the
 // sendInOrder branch); a desktop upload has no browser, so the server sends
-// the same email.
+// the same email. Also the request email for a document assigned for signing
+// in person (parsefunction/inPersonAssign.js), which the server sends too.
 
 import { mailTemplate, replaceMailVaribles } from '../../../Utils.js';
 import sendmailv3 from '../../parsefunction/sendMailv3.js';
@@ -17,9 +18,17 @@ export function nextSignerMail(doc, signedContactId, siteOrigin) {
   const idx = findPlaceholderIndex(placeholders, signedContactId);
   const next = idx === -1 ? null : placeholders[idx + 1];
   if (!next) return null;
-  const nextId = next.signerObjId || next.signerPtr?.objectId;
+  return signRequestMail(doc, next, siteOrigin);
+}
+
+// The sendmailv3 params asking the signer of `placeholder` to sign `doc` (the
+// document JSON, with ExtUserPtr.TenantId and Signers included), or null if
+// they have no email. The same email the browser sends when a document is
+// sent (the tenant's or document's custom request email, else the standard).
+export function signRequestMail(doc, placeholder, siteOrigin) {
+  const nextId = placeholder.signerObjId || placeholder.signerPtr?.objectId;
   const contact = (doc.Signers || []).find(s => s?.objectId === nextId);
-  const email = next.email || contact?.Email;
+  const email = placeholder.email || contact?.Email;
   if (!email) return null;
 
   const sender = doc.ExtUserPtr || {};
@@ -77,14 +86,16 @@ export function nextSignerMail(doc, signedContactId, siteOrigin) {
 // How mail goes out; tests swap `send` to capture it.
 export const mailer = { send: params => sendmailv3({ params }) };
 
-// Send it; never fails the signing that triggered it.
-export async function notifyNextSigner(doc, signedContactId, siteOrigin) {
-  const params = nextSignerMail(doc, signedContactId, siteOrigin);
+// Send `params` if any; never fails what triggered it. Answers the recipient.
+export async function sendQuietly(params, what) {
   if (!params) return null;
   try {
     await mailer.send(params);
   } catch (err) {
-    console.log('bsapi: next-signer mail failed', err?.message);
+    console.log(`bsapi: ${what} mail failed`, err?.message);
   }
   return params.recipient;
 }
+
+export const notifyNextSigner = (doc, signedContactId, siteOrigin) =>
+  sendQuietly(nextSignerMail(doc, signedContactId, siteOrigin), 'next-signer');
