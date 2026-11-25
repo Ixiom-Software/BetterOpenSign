@@ -352,9 +352,15 @@ describe("InPersonFields", () => {
       fireEvent.click(screen.getByText("in-person.assign-send"));
 
       await screen.findByText(/in-person.assigned/);
-      const [, params] = axios.post.mock.calls.find(([url]) =>
+      const [, params, config] = axios.post.mock.calls.find(([url]) =>
         url.endsWith("functions/inpersonassign")
       );
+      // As the signed-in user: Parse reads X-Parse-Session-Token.
+      expect(config.headers["X-Parse-Session-Token"]).toBe("r:session");
+      const [, , listConfig] = axios.post.mock.calls.find(([url]) =>
+        url.endsWith("functions/inpersonassignees")
+      );
+      expect(listConfig.headers["X-Parse-Session-Token"]).toBe("r:session");
       expect(params).toMatchObject({ name: "work-order", assigneeId: "u1" });
       const sent = Uint8Array.from(atob(params.pdf), (c) => c.charCodeAt(0));
       const doc = await PDFDocument.load(sent);
