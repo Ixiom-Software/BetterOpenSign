@@ -44,8 +44,11 @@ const MAX_PAGE_WIDTH = 900;
 // The Templates report (json/ReportJson.js).
 const TEMPLATES_REPORT = "6TeaPr321t";
 
-// Calls a cloud function as the signed-in user; answers its result.
+// Calls a cloud function as the signed-in user; answers its result. Parse
+// signs the user in (request.user) from X-Parse-Session-Token, which
+// inpersonassign* need; getTemplate reads `sessiontoken` itself.
 const runCloudFn = async (name, params) => {
+  const session = localStorage.getItem("accesstoken");
   const res = await axios.post(
     `${localStorage.getItem("baseUrl")}functions/${name}`,
     params,
@@ -53,7 +56,8 @@ const runCloudFn = async (name, params) => {
       headers: {
         "Content-Type": "application/json",
         "X-Parse-Application-Id": localStorage.getItem("parseAppId"),
-        sessiontoken: localStorage.getItem("accesstoken")
+        "X-Parse-Session-Token": session,
+        sessiontoken: session
       }
     }
   );

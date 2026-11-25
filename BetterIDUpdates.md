@@ -55,6 +55,11 @@ as they were.
 - **The BetterID app** needs a "Documents to sign" list for these
   (BetterSignApps); until then the assignee sees them on the site only. A push
   when a document is assigned comes later (a new relay message type).
+- **Fix (same day):** the page called `inpersonassignees`/`inpersonassign`
+  with only the `sessiontoken` header, which some of upstream's functions read
+  themselves; Parse signs the user in (`request.user`) from
+  `X-Parse-Session-Token`, so "Couldn't load the people in your teams". The
+  page now sends both.
 
 ### 2026-11-25: sign in person from a template
 
