@@ -11,7 +11,8 @@ import {
   addInPersonFields,
   displayBoxToRect,
   fieldNameFor,
-  readPdf
+  readPdf,
+  templateBoxes
 } from "./inPersonFields";
 import { addBlankSignatureField } from "./appendOnlyPdf";
 
@@ -266,5 +267,168 @@ describe("addInPersonFields", () => {
     expect(names).toEqual(["Zoë Łukasz"]);
     const doc = await PDFDocument.load(bytes);
     expect(fieldDict(doc, "Zoë Łukasz")).toBeDefined();
+  });
+});
+
+describe("templateBoxes", () => {
+  const pages = [
+    { width: 600, height: 800 },
+    { width: 800, height: 600 }
+  ];
+  const widget = (type, extra = {}) => ({
+    key: `${type}-${Math.random()}`,
+    type,
+    xPosition: 100,
+    yPosition: 200,
+    Width: 150,
+    Height: 60,
+    ...extra
+  });
+
+  it("makes a box for each signature and initials widget, named for its role", () => {
+    const { boxes, skipped } = templateBoxes(
+      [
+        {
+          Role: "Homeowner",
+          placeHolder: [
+            {
+              pageNumber: 1,
+              pos: [
+                widget("signature"),
+                widget("initials", { Width: 50, Height: 50, xPosition: 400 })
+              ]
+            },
+            { pageNumber: 2, pos: [widget("signature", { yPosition: 10 })] }
+          ]
+        },
+        {
+          Role: "Technician",
+          placeHolder: [{ pageNumber: 1, pos: [widget("signature")] }]
+        }
+      ],
+      pages
+    );
+    expect(skipped).toBe(0);
+    expect(boxes).toEqual([
+      { page: 0, x: 100, y: 200, width: 150, height: 60, name: "Homeowner" },
+      {
+        page: 0,
+        x: 400,
+        y: 200,
+        width: 50,
+        height: 50,
+        name: "Homeowner (initials)"
+      },
+      { page: 1, x: 100, y: 10, width: 150, height: 60, name: "Homeowner" },
+      { page: 0, x: 100, y: 200, width: 150, height: 60, name: "Technician" }
+    ]);
+  });
+
+  it("leaves out prefill widgets, and counts other types and missing pages", () => {
+    const { boxes, skipped } = templateBoxes(
+      [
+        {
+          Role: "prefill",
+          placeHolder: [{ pageNumber: 1, pos: [widget("text")] }]
+        },
+        {
+          Role: "Customer",
+          placeHolder: [
+            {
+              pageNumber: 1,
+              pos: [widget("date"), widget("checkbox"), widget("signature")]
+            },
+            { pageNumber: 5, pos: [widget("signature")] }
+          ]
+        }
+      ],
+      pages
+    );
+    expect(boxes.map((box) => box.name)).toEqual(["Customer"]);
+    expect(skipped).toBe(3);
+  });
+
+  it("sizes widgets as OpenSign does", () => {
+    const { boxes } = templateBoxes(
+      [
+        {
+          Role: "A",
+          placeHolder: [
+            {
+              pageNumber: 1,
+              pos: [
+                // No size: OpenSign's default.
+                widget("signature", { Width: undefined, Height: undefined }),
+                widget("initials", { Width: undefined, Height: undefined }),
+                // Old mobile data: stored unscaled.
+                widget("signature", { isMobile: true, scale: 0.5 }),
+                // ... unless resized since.
+                widget("signature", {
+                  isMobile: true,
+                  scale: 0.5,
+                  IsResize: true
+                })
+              ]
+            }
+          ]
+        }
+      ],
+      pages
+    );
+    expect(boxes.map(({ width, height }) => [width, height])).toEqual([
+      [150, 60],
+      [50, 50],
+      [75, 30],
+      [150, 60]
+    ]);
+  });
+
+  it("keeps boxes on the page", () => {
+    const { boxes } = templateBoxes(
+      [
+        {
+          Role: "",
+          placeHolder: [
+            {
+              pageNumber: 1,
+              pos: [widget("signature", { xPosition: 590, yPosition: -20 })]
+            }
+          ]
+        }
+      ],
+      pages
+    );
+    expect(boxes).toEqual([
+      { page: 0, x: 450, y: 0, width: 150, height: 60, name: "Signature" }
+    ]);
+  });
+
+  it("gives each box of a role its own field", async () => {
+    const doc = await PDFDocument.create();
+    doc.addPage([600, 800]);
+    const input = await doc.save();
+    const { boxes } = templateBoxes(
+      [
+        {
+          Role: "Homeowner",
+          placeHolder: [
+            {
+              pageNumber: 1,
+              pos: [
+                widget("signature"),
+                widget("signature", { yPosition: 400 })
+              ]
+            }
+          ]
+        }
+      ],
+      (await readPdf(input)).pages
+    );
+    const { bytes, names } = await addInPersonFields(input, boxes);
+    expect(names).toEqual(["Homeowner", "Homeowner 2"]);
+    const reloaded = await PDFDocument.load(bytes);
+    expect(rectOf(fieldDict(reloaded, "Homeowner"))).toEqual([
+      100, 540, 250, 600
+    ]);
   });
 });

@@ -1,7 +1,11 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { MemoryRouter } from "react-router";
+import axios from "axios";
 import { PDFDocument, PDFName, PDFSignature } from "@cantoo/pdf-lib";
 import InPersonFields from "./InPersonFields";
+
+vi.mock("axios", () => ({ default: { post: vi.fn() } }));
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({
@@ -66,6 +70,13 @@ async function onePagePdf() {
   return doc.save();
 }
 
+const renderPage = (path = "/in-person") =>
+  render(
+    <MemoryRouter initialEntries={[path]}>
+      <InPersonFields />
+    </MemoryRouter>
+  );
+
 const choose = (container, file) =>
   fireEvent.change(container.querySelector('input[type="file"]'), {
     target: { files: [file] }
@@ -73,7 +84,7 @@ const choose = (container, file) =>
 
 describe("InPersonFields", () => {
   it("places boxes where the page is clicked and downloads the fields", async () => {
-    const { container } = render(<InPersonFields />);
+    const { container } = renderPage();
     choose(container, pdfFile(await onePagePdf()));
     const page = await screen.findByTestId("in-person-page-0");
 
@@ -103,7 +114,7 @@ describe("InPersonFields", () => {
   });
 
   it("removes a box", async () => {
-    const { container } = render(<InPersonFields />);
+    const { container } = renderPage();
     choose(container, pdfFile(await onePagePdf()));
     const page = await screen.findByTestId("in-person-page-0");
     fireEvent.click(page, { clientX: 100, clientY: 100 });
@@ -116,7 +127,7 @@ describe("InPersonFields", () => {
   });
 
   it("doesn't add a box when a drag ends outside the box", async () => {
-    const { container } = render(<InPersonFields />);
+    const { container } = renderPage();
     choose(container, pdfFile(await onePagePdf()));
     const page = await screen.findByTestId("in-person-page-0");
     fireEvent.click(page, { clientX: 100, clientY: 100 });
@@ -137,11 +148,134 @@ describe("InPersonFields", () => {
       PDFName.of("Perms"),
       doc.context.obj({ DocMDP: doc.context.obj({}) })
     );
-    const { container } = render(<InPersonFields />);
+    const { container } = renderPage();
     choose(container, pdfFile(await doc.save()));
     await waitFor(() =>
       expect(screen.getByText("in-person.certified")).toBeInTheDocument()
     );
     expect(screen.queryByTestId("in-person-page-0")).toBeNull();
+  });
+
+  describe("from a template", () => {
+    const placeholders = [
+      {
+        Role: "Homeowner",
+        placeHolder: [
+          {
+            pageNumber: 1,
+            pos: [
+              { key: "s", type: "signature", xPosition: 100, yPosition: 600 },
+              { key: "i", type: "initials", xPosition: 400, yPosition: 600 },
+              { key: "d", type: "date", xPosition: 100, yPosition: 100 }
+            ]
+          }
+        ]
+      }
+    ];
+
+    // getReport lists one template; getTemplate answers `template`, whose
+    // PDF fetch() answers.
+    const serve = async (template) => {
+      const pdf = await onePagePdf();
+      axios.post.mockReset();
+      axios.post.mockImplementation(async (url, params) => {
+        if (url.endsWith("functions/getReport")) {
+          return {
+            data: { result: [{ objectId: "tpl1", Name: "Work order" }] }
+          };
+        }
+        if (url.endsWith("functions/getTemplate")) {
+          return {
+            data: {
+              result:
+                params.templateId === "tpl1"
+                  ? template
+                  : { error: "template deleted or you don't have access." }
+            }
+          };
+        }
+        throw new Error(`unexpected ${url}`);
+      });
+      // The signed-in session the page sends.
+      const session = {
+        baseUrl: "https://api.example/app/",
+        parseAppId: "app",
+        accesstoken: "r:session"
+      };
+      vi.stubGlobal("localStorage", { getItem: (key) => session[key] ?? null });
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async () => ({
+          ok: true,
+          arrayBuffer: async () => pdf.buffer
+        }))
+      );
+    };
+
+    const template = {
+      objectId: "tpl1",
+      Name: "Work order",
+      URL: "https://files.example/work-order.pdf?signed",
+      Placeholders: placeholders
+    };
+
+    it("places a box for each signature and initials field", async () => {
+      await serve(template);
+      renderPage();
+      fireEvent.mouseDown(screen.getByLabelText("in-person.from-template"));
+      fireEvent.click(await screen.findByText("Work order"));
+      await screen.findByTestId("in-person-page-0");
+
+      const names = screen
+        .getAllByLabelText("in-person.signer-name")
+        .map((input) => input.value);
+      expect(names).toEqual(["Homeowner", "Homeowner (initials)"]);
+      expect(
+        screen.getByText('in-person.template-skipped {"count":1}')
+      ).toBeInTheDocument();
+      expect(fetch).toHaveBeenCalledWith(template.URL);
+      expect(axios.post).toHaveBeenCalledWith(
+        "https://api.example/app/functions/getTemplate",
+        { templateId: "tpl1" },
+        {
+          headers: expect.objectContaining({
+            "X-Parse-Application-Id": "app",
+            sessiontoken: "r:session"
+          })
+        }
+      );
+
+      fireEvent.click(screen.getByText("in-person.download"));
+      await screen.findByText(/in-person.downloaded/);
+      const doc = await PDFDocument.load(await readBlob(downloaded));
+      expect(
+        doc
+          .getForm()
+          .getFields()
+          .filter((field) => field instanceof PDFSignature)
+          .map((field) => field.getName())
+      ).toEqual(["Homeowner", "Homeowner (initials)"]);
+    });
+
+    it("opens the template in the link", async () => {
+      await serve(template);
+      renderPage("/in-person?templateId=tpl1");
+      await screen.findByTestId("in-person-page-0");
+      expect(screen.getAllByTestId("box")).toHaveLength(2);
+    });
+
+    it("says so when the template can't be opened", async () => {
+      await serve(template);
+      renderPage("/in-person?templateId=gone");
+      await screen.findByText("in-person.template-error");
+      expect(screen.queryByTestId("in-person-page-0")).toBeNull();
+    });
+
+    it("says so when the template has no signature fields", async () => {
+      await serve({ ...template, Placeholders: [] });
+      renderPage("/in-person?templateId=tpl1");
+      await screen.findByText("in-person.template-no-signatures");
+      expect(screen.queryAllByTestId("box")).toHaveLength(0);
+    });
   });
 });

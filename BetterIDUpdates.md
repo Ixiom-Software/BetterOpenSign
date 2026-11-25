@@ -26,6 +26,29 @@ Entries before 2026-11-23 were written when the product was BetterSign; their
 product names now read BetterID. Old addresses and stored values in them are kept
 as they were.
 
+### 2026-11-25: sign in person from a template
+
+- **"Or start from a template"** on the Sign in person page: a search box over
+  the templates the user can see (`getReport`, the Templates report). Picking
+  one loads its PDF (`getTemplate`, whose presigned `URL` is fetched straight
+  away) and places a box for each of its widgets for signing by hand: a
+  signature widget becomes a box named for its role ("Homeowner"), an
+  initials widget one named "Homeowner (initials)". A role with several boxes
+  gets "Homeowner", "Homeowner 2", ... (one drawing each on the phone). The
+  boxes can be moved, renamed, added or removed as for a PDF from disk.
+- **Left out:** prefill widgets and every other type (text, date, checkbox,
+  ...); the page says how many. Boxes on a page the PDF lacks are dropped
+  and counted too. Sizes follow OpenSign's `placeholderWidth`/`Height`,
+  including old mobile-view widgets.
+- **Read only:** nothing is saved to the template and no document is
+  created. `getTemplate` checks access (owner, shared team or colleague).
+- **Templates list:** a "Sign in person" item in each template's menu opens
+  `/in-person?templateId=<id>`.
+- **Code:** `templateBoxes` in `src/utils/inPersonFields.js`;
+  `src/pages/InPersonFields.jsx`; the `inperson` action in
+  `src/json/ReportJson.js` and `src/reports/template/TemplatesReport.jsx`.
+  Strings `in-person.from-template`, `template-*`, `btnLabel.Sign in person`.
+
 ### 2026-11-24: prepare a PDF for signing in person
 
 - **New page, "Sign in person"** (`/in-person`, in the sidebar after "Request
@@ -880,7 +903,7 @@ changes:
 | `src/components/pdf/SelectLanguage.jsx` | Value read from i18n (no local copy); "Language" label and globe icon; "Español" spelling | 2026-11-15 |
 | `src/pages/GuestLogin.jsx` | 6-digit code input; sends `docId`; shows server errors | 2026-11-13 |
 | `src/pages/UserList.jsx` | Reset-password action removed; Edit user action; BetterID identities section | 2026-11-13 → 11-15 |
-| `src/json/ReportJson.js` | `usersActions`: reset password removed, Edit added | 2026-11-13 → 11-15 |
+| `src/json/ReportJson.js` | `usersActions`: reset password removed, Edit added; Templates row menu: "Sign in person" (action `inperson`) | 2026-11-13 → 11-25 |
 | `src/pages/UserProfile.jsx` | Change Password button removed; "code sent" only on success | 2026-11-13 |
 | `src/pages/SignyourselfPdf.jsx`, `src/components/pdf/VerifyEmail.jsx` | 6-digit codes; "code sent" only on success; `SignyourselfPdf` passes the document id to Sign on phone | 2026-11-13 → 11-15 |
 | `src/pages/PdfRequestFiles.jsx` | Append-only signing for documents a VLAD signed; passes the document id to Sign on phone | 2026-11-14 → 11-15 |
@@ -893,9 +916,10 @@ changes:
 | `src/constant/appinfo.js`, `src/assets/images/logo.png` | App-icon favicon; Better DocSign wordmark | 2026-11-16 → 11-23 |
 | `src/App.jsx` | `/auth/bettersign/callback` route; `/forgetpassword`, `/changepassword` removed; `/in-person` route | 2026-11-06 → 11-24 |
 | `src/json/menuJson.js` | "Sign in person" sidebar item (`/in-person`) | 2026-11-24 |
+| `src/reports/template/TemplatesReport.jsx` | `inperson` action opens `/in-person?templateId=` (also in the `APP_NAME` row below) | 2026-11-25 |
 | `src/components/Header.jsx`, `Footer.jsx`, `FullScreenButton.jsx`, `ThemeToggle.jsx`, `sidebar/Menu.jsx`, `Sidebar.jsx`, `SubMenu.jsx`, `src/layout/HomeLayout.jsx` | BetterID brand (ink top bar, wordmark, green pills, brand footer); Change Password menu item removed; footer links our source and AGPL-3.0 license, "Built on OpenSign", copyright `© 2026 BetterID` | 2026-11-06 → 11-23 |
 | `src/index.css`, `src/styles/dark-theme-improvements.css`, `tailwind.config.js`, `index.html`, `public/manifest.json` | Brand colours and DaisyUI themes, theme-color; manifest name Better DocSign (short name DocSign) | 2026-11-06 → 11-22 |
-| `public/locales/en/translation.json` | `signer-link-hint`, `bs-identities.*`, edit-user strings, `phone-sign.*`, `in-person.*`, `sidebar.Sign in person` (English only; other languages fall back); `home.*` | 2026-11-13 → 11-24 |
+| `public/locales/en/translation.json` | `signer-link-hint`, `bs-identities.*`, edit-user strings, `phone-sign.*`, `in-person.*`, `sidebar.Sign in person`, `btnLabel.Sign in person` (English only; other languages fall back); `home.*` | 2026-11-13 → 11-25 |
 | `public/locales/{es,fr,it,de,hi,kr}/translation.json` | `signer-link-hint`, `home.*` (home page), appended at the end | 2026-11-15 |
 | `public/locales/*/translation.json` (all seven) | Values name the site Better DocSign and the identity BetterID (BetterSign until 2026-11-22) instead of OpenSign / OpenSign™, and `contact@betterid.net` (`contact@bettersign.ing` until 2026-11-22) instead of `*@opensignlabs.com`; keys unchanged | 2026-11-16 → 11-22 |
 | `package.json`, `package-lock.json` | MUI v7, `@cantoo/pdf-lib`, `patch-package` postinstall | 2026-10-07 → 11-14 |

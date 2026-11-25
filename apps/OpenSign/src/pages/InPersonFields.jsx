@@ -3,11 +3,19 @@
 // phone app's "Sign a PDF in person" fills them: someone draws a signature on
 // the phone for a box, and the phone's owner seals the PDF with their own
 // signature (src/utils/inPersonFields.js). The PDF never leaves the browser.
+//
+// It can start from a template instead of a local PDF (/in-person?templateId=
+// opens one): the template's PDF, with a box for each of its signature and
+// initials widgets, named for the widget's role. The template is only read
+// (getReport, getTemplate), never changed.
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useSearchParams } from "react-router";
 import { Document, Page } from "react-pdf";
 import { Rnd } from "react-rnd";
+import axios from "axios";
+import Autocomplete from "@mui/material/Autocomplete";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import IconButton from "@mui/material/IconButton";
@@ -19,10 +27,49 @@ import {
   DEFAULT_BOX,
   MIN_BOX,
   addInPersonFields,
-  readPdf
+  readPdf,
+  templateBoxes
 } from "../utils/inPersonFields";
 
 const MAX_PAGE_WIDTH = 900;
+// The Templates report (json/ReportJson.js).
+const TEMPLATES_REPORT = "6TeaPr321t";
+
+// Calls a cloud function as the signed-in user; answers its result.
+const runCloudFn = async (name, params) => {
+  const res = await axios.post(
+    `${localStorage.getItem("baseUrl")}functions/${name}`,
+    params,
+    {
+      headers: {
+        "Content-Type": "application/json",
+        "X-Parse-Application-Id": localStorage.getItem("parseAppId"),
+        sessiontoken: localStorage.getItem("accesstoken")
+      }
+    }
+  );
+  return res.data?.result;
+};
+
+// The template's name and placeholders, and its PDF's bytes. Throws a
+// { code: "template" } error if it's gone, not shared with the user, or its
+// PDF can't be fetched.
+const fetchTemplate = async (templateId) => {
+  const failed = () =>
+    Object.assign(new Error("template"), { code: "template" });
+  const template = await runCloudFn("getTemplate", { templateId }).catch(
+    () => null
+  );
+  if (!template || template.error || !template.URL) throw failed();
+  // getTemplate presigns URL for a short while: fetch it now.
+  const res = await fetch(template.URL).catch(() => null);
+  if (!res?.ok) throw failed();
+  return {
+    name: template.Name,
+    placeholders: template.Placeholders,
+    bytes: new Uint8Array(await res.arrayBuffer())
+  };
+};
 
 const outputName = (fileName) =>
   `${String(fileName || "document").replace(/\.pdf$/i, "")}-in-person.pdf`;
@@ -40,6 +87,12 @@ function InPersonFields() {
   const [done, setDone] = useState(null);
   const [busy, setBusy] = useState(false);
   const [pageWidth, setPageWidth] = useState(MAX_PAGE_WIDTH);
+  const [notice, setNotice] = useState("");
+  const [templatesOpen, setTemplatesOpen] = useState(false);
+  const [templateQuery, setTemplateQuery] = useState("");
+  const [templates, setTemplates] = useState([]);
+  const [templatesLoading, setTemplatesLoading] = useState(false);
+  const [searchParams] = useSearchParams();
   const nextId = useRef(1);
   const viewer = useRef(null);
   // Set while a drag or resize ends: letting go outside the box (against the
@@ -60,24 +113,33 @@ function InPersonFields() {
     return () => observer.disconnect();
   }, [info]);
 
-  const handleFile = async (event) => {
-    const picked = event.target.files?.[0];
-    event.target.value = "";
-    if (!picked) return;
+  const clearPdf = () => {
     setError("");
+    setNotice("");
     setDone(null);
     setBoxes([]);
     setInfo(null);
     setBytes(null);
-    if (picked.type !== "application/pdf" && !/\.pdf$/i.test(picked.name)) {
-      setError(t("please-select-pdf"));
-      return;
-    }
+  };
+
+  // Shows the PDF `load()` answers ({ name, bytes, placeholders? }), with a
+  // box for each of the template's signature widgets if it's a template's.
+  const openPdf = async (load) => {
+    clearPdf();
     setBusy(true);
     try {
-      const data = new Uint8Array(await picked.arrayBuffer());
+      const { name, bytes: data, placeholders } = await load();
       const read = await readPdf(data);
-      setFileName(picked.name);
+      if (placeholders) {
+        const found = templateBoxes(placeholders, read.pages);
+        setBoxes(found.boxes.map((box) => ({ ...box, id: nextId.current++ })));
+        if (found.boxes.length === 0) {
+          setNotice(t("in-person.template-no-signatures"));
+        } else if (found.skipped > 0) {
+          setNotice(t("in-person.template-skipped", { count: found.skipped }));
+        }
+      }
+      setFileName(name);
       setBytes(data);
       setInfo(read);
     } catch (err) {
@@ -87,12 +149,67 @@ function InPersonFields() {
           ? t("in-person.encrypted")
           : err?.code === "certified"
             ? t("in-person.certified")
-            : t("in-person.load-error")
+            : err?.code === "template"
+              ? t("in-person.template-error")
+              : t("in-person.load-error")
       );
     } finally {
       setBusy(false);
     }
   };
+
+  const handleFile = async (event) => {
+    const picked = event.target.files?.[0];
+    event.target.value = "";
+    if (!picked) return;
+    if (picked.type !== "application/pdf" && !/\.pdf$/i.test(picked.name)) {
+      clearPdf();
+      setError(t("please-select-pdf"));
+      return;
+    }
+    await openPdf(async () => ({
+      name: picked.name,
+      bytes: new Uint8Array(await picked.arrayBuffer())
+    }));
+  };
+
+  const openTemplate = (templateId) =>
+    openPdf(async () => {
+      const template = await fetchTemplate(templateId);
+      return { ...template, name: `${template.name || "template"}.pdf` };
+    });
+
+  // /in-person?templateId=... (the Templates list's "Sign in person").
+  const linkedTemplate = searchParams.get("templateId");
+  useEffect(() => {
+    if (linkedTemplate) openTemplate(linkedTemplate);
+    // Only when the link changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [linkedTemplate]);
+
+  // The user's templates matching what's typed, while the list is open.
+  const search = useRef(0);
+  useEffect(() => {
+    if (!templatesOpen) return undefined;
+    const id = ++search.current;
+    const timer = setTimeout(async () => {
+      setTemplatesLoading(true);
+      try {
+        const params = { reportId: TEMPLATES_REPORT, skip: 0, limit: 20 };
+        if (templateQuery.trim()) params.searchTerm = templateQuery.trim();
+        const result = await runCloudFn("getReport", params);
+        if (id === search.current) {
+          setTemplates(Array.isArray(result) ? result : []);
+        }
+      } catch (err) {
+        console.log("in-person: cannot list templates", err);
+        if (id === search.current) setTemplates([]);
+      } finally {
+        if (id === search.current) setTemplatesLoading(false);
+      }
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [templatesOpen, templateQuery]);
 
   const scaleOf = (pageIndex) => pageWidth / info.pages[pageIndex].width;
 
@@ -210,6 +327,36 @@ function InPersonFields() {
             hidden
           />
         </Button>
+        <Autocomplete
+          size="small"
+          sx={{ minWidth: 260, flex: "0 1 320px" }}
+          options={templates}
+          getOptionLabel={(option) => option?.Name || ""}
+          isOptionEqualToValue={(a, b) => a.objectId === b.objectId}
+          // The server filters by what's typed.
+          filterOptions={(options) => options}
+          loading={templatesLoading}
+          disabled={busy}
+          value={null}
+          blurOnSelect
+          open={templatesOpen}
+          onOpen={() => setTemplatesOpen(true)}
+          onClose={() => setTemplatesOpen(false)}
+          onInputChange={(e, value, reason) => {
+            if (reason === "input") setTemplateQuery(value);
+          }}
+          onChange={(e, option) => {
+            if (option?.objectId) openTemplate(option.objectId);
+          }}
+          noOptionsText={t("in-person.template-none")}
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              label={t("in-person.from-template")}
+              placeholder={t("in-person.template-search")}
+            />
+          )}
+        />
         {fileName && info && (
           <Typography
             sx={{
@@ -234,6 +381,11 @@ function InPersonFields() {
 
       {info && (
         <>
+          {notice && (
+            <MuiAlert severity="info" sx={{ mb: 2 }}>
+              {notice}
+            </MuiAlert>
+          )}
           {info.signatureFields.length > 0 && (
             <MuiAlert severity="info" sx={{ mb: 2 }}>
               {t("in-person.existing", {
