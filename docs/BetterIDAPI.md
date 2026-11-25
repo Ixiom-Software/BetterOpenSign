@@ -139,7 +139,7 @@ Errors are `{ "error": "<code>", "message": "…" }`.
 | `POST /auth/token` | `{access_token, token_type, expires_in, expires_at}`; `403 not_linked` (signature good, no active link: the VLAD is recorded for an admin, section 3), `401 access_denied`, `400 invalid_challenge`/`invalid_statement`, `429 rate_limited`, `502 verifier_misconfigured`, `503 verifier_unavailable` |
 | `POST /auth/logout` | 204 |
 | `GET /me` | `{vlad, user: {id, email, name}}` |
-| `GET /documents?role=owner\|signer&status=…&limit=&skip=` | `{results: [Document], limit, skip}`. `status`: `draft`, `in_progress`, `completed`, `declined`, `expired`. `limit` ≤ 100 |
+| `GET /documents?role=owner\|signer&status=…&inPerson=true\|false&limit=&skip=` | `{results: [Document], limit, skip}`. `status`: `draft`, `in_progress`, `completed`, `declined`, `expired`. `inPerson`: only documents assigned for signing in person, or none of them. `limit` ≤ 100 |
 | `GET /documents/:id` | `Document` if you own it or are a signer, else 404 |
 | `GET /documents/:id/file?version=current\|original` | the PDF. `X-Content-SHA256` is its hash |
 | `POST /documents/:id/signatures` | your desktop-signed PDF (section 5). `201` + `Document` + `signedSha256`; `409` with `stale_base`, `locked` (someone is signing it on their phone), `already_signed`, `not_your_turn`, `not_a_signer`, `completed`, `expired`…; `400 not_appended`/`no_signature`; `401 access_denied`; `502 verifier_misconfigured`; `503 verifier_unavailable` |
@@ -155,6 +155,7 @@ Errors are `{ "error": "<code>", "message": "…" }`.
   "signers": [{ "id": "…", "email": "…", "name": "…", "signed": false,
                  "signedWithBetterID": false }],
   "appendOnly": false,            // a BetterID identity has signed (section 5)
+  "inPerson": false,              // assigned for signing in person (below)
   "canSign": true,                // your turn, now
   "cannotSignReason": null,       // else not_your_turn, already_signed, not_a_signer, …
   "myFields": [                   // where to put your signature (when canSign)
@@ -170,6 +171,20 @@ OpenSign stores them. In PDF user space (origin bottom-left) a field's
 rectangle is `[x, top - y - height, x + width, top - y]` with
 `top = cropBox.y + cropBox.height`. Rotated pages need the same compensation
 OpenSign's `getWidgetPosition` applies.
+
+### Documents assigned for signing in person
+
+`inPerson: true` marks a PDF someone prepared on the website's Sign in person
+page and assigned to you (`inpersonassign`). The file has blank, named
+signature fields (`/FT /Sig`, no `/V`) and you have no `myFields`. Run the
+app's in-person flow on the downloaded file (`version=current`): for each blank
+field, Me, In person (someone draws on the phone; the drawing is stamped into
+the field's box) or Leave blank; then sign the whole PDF as yourself and upload
+it as in section 5. Every change must be appended to the downloaded bytes. The
+website can't sign these documents (`signPdf` and Sign on phone refuse them),
+so your upload is what completes the document. To list the ones waiting for
+you: `GET /documents?role=signer&status=in_progress&inPerson=true`, then those
+with `canSign`.
 
 ## 3. Linking a VLAD to an account
 

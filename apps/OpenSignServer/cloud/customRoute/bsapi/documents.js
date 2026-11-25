@@ -183,6 +183,9 @@ export function toPublicDocument(doc, userId) {
       ),
     })),
     appendOnly: isAppendOnly(doc),
+    // Assigned for signing in person (parsefunction/inPersonAssign.js): the
+    // app runs its in-person flow on the file's blank signature fields.
+    inPerson: !!doc.get('InPerson'),
     canSign: turn.canSign,
     cannotSignReason: turn.canSign ? null : turn.reason,
     myFields: turn.canSign ? placeholderFields(turn.placeholder) : [],
@@ -195,11 +198,15 @@ export function toPublicDocument(doc, userId) {
   };
 }
 
-// GET /documents?role=owner|signer&status=…&limit=&skip=
+// GET /documents?role=owner|signer&status=…&inPerson=true|false&limit=&skip=
 export async function listDocuments(req, res) {
   const userId = req.bs.user.id;
   const role = req.query.role || 'owner';
   const status = req.query.status;
+  const inPerson = req.query.inPerson;
+  if (inPerson !== undefined && inPerson !== 'true' && inPerson !== 'false') {
+    return apiError(res, 400, 'invalid_request', 'inPerson must be true or false.');
+  }
   if (!ROLES.includes(role)) {
     return apiError(res, 400, 'invalid_request', `role must be one of ${ROLES.join(', ')}.`);
   }
@@ -212,6 +219,8 @@ export async function listDocuments(req, res) {
   let q = baseQuery();
   if (role === 'owner') q.equalTo('CreatedBy', userPtr(userId));
   else q.matchesQuery('Signers', signerContactsQuery(userId));
+  if (inPerson === 'true') q.equalTo('InPerson', true);
+  if (inPerson === 'false') q.notEqualTo('InPerson', true);
   if (status) {
     q = Parse.Query.and(q, statusQuery(status));
     q.include('Signers');

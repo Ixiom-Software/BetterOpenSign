@@ -6,8 +6,10 @@ import { setDocumentCount } from '../../utils/CountUtils.js';
 // signature rewritten away. SignRevision orders concurrent signings. Seal and
 // CertificateSeal record how OpenSign sealed the files (utils/seal.js).
 // PhoneSignLock* holds the document for a signer signing on their phone
-// (parsefunction/bsPhoneSignPdf.js).
+// (parsefunction/bsPhoneSignPdf.js). InPerson keeps a document assigned for
+// signing in person (parsefunction/inPersonAssign.js) out of browser signing.
 const SERVER_ONLY_FIELDS = [
+  'InPerson',
   'VladSignatures',
   'SignRevision',
   'Seal',

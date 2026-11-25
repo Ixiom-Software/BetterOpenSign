@@ -8,6 +8,11 @@
 // opens one): the template's PDF, with a box for each of its signature and
 // initials widgets, named for the widget's role. The template is only read
 // (getReport, getTemplate), never changed.
+//
+// Instead of downloading it, the PDF can be assigned to a colleague in one of
+// your teams who has BetterID (inpersonassignees, inpersonassign in
+// apps/OpenSignServer parsefunction/inPersonAssign.js): it's in their list to
+// sign, on the website and in their BetterID app, which signs it in person.
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -23,6 +28,10 @@ import MuiAlert from "@mui/material/Alert";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import CircularProgress from "@mui/material/CircularProgress";
+import Dialog from "@mui/material/Dialog";
+import DialogActions from "@mui/material/DialogActions";
+import DialogContent from "@mui/material/DialogContent";
+import DialogTitle from "@mui/material/DialogTitle";
 import {
   DEFAULT_BOX,
   MIN_BOX,
@@ -50,6 +59,18 @@ const runCloudFn = async (name, params) => {
   );
   return res.data?.result;
 };
+
+// Base64 of `bytes`, for a cloud function parameter.
+const toBase64 = (bytes) => {
+  let text = "";
+  for (let i = 0; i < bytes.length; i += 0x8000) {
+    text += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  }
+  return btoa(text);
+};
+
+// The message of a failed cloud function call.
+const cloudError = (err) => err?.response?.data?.error || err?.message || "";
 
 // The template's name and placeholders, and its PDF's bytes. Throws a
 // { code: "template" } error if it's gone, not shared with the user, or its
@@ -93,6 +114,12 @@ function InPersonFields() {
   const [templates, setTemplates] = useState([]);
   const [templatesLoading, setTemplatesLoading] = useState(false);
   const [searchParams] = useSearchParams();
+  const [assignOpen, setAssignOpen] = useState(false);
+  const [assignees, setAssignees] = useState(null);
+  const [assignee, setAssignee] = useState(null);
+  const [docName, setDocName] = useState("");
+  const [assignError, setAssignError] = useState("");
+  const [assigned, setAssigned] = useState(null);
   const nextId = useRef(1);
   const viewer = useRef(null);
   // Set while a drag or resize ends: letting go outside the box (against the
@@ -114,6 +141,7 @@ function InPersonFields() {
   }, [info]);
 
   const clearPdf = () => {
+    setAssigned(null);
     setError("");
     setNotice("");
     setDone(null);
@@ -260,6 +288,51 @@ function InPersonFields() {
   const removeBox = (id) => {
     setBoxes((prev) => prev.filter((b) => b.id !== id));
     setDone(null);
+  };
+
+  // The people the PDF can be assigned to (loaded when the dialog opens).
+  const openAssign = async () => {
+    setAssignError("");
+    setAssignee(null);
+    setDocName(String(fileName || "").replace(/\.pdf$/i, ""));
+    setAssignOpen(true);
+    if (assignees) return;
+    try {
+      const result = await runCloudFn("inpersonassignees", {});
+      setAssignees(Array.isArray(result) ? result : []);
+    } catch (err) {
+      console.log("in-person: cannot list colleagues", err);
+      setAssignees([]);
+      setAssignError(t("in-person.assign-list-error"));
+    }
+  };
+
+  const handleAssign = async () => {
+    setBusy(true);
+    setAssignError("");
+    try {
+      const { bytes: out } = await addInPersonFields(bytes, boxes);
+      const result = await runCloudFn("inpersonassign", {
+        name: docName.trim(),
+        assigneeId: assignee.id,
+        pdf: toBase64(out)
+      });
+      setAssignOpen(false);
+      setDone(null);
+      setAssigned({
+        name: result?.name || docName.trim(),
+        to: assignee.name || assignee.email
+      });
+    } catch (err) {
+      console.log("in-person: cannot assign", err);
+      setAssignError(
+        err?.code === "certified"
+          ? t("in-person.certified")
+          : cloudError(err) || t("in-person.save-error")
+      );
+    } finally {
+      setBusy(false);
+    }
   };
 
   const handleDownload = async () => {
@@ -422,7 +495,23 @@ function InPersonFields() {
             >
               {t("in-person.download")}
             </Button>
+            <Button
+              variant="outlined"
+              onClick={openAssign}
+              disabled={busy || boxes.length === 0}
+              startIcon={
+                <i className="fa-light fa-user-check" aria-hidden="true" />
+              }
+            >
+              {t("in-person.assign")}
+            </Button>
           </Box>
+
+          {assigned && (
+            <MuiAlert severity="success" sx={{ mb: 2 }}>
+              {t("in-person.assigned", assigned)}
+            </MuiAlert>
+          )}
 
           {done && (
             <MuiAlert severity="success" sx={{ mb: 2 }}>
@@ -605,6 +694,81 @@ function InPersonFields() {
           </MuiAlert>
         </>
       )}
+
+      <Dialog
+        open={assignOpen}
+        onClose={() => !busy && setAssignOpen(false)}
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogTitle>{t("in-person.assign-title")}</DialogTitle>
+        <DialogContent>
+          <Typography sx={{ color: "text.secondary", mb: 2 }}>
+            {t("in-person.assign-intro")}
+          </Typography>
+          <TextField
+            label={t("in-person.assign-doc-name")}
+            value={docName}
+            onChange={(e) => setDocName(e.target.value)}
+            fullWidth
+            size="small"
+            sx={{ mb: 2 }}
+          />
+          <Autocomplete
+            options={assignees || []}
+            loading={!assignees}
+            value={assignee}
+            onChange={(e, option) => setAssignee(option)}
+            getOptionLabel={(option) => option?.name || option?.email || ""}
+            isOptionEqualToValue={(a, b) => a.id === b.id}
+            getOptionDisabled={(option) => !option.linked}
+            noOptionsText={t("in-person.assign-none")}
+            renderOption={(props, option) => {
+              const { key, ...rest } = props;
+              return (
+                <Box component="li" key={key} {...rest}>
+                  <Box>
+                    <Typography>{option.name || option.email}</Typography>
+                    <Typography
+                      sx={{ fontSize: "0.8rem", color: "text.secondary" }}
+                    >
+                      {[option.email, option.teams.join(", ")]
+                        .filter(Boolean)
+                        .join(" · ")}
+                      {!option.linked &&
+                        ` · ${t("in-person.assign-no-betterid")}`}
+                    </Typography>
+                  </Box>
+                </Box>
+              );
+            }}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label={t("in-person.assign-to")}
+                size="small"
+              />
+            )}
+          />
+          {assignError && (
+            <MuiAlert severity="error" sx={{ mt: 2 }}>
+              {assignError}
+            </MuiAlert>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setAssignOpen(false)} disabled={busy}>
+            {t("cancel")}
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleAssign}
+            disabled={busy || !assignee || !docName.trim()}
+          >
+            {busy ? <CircularProgress size={18} /> : t("in-person.assign-send")}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

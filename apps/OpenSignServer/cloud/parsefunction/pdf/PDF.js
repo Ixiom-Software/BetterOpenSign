@@ -132,6 +132,8 @@ export function phoneSignLockOf(doc, now = new Date()) {
 }
 export const PHONE_LOCKED_MESSAGE =
   'Someone is signing this document on their phone right now. Try again in a few minutes.';
+export const IN_PERSON_MESSAGE =
+  'This document is signed in person: open it in the BetterID app on your phone.';
 
 // Best effort: remove an uploaded file a lost commit no longer needs.
 export async function deleteUploadedFile(url) {
@@ -649,6 +651,11 @@ async function PDF(req) {
       }
     }
     const _resDoc = resDoc?.toJSON();
+    // Assigned for signing in person: only the assignee's BetterID app signs
+    // it (/api/v1), which keeps its blank fields; signing here would flatten them.
+    if (_resDoc.InPerson) {
+      throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, IN_PERSON_MESSAGE);
+    }
     let signUser;
     let className;
     // `reqUserId` is send throught pdfrequest signing flow
