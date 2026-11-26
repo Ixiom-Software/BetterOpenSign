@@ -5,27 +5,44 @@
 // apps/OpenSign/src/constant/bsid.js) and hands us the code. We:
 //   1. exchange it at bs-id /token (public client: code_verifier, no secret),
 //   2. verify the id_token (ES256 against bs-id /jwks; iss, aud, nonce, exp),
-//   3. map its `vlad` to an existing OpenSign account (the bs_Identity class,
-//      utils/bsIdentity.js); a VLAD with no active link is recorded for an
-//      admin to link and refused,
+//   3. map its `vlad` to its OpenSign account (the bs_Identity class,
+//      utils/bsIdentity.js), or, with self sign-up on, make one for it,
 //   4. mint a Parse session for that account (same /loginAs path as
 //      betteridlogin), which Login.jsx finishes with thirdpartyLoginfn.
 //
-// Only linked VLADs can sign in, and only to an account that already exists:
-// the admin picks the account, not the user.
+// Who gets in (utils/bsSignInDecision.js):
+//   - a VLAD with an active link signs in to the linked account;
+//   - with BS_SELF_SIGNUP=true, a VLAD with no link whose id_token carries a
+//     verified email (the browser asks for scope `openid email`) gets a new
+//     account of its own, made as OpenSign's sign-up makes one, and is linked
+//     to it (utils/bsSelfSignup.js). Not if an account already uses that
+//     email (it's never linked automatically), and not if an admin turned the
+//     VLAD's link off;
+//   - everyone else is refused, and the VLAD is recorded on the Users page for
+//     an admin to link. No email: the message says how to link one in the
+//     BetterID app.
 //
 // Env:
 //   BS_ID_URL        bs-id origin (= the id_token `iss`). Default https://id.betterid.net
 //   BS_ID_CLIENT_ID  this app's client_id at bs-id. Default bs-opensign
+//   BS_SELF_SIGNUP   `true` turns self sign-up on. Default off
 //
 // Params: { code, codeVerifier, redirectUri, nonce }
-// Returns: { sessionToken, objectId, email, betterid } (betterid: the session
-// was recorded as a BetterID one)
+// Returns: { sessionToken, objectId, email, betterid, created } (betterid: the
+// session was recorded as a BetterID one; created: the account was just made)
 
 import crypto from 'node:crypto';
 import axios from 'axios';
 import { sessionViaLoginAs } from './betteridlogin.js';
 import { accountForVlad, recordSignInAttempt } from '../../utils/bsIdentity.js';
+import {
+  USE_PASSKEY_CODE,
+  decideSignIn,
+  selfSignupEnabled,
+  signupName,
+  verifiedEmail,
+} from '../../utils/bsSignInDecision.js';
+import { SignupLost, createAccountForVlad, emailOwner } from '../../utils/bsSelfSignup.js';
 import { recordBsIdSession } from '../../utils/bsWebSession.js';
 
 const B64URL_RE = /^[A-Za-z0-9_-]+$/;
@@ -135,28 +152,125 @@ export default async function bsidlogin(request) {
   }
 
   // 3 and 4: the account and its session.
-  return signInVlad(claims.vlad.toLowerCase(), 'bsidlogin');
+  return signInVlad(claims.vlad.toLowerCase(), 'bsidlogin', { claims });
+}
+
+const LINK_EMAIL =
+  'In the BetterID app, open Settings → Account → Link an email address, then sign in again.';
+
+function refusal(reason, vlad, email) {
+  const short = `VLAD ${vlad.slice(0, 16)}…`;
+  switch (reason) {
+    case 'no_account':
+      return fail('The account linked to this BetterID identity does not exist.');
+    case 'use_passkey':
+      return new Parse.Error(
+        USE_PASSKEY_CODE,
+        'Your first sign-in to Better DocSign needs your passkey. Continuing with BetterID…'
+      );
+    case 'no_email':
+      return fail(
+        `To create a Better DocSign account, your BetterID needs a verified email address. ${LINK_EMAIL}`
+      );
+    case 'email_taken':
+      return fail(
+        `A Better DocSign account already uses ${email}, but it isn't linked to this BetterID identity. Ask an admin of that account to link it (${short}).`
+      );
+    case 'busy':
+      return fail('Your Better DocSign account is still being set up. Sign in again in a moment.');
+    default:
+      return fail(
+        `This BetterID identity isn't linked to an account. Ask an admin to add it (${short}).`
+      );
+  }
+}
+
+// Another sign-in of the same VLAD is making its account: wait for its link.
+async function waitForLink(vlad) {
+  for (let i = 0; i < 20; i++) {
+    await new Promise(resolve => setTimeout(resolve, 250));
+    const account = await accountForVlad(vlad);
+    if (account.user) return account;
+  }
+  return null;
+}
+
+// Self sign-up (decision.action === 'create'). Returns accountForVlad()'s
+// answer for the new (or the racing sign-in's) account, or throws a refusal.
+async function selfSignUp(vlad, event, decision, email, claims) {
+  try {
+    const { userId } = await createAccountForVlad({
+      vlad,
+      email,
+      name: signupName(claims, email),
+      reuseUserId: decision.reuseUserId,
+    });
+    console.log(
+      JSON.stringify({
+        event: `${event}_account_created`,
+        vlad: vlad.slice(0, 16),
+        userId,
+        reusedRecipient: !!decision.reuseUserId,
+      })
+    );
+  } catch (e) {
+    const reason = e instanceof SignupLost ? e.reason : 'error';
+    console.log(
+      JSON.stringify({
+        event: `${event}_signup_lost`,
+        vlad: vlad.slice(0, 16),
+        reason,
+        error: e.message,
+      })
+    );
+    if (reason === 'email_taken') {
+      await recordSignInAttempt(vlad);
+      throw refusal('email_taken', vlad, email);
+    }
+    // 'busy', or it failed (maybe because the VLAD got linked meanwhile).
+    const account = reason === 'busy' ? await waitForLink(vlad) : await accountForVlad(vlad);
+    if (account?.user) return { ...account, created: false };
+    if (reason === 'busy') throw refusal('busy', vlad);
+    throw fail('Your Better DocSign account could not be created. Please try again.');
+  }
+  const account = await accountForVlad(vlad);
+  if (!account.user)
+    throw fail('Your Better DocSign account could not be created. Please try again.');
+  return { ...account, created: true };
 }
 
 // A VLAD that has proved itself (bs-id's id_token, or the phone's signature
-// in bsextlogin.js) -> a session for its linked account. `event` prefixes the
-// log lines.
-export async function signInVlad(vlad, event) {
+// in bsextlogin.js) -> a session for its account. `event` prefixes the log
+// lines. `claims`: bs-id's verified id_token claims (the verified email for
+// self sign-up); absent for the extension.
+export async function signInVlad(vlad, event, { claims } = {}) {
   // 3. VLAD -> account.
-  const account = await accountForVlad(vlad);
-  if (account.reason === 'no_account') {
-    console.log(JSON.stringify({ event: `${event}_no_account`, vlad }));
-    throw fail('The account linked to this BetterID identity does not exist.');
+  let account = await accountForVlad(vlad);
+  const email = verifiedEmail(claims);
+  const facts = {
+    account,
+    selfSignup: selfSignupEnabled(),
+    via: claims ? 'bsid' : 'extension',
+    email,
+  };
+  let decision = decideSignIn(facts);
+  if (decision.action === 'lookup_email') {
+    decision = decideSignIn({ ...facts, emailOwner: await emailOwner(email) });
   }
-  if (!account.user) {
-    console.log(JSON.stringify({ event: `${event}_denied`, vlad, reason: account.reason }));
+  if (decision.action === 'refuse') {
+    const { reason, record } = decision;
+    const ev = reason === 'no_account' ? `${event}_no_account` : `${event}_denied`;
+    console.log(JSON.stringify({ event: ev, vlad, reason, linkReason: account.reason }));
     // The VLAD proved itself: list it on the Users page for an admin.
-    if (account.reason !== 'ambiguous') await recordSignInAttempt(vlad);
-    throw fail(
-      `This BetterID identity isn't linked to an account. Ask an admin to add it (VLAD ${vlad.slice(0, 16)}…).`
-    );
+    if (record) await recordSignInAttempt(vlad);
+    throw refusal(reason, vlad, email);
   }
-  const { user, email } = account;
+  let created = false;
+  if (decision.action === 'create') {
+    account = await selfSignUp(vlad, event, decision, email, claims);
+    created = account.created;
+  }
+  const { user, email: accountEmail } = account;
 
   // 4. Session for that account, remembered as a BetterID session (for
   // "Sign on phone", utils/bsWebSession.js). The sign-in doesn't depend on
@@ -170,5 +284,11 @@ export async function signInVlad(vlad, event) {
     console.log(JSON.stringify({ event: `${event}_session_not_recorded`, error: e.message }));
   }
   console.log(JSON.stringify({ event, vlad: vlad.slice(0, 16), userId: user.id }));
-  return { sessionToken: login.sessionToken, objectId: user.id, email, betterid };
+  return {
+    sessionToken: login.sessionToken,
+    objectId: user.id,
+    email: accountEmail,
+    betterid,
+    created,
+  };
 }

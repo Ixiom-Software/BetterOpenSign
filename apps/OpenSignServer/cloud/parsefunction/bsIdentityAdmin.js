@@ -3,7 +3,10 @@
 //
 // An admin sees and edits links to accounts in their own tenant, plus the
 // unassigned rows (VLADs that tried to sign in and aren't linked yet), and can
-// only link a VLAD to an account in their tenant.
+// only link a VLAD to an account in their tenant. Admins of a tenant made by
+// BetterID self sign-up (partners_Tenant.BsSelfSignup, utils/bsSelfSignup.js)
+// don't see the unassigned rows: those are every visitor's, and anyone can
+// make such a tenant.
 //
 //   bsidentitylist   {}                                   -> { identities, accounts }
 //   bsidentitysave   { id?, vlad?, userId?, label?, active? } -> identity
@@ -44,12 +47,15 @@ async function adminScope(request) {
     if (!userId) continue;
     accounts[userId] = { userId, name: ext.get('Name') || '', email: ext.get('Email') || '' };
   }
-  return { accounts };
+  const tenant = await new Parse.Query('partners_Tenant')
+    .get(tenantId, { useMasterKey: true })
+    .catch(() => null);
+  return { accounts, seesUnassigned: tenant?.get('BsSelfSignup') !== true };
 }
 
-const visible = (row, accounts) => {
+const visible = (row, { accounts, seesUnassigned }) => {
   const userId = row.get('UserId')?.id;
-  return !userId || !!accounts[userId];
+  return userId ? !!accounts[userId] : seesUnassigned;
 };
 
 const toJson = row => ({
@@ -62,35 +68,37 @@ const toJson = row => ({
   createdAt: row.createdAt?.toISOString() || null,
 });
 
-async function rowFor(id, accounts) {
+async function rowFor(id, scope) {
   if (typeof id !== 'string' || !id) {
     throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Missing id.');
   }
   const row = await new Parse.Query('bs_Identity')
     .get(id, { useMasterKey: true })
     .catch(() => null);
-  if (!row || !visible(row, accounts)) {
+  if (!row || !visible(row, scope)) {
     throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Identity not found.');
   }
   return row;
 }
 
 export async function listBsIdentities(request) {
-  const { accounts } = await adminScope(request);
+  const scope = await adminScope(request);
+  const { accounts } = scope;
   const rows = await new Parse.Query('bs_Identity').findAll({ useMasterKey: true });
   rows.sort((a, b) => b.createdAt - a.createdAt);
   return {
-    identities: rows.filter(r => visible(r, accounts)).map(toJson),
+    identities: rows.filter(r => visible(r, scope)).map(toJson),
     accounts: Object.values(accounts).sort((a, b) => a.email.localeCompare(b.email)),
   };
 }
 
 export async function saveBsIdentity(request) {
-  const { accounts } = await adminScope(request);
+  const scope = await adminScope(request);
+  const { accounts } = scope;
   const p = request.params || {};
   let row;
   if (p.id) {
-    row = await rowFor(p.id, accounts);
+    row = await rowFor(p.id, scope);
   } else {
     const vlad = String(p.vlad || '')
       .trim()
@@ -138,8 +146,8 @@ export async function saveBsIdentity(request) {
 }
 
 export async function deleteBsIdentity(request) {
-  const { accounts } = await adminScope(request);
-  const row = await rowFor(request.params?.id, accounts);
+  const scope = await adminScope(request);
+  const row = await rowFor(request.params?.id, scope);
   await row.destroy({ useMasterKey: true });
   console.log(JSON.stringify({ event: 'bsidentity_deleted', by: request.user.id, id: row.id }));
   return { ok: true };

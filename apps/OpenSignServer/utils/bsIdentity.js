@@ -1,6 +1,7 @@
 // VLAD -> OpenSign account, shared by browser sign-in (bsidlogin) and the
-// desktop API (/api/v1). Only linked VLADs can sign in, and only to an account
-// that already exists: an admin links them (Users page), not the user.
+// desktop API (/api/v1). Only linked VLADs can sign in. An admin links them
+// (Users page); with BS_SELF_SIGNUP on, Sign in with BetterID also links a
+// VLAD to the new account it makes for it (utils/bsSelfSignup.js).
 //
 // Links live in the bs_Identity class (master-key only):
 // { vlad, UserId, Label, Active, LastSeenAt }. The VLAD's active row
@@ -18,6 +19,8 @@ export const ATTEMPT_LABEL = 'Sign-in attempt';
 
 // Returns { user, email, source } or
 // { reason: 'not_linked' | 'inactive' | 'ambiguous' | 'no_account' }.
+// 'inactive' comes with turnedOff: true when one of the rows has an account
+// (an admin turned that link off), false when they're only sign-in attempts.
 export async function accountForVlad(vladHex) {
   const vlad = String(vladHex || '').toLowerCase();
   if (!VLAD_HEX_RE.test(vlad)) return { reason: 'not_linked' };
@@ -29,7 +32,9 @@ export async function accountForVlad(vladHex) {
   const rows = await idQuery.find({ useMasterKey: true });
   if (!rows.length) return { reason: 'not_linked' };
   const active = rows.filter(r => r.get('Active') === true);
-  if (active.length === 0) return { reason: 'inactive' };
+  if (active.length === 0) {
+    return { reason: 'inactive', turnedOff: rows.some(r => !!r.get('UserId')) };
+  }
   if (active.length > 1) {
     console.error(`bsIdentity: ${active.length} active bs_Identity rows for one VLAD`);
     return { reason: 'ambiguous' };

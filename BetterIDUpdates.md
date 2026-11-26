@@ -6,6 +6,7 @@ operations are covered in [DEPLOYMENT.md](DEPLOYMENT.md).
 - [Change log](#change-log)
 - [Home page and sign-in](#home-page-and-sign-in)
   - [Sign in with BetterID](#sign-in-with-betterid)
+  - [Self sign-up: an account on first sign-in](#self-sign-up-an-account-on-first-sign-in)
   - [What a VLAD signs to log in](#what-a-vlad-signs-to-log-in)
   - [Recipients: the emailed signing link](#recipients-the-emailed-signing-link)
   - [No username/password sign-in](#no-usernamepassword-sign-in)
@@ -25,6 +26,28 @@ operations are covered in [DEPLOYMENT.md](DEPLOYMENT.md).
 Entries before 2026-11-23 were written when the product was BetterSign; their
 product names now read BetterID. Old addresses and stored values in them are kept
 as they were.
+
+### 2026-11-26: self sign-up, an account on first sign-in
+
+- **Off until `BS_SELF_SIGNUP=true`** is set on the API (DEPLOYMENT.md item 14).
+  Then someone with the BetterID app and a verified email can sign in and get
+  their own account, without an admin. See
+  [Self sign-up](#self-sign-up-an-account-on-first-sign-in).
+- **The sign-in asks bs-id for `scope=openid email`** (`constant/bsid.js`), so
+  the id_token carries the email linked in the BetterID app. The vendored
+  button gained a `scope` attribute for this: a local change, to be made in
+  BetterSignApps before the next re-vendor (noted in `button.js`).
+- **The extension path** (`bsextlogin`) carries no email, so it never makes an
+  account: for a VLAD with no link it answers code 4201, and the page goes on
+  to bs-id's passkey page, where `bsidlogin` can.
+- **Users page:** admins of self-signed-up tenants don't see the shared list of
+  unassigned sign-in attempts (`partners_Tenant.BsSelfSignup`).
+- **Code:** `utils/bsSignInDecision.js` (who gets in; pure),
+  `utils/bsSelfSignup.js` (the account, the link, races),
+  `cloud/parsefunction/bsidlogin.js` (`signInVlad`), `AddAdmin.js`
+  (`addAdminRecords`, moved out of `AddAdmin`, unchanged), `bsIdentityAdmin.js`.
+  Tests: `spec/bsapi/signInDecision.spec.js`,
+  `spec/bsapi-integration/selfsignup.spec.js`, `src/constant/bsid.test.js`.
 
 ### 2026-11-25: assign a PDF for signing in person
 
@@ -582,10 +605,70 @@ device), so there is no password to steal.
   (master key only) pointing at an existing account. Admins manage these on the
   Users page (BetterID identities); an unknown VLAD that signs in shows up there,
   turned off. Or [docs/BetterIDAPI.md §3](docs/BetterIDAPI.md#3-linking-a-vlad-to-an-account). Unknown VLADs
-  are refused and logged as `{"event":"bsidlogin_denied","vlad":…}`.
+  are refused and logged as `{"event":"bsidlogin_denied","vlad":…}`, unless
+  [self sign-up](#self-sign-up-an-account-on-first-sign-in) is on and makes them
+  an account.
+- **Scope:** the button asks bs-id for `openid email`. bs-id adds `email`,
+  `email_verified: true` and `bs_email_verified_at` to the id_token when the
+  person linked and verified an email in the BetterID app; otherwise they're
+  absent. Only self sign-up uses them.
 - **Configuration:** `BS_ID_URL` and `BS_ID_CLIENT_ID` on the server;
   `REACT_APP_BS_ID_URL` and `REACT_APP_BS_ID_CLIENT_ID` at frontend build time.
   Defaults are `https://id.betterid.net` and `bs-opensign`.
+
+### Self sign-up: an account on first sign-in
+
+Off unless the API has `BS_SELF_SIGNUP=true`. With it on, a VLAD that signs in
+through bs-id with no link is handled by `utils/bsSignInDecision.js`:
+
+| The VLAD | What happens |
+| --- | --- |
+| has an active link | signs in, as always |
+| has a link an admin turned off | refused, as before (that's a block) |
+| no link, verified email, no account uses it | **new account**, linked, signed in |
+| no link, verified email, a recipient-only `_User` has it | **new account** on that `_User` |
+| no link, verified email, an account uses it | refused; recorded for an admin |
+| no link, no verified email | refused: "link an email in the BetterID app"; recorded |
+| no link, through the extension | code 4201: the page goes to bs-id's passkey page |
+
+What a new person sees: **Sign in with BetterID**, approve on the phone at bs-id,
+and they land on the dashboard of their new account (OpenSign's usual landing for
+an admin, with its first-run tour). They can change their name in Profile.
+
+- **The account** is what OpenSign's own sign-up makes (`AddAdmin.js`,
+  `addAdminRecords`): `_User` (username and email = the verified email, a random
+  password that can't be used), `partners_Tenant`, `contracts_Users` with role
+  `contracts_Admin`, and its own `contracts_Organizations` with an "All Users"
+  team. Name: the token's `name`/`preferred_username`, else from the email
+  ("jane.doe@…" → "Jane Doe"); it's also the tenant and organization name. The
+  tenant is marked `BsSelfSignup: true`. The VLAD's link (`bs_Identity`, active,
+  label `Self sign-up`) reuses its unassigned sign-in attempt row if it has one.
+  Logged as `{"event":"bsidlogin_account_created","vlad":<16 hex>,"userId":…}`.
+- **An email that's taken is never linked automatically.** Whoever holds the
+  email isn't proven to be that account's VLAD, so linking would hand the account
+  over. The person is told to ask that account's admin, and the VLAD is listed on
+  the Users page as usual. Recipients are different: OpenSign makes a `_User`
+  for every contact, with no `contracts_Users` row, so no one can sign in to it.
+  The account is made on that `_User` (the email was verified by BetterID's
+  email claim directory), so their contacts and documents stay theirs.
+- **No email:** refused with "In the BetterID app, open Settings → Account →
+  Link an email address, then sign in again." The VLAD is still recorded, as any
+  refused one: an admin may want to link a colleague who has no email.
+- **Races.** Two sign-ins at once make one account. The `_User` is the lock: a
+  new one is made with `signUp` (the username is unique), and every sign-in that
+  would finish an account on a `_User` increments its `BsSignupClaims`; only the
+  one that moves it to 1 goes on. The others wait up to 5 s for that one's link
+  and sign in to it, or are told to sign in again in a moment. If making the
+  account fails part way, what was made is removed and the claim released.
+- **Users page.** Every self-signed-up person is the admin of their own tenant,
+  and anyone can become one, so admins of `BsSelfSignup` tenants don't see (or
+  claim, or delete) the unassigned sign-in attempts. They still see their own
+  links and can add a VLAD by hex for a colleague.
+- **The extension** (`bsextlogin`) can't make accounts: its statement carries no
+  email, and the email claim directory has no public lookup by VLAD. With self
+  sign-up on, a VLAD with no link gets code 4201 (`USE_PASSKEY_CODE`) and the
+  page (`constant/bsid.js`) goes on to bs-id's passkey page, asking for the
+  email. One more approval on the phone, once.
 
 ### After the first time: a tap on the phone, no QR
 
@@ -1042,6 +1125,16 @@ Known issues, found in review on 2026-11-15:
   sign into that tenant. Harmless while docsign has one tenant. Fix: show unassigned
   rows only to `contracts_Admin`, or record which site the attempt came from.
   Pending spec: "doesn't show another tenant's admins the unassigned sign-in attempts".
+  Self-signed-up tenants (2026-11-26) are already kept out of them; tenants an
+  operator made by hand still see them.
+- **Any admin can link any VLAD to an account in their tenant (self sign-up).**
+  With `BS_SELF_SIGNUP` on, anyone can be a tenant admin. Such an admin could add
+  a stranger's VLAD (VLADs appear on completion certificates) to an account they
+  control, before that person ever signs in; that person's first sign-in would
+  then land in the admin's tenant instead of making their own account. Fix
+  options: only let a link be made for a VLAD that asked for it (an invitation
+  the VLAD accepts), or only for an account whose email matches the VLAD's
+  verified email.
 - **Users can change their own role (upstream, security).** A user's own
   `contracts_Users` row is writable with their session (the ACL `adduser` sets), and
   nothing checks saves to that class. So a user can set their own `UserRole` to

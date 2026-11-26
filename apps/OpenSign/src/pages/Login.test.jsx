@@ -143,7 +143,8 @@ describe("Sign in with BetterID button", () => {
     await waitFor(() => expect(kit.startPasskeySignIn).toHaveBeenCalledWith({
       bsIdUrl: "https://id.betterid.net",
       clientId: "bs-opensign",
-      redirectUri: window.location.origin + "/auth/bettersign/callback"
+      redirectUri: window.location.origin + "/auth/bettersign/callback",
+      scope: "openid email" // the verified email, for self sign-up
     }));
     expect(await button()).toBeDisabled();
   });
