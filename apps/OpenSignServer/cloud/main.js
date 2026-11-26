@@ -81,6 +81,7 @@ import triggerEvent from './parsefunction/triggerEvent.js';
 import setWidgetPreferences from './parsefunction/setWidgetPreferences.js';
 import createDocumentFromApp from './parsefunction/createDocumentFromApp.js';
 import { inpersonassign, inpersonassignees } from './parsefunction/inPersonAssign.js';
+import { mailinboxget, mailinboxrotate, mailinboxupdate } from './parsefunction/mailInbox.js';
 
 // This afterSave function triggers after an object is added or updated in the specified class, allowing for post-processing logic.
 Parse.Cloud.afterSave('contracts_Document', DocumentAftersave);
@@ -182,3 +183,6 @@ Parse.Cloud.define('createdocumentfromapp', createDocumentFromApp);
 // Sign in person: assign a prepared PDF to a colleague's BetterID app
 Parse.Cloud.define('inpersonassignees', inpersonassignees);
 Parse.Cloud.define('inpersonassign', inpersonassign);
+Parse.Cloud.define('mailinboxget', mailinboxget);
+Parse.Cloud.define('mailinboxrotate', mailinboxrotate);
+Parse.Cloud.define('mailinboxupdate', mailinboxupdate);

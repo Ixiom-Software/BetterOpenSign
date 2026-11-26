@@ -21,6 +21,7 @@ import ModalUi from "../primitives/ModalUi";
 import Loader from "../primitives/Loader";
 import { useTranslation } from "react-i18next";
 import SelectLanguage from "../components/pdf/SelectLanguage";
+import MailInboxCard from "../components/MailInboxCard";
 import Box from "@mui/material/Box";
 import Paper from "@mui/material/Paper";
 import Button from "@mui/material/Button";
@@ -318,6 +319,7 @@ function UserProfile() {
         <Box
           sx={{
             display: "flex",
+            flexDirection: "column",
             justifyContent: "center",
             alignItems: "center",
             width: "100%",
@@ -635,6 +637,7 @@ function UserProfile() {
               </Link>
             </Box>
           </Paper>
+          <MailInboxCard />
           {isdeleteModal && (
             <ModalUi
               isOpen

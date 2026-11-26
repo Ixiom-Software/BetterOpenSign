@@ -1,0 +1,18 @@
+// The docsign-inbound Email Worker (DEPLOYMENT.md, "Emailing PDFs in").
+// Deploy from this directory: `npx wrangler deploy`, after
+// `npx wrangler secret put BS_INBOUND_MAIL_SECRET` (the same value as the Fly
+// secret). Then, in the betterid.net zone, Email Routing for the subdomain
+// in.betterid.net, with its catch-all rule set to "Send to a Worker":
+// docsign-inbound.
+{
+  "name": "docsign-inbound",
+  "compatibility_date": "2026-10-06",
+  "main": "./worker.js",
+  "workers_dev": false,
+  "vars": {
+    "API_URL": "https://docsign-bettersign-api.fly.dev",
+    // Largest message in MB; the same as the backend's BS_INBOUND_MAIL_MAX_MB.
+    // Cloudflare Email Routing takes at most 25.
+    "MAX_MESSAGE_MB": "25"
+  }
+}

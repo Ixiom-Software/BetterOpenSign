@@ -100,6 +100,7 @@ beforeAll(async () => {
   await require('../../../databases/migrations/20261117120000-create_bs_publishedcert.cjs').up(
     Parse
   );
+  await require('../../../databases/migrations/20261125120000-create_bs_mail_inbox.cjs').up(Parse);
 }, 180000);
 
 afterAll(async () => {
