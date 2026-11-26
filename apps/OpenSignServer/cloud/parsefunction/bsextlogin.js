@@ -12,6 +12,12 @@
 //   4. bsextlogin { challengeId, statement, vladSig } -> the same result as
 //      bsidlogin: { sessionToken, objectId, email, betterid }
 //
+// The statement carries no email, so this path never makes an account (self
+// sign-up, BS_SELF_SIGNUP). With self sign-up on, a VLAD with no link gets
+// error code USE_PASSKEY_CODE (utils/bsSignInDecision.js) instead of a
+// refusal, and the browser goes on to bs-id's passkey page, asking for the
+// verified email (constant/bsid.js), where bsidlogin can make the account.
+//
 // The statement check is the shared one (vendor/signInWithBetterIDButton/server.js, from
 // BetterSignApps server/signInWithBetterIDButton), as oauthService and apiDelegateService use.
 // A challenge is single-use (one attempt) and lives CHALLENGE_TTL_MS.

@@ -1,13 +1,24 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import Parse from "parse";
-import { BSID_CALLBACK_PATH, bsIdRedirectUri, signInButtonOptions } from "./bsid";
+import { startPasskeySignIn } from "../vendor/signInWithBetterIDButton/browser";
+import {
+  BSID_CALLBACK_PATH,
+  BSID_SCOPE,
+  USE_PASSKEY_CODE,
+  bsIdRedirectUri,
+  signInButtonOptions
+} from "./bsid";
 
 vi.mock("parse", () => ({ default: { Cloud: { run: vi.fn() } } }));
+vi.mock("../vendor/signInWithBetterIDButton/browser", () => ({
+  startPasskeySignIn: vi.fn(async () => {})
+}));
 
 const run = Parse.Cloud.run;
 
 beforeEach(() => {
   run.mockReset();
+  startPasskeySignIn.mockClear();
   delete window.RUNTIME_ENV;
 });
 afterEach(() => delete window.RUNTIME_ENV);
@@ -64,9 +75,36 @@ describe("signInButtonOptions (this site's settings for the button)", () => {
     expect(run).toHaveBeenLastCalledWith("bsidlogin", cb);
   });
 
+  it("asks bs-id for the verified email (scope openid email)", () => {
+    expect(BSID_SCOPE).toBe("openid email");
+    expect(signInButtonOptions().scope).toBe("openid email");
+  });
+
+  it("goes on to bs-id's passkey when bsextlogin says a first sign-in needs it", async () => {
+    const o = signInButtonOptions();
+    run.mockRejectedValueOnce(
+      Object.assign(new Error("needs your passkey"), { code: USE_PASSKEY_CODE })
+    );
+    const pending = o.completeExtension({ statement: "s", vladSig: "v" });
+    let settled = false;
+    pending.then(
+      () => (settled = true),
+      () => (settled = true)
+    );
+    await new Promise((r) => setTimeout(r, 0));
+    expect(startPasskeySignIn).toHaveBeenCalledWith({
+      bsIdUrl: "https://id.betterid.net",
+      clientId: "bs-opensign",
+      redirectUri: bsIdRedirectUri(),
+      scope: "openid email"
+    });
+    expect(settled).toBe(false); // the page is leaving for bs-id
+  });
+
   it("passes server errors through to the button (which reports them)", async () => {
     const o = signInButtonOptions();
     run.mockRejectedValueOnce(new Error("This BetterID identity isn't linked"));
     await expect(o.completeExtension({ statement: "s", vladSig: "v" })).rejects.toThrow(/isn't linked/);
+    expect(startPasskeySignIn).not.toHaveBeenCalled();
   });
 });
