@@ -26,6 +26,61 @@ Entries before 2026-11-23 were written when the product was BetterSign; their
 product names now read BetterID. Old addresses and stored values in them are kept
 as they were.
 
+### 2026-11-25: email PDFs to Better DocSign
+
+- **Your address,** on the profile page ("Email PDFs to Better DocSign"),
+  off until you turn it on: `<token>@in.betterid.net`. Each PDF attached to
+  an email to it becomes a **draft document** (in Drafts; open it to add
+  signers and fields, then send it); to `<token>+template@in.betterid.net`, a
+  **template**. One PDF takes the email's subject as its name (without
+  `Fwd:`/`Re:`), several take their file names. You get an email with a link
+  to each (a system mail, not counted against your mail).
+- **Who can send:** your account's email, and any other addresses you add on
+  the card (up to 10). The message must also carry a valid **DKIM signature**
+  of a domain aligned with `From:` (the same domain, or one under or over it,
+  as DMARC aligns), covering the whole body, not rsa-sha1. The backend
+  checks it itself (`mailauth`), so nothing in the message or from
+  Cloudflare is trusted for it. Gmail, Outlook and most providers sign;
+  mail that isn't signed bounces, saying why.
+- **The address is the secret:** 20 random base32 characters. "Get a new
+  address" replaces it (mail to the old one bounces); the switch turns it off.
+- **Limits:** 10 PDFs an email; 25 MB a message (Cloudflare's limit), set by
+  `BS_INBOUND_MAIL_MAX_MB` on the backend and `MAX_MESSAGE_MB` on the Worker;
+  20 PDFs an address an hour (`BS_INBOUND_MAIL_PER_HOUR`). Each PDF is stored
+  as the web form stores an upload (an empty-password encryption removed,
+  form fields cleared) and counted against your organization's storage. A
+  PDF with a password is skipped and named in the email; an email with no
+  usable PDF bounces.
+- **Taken once:** per Message-ID and address (an email to both addresses
+  makes a draft and a template). The message is claimed before anything is
+  made; if making it fails, what was made is undone, so the Worker's retry
+  doesn't duplicate it, and a retry while it's still being made is told to
+  wait. A claim left by a crash is taken over after 10 minutes.
+- **The route:** `POST /inbound/mail`, HMAC-signed with
+  `BS_INBOUND_MAIL_SECRET`. Before reading a body it needs a fresh timestamp
+  and a well-formed signature, refuses an IP after 10 bad signatures a minute
+  (`BS_INBOUND_MAIL_BAD_PER_MIN`), and reads at most 4 bodies at once, so
+  large posts without the secret can't fill the machine's memory.
+- **How it gets here:** Cloudflare Email Routing, with the subdomain
+  `in.betterid.net` added → Email Worker `docsign-inbound`
+  (`deploy/cloudflare-inbound-mail/`), which posts the raw message to the
+  backend; a 4xx answer is bounced with its reason, a 401 or 5xx retried
+  twice. Routing rules match only exact addresses or a zone's catch-all, so
+  the Worker is betterid.net's catch-all: other unmatched mail it forwards to
+  `FORWARD_TO` (a Worker secret), as the catch-all did before. Setup:
+  DEPLOYMENT.md, "Emailing PDFs in".
+- **Deleting an account** deletes its addresses and their mail log.
+- **Code:** server `cloud/customRoute/inboundMail.js` (the route),
+  `cloud/parsefunction/mailInbox.js` (`mailinboxget`, `mailinboxrotate`,
+  `mailinboxupdate`, `deleteMailInboxes`), migration
+  `20261125120000-create_bs_mail_inbox` (`bs_MailInbox`, `bs_InboundMail`,
+  master key only), specs `spec/bsapi-integration/inboundmail.spec.js` and
+  `spec/bsapi/inboundWorker.spec.js` (the Worker), dependencies `mailparser`
+  and `mailauth`; frontend `src/components/MailInboxCard.jsx` (+ test),
+  `src/pages/UserProfile.test.jsx`, strings `mail-inbox.*`.
+- **Not yet:** Word files and images (the web form converts them), and
+  sending straight to signers named in the email.
+
 ### 2026-11-25: assign a PDF for signing in person
 
 - **"Assign to…"** on the Sign in person page, next to Download. Pick a
@@ -905,10 +960,10 @@ Server (`apps/OpenSignServer/`):
 | File | What we changed | Since |
 |---|---|---|
 | `index.js` | Public file uploads (`FILE_UPLOAD_PUBLIC`), `Content-Length` exposed cross-origin | 2026-10-07 |
-| `cloud/main.js` | Registers our cloud functions (`betteridlogin`, `bsidlogin`, `bsidentity*`, `updateuserbyadmin`, `bsphonesign*`, `inpersonassign*`) and the `bs_Identity` save hook; `beforeLogin` hook blocking password sign-in ("Sign in with BetterID") | 2026-10-06 → 11-25 |
-| `cloud/customRoute/customApp.js` | Mounts the desktop API router (`bsapi`) at `/api/v1` | 2026-11-14 |
+| `cloud/main.js` | Registers our cloud functions (`betteridlogin`, `bsidlogin`, `bsidentity*`, `updateuserbyadmin`, `bsphonesign*`, `inpersonassign*`, `mailinbox*`) and the `bs_Identity` save hook; `beforeLogin` hook blocking password sign-in ("Sign in with BetterID") | 2026-10-06 → 11-25 |
+| `cloud/customRoute/customApp.js` | Mounts the desktop API router (`bsapi`) at `/api/v1`, and `POST /inbound/mail` (`inboundMail.js`) | 2026-11-14 → 11-25 |
 | `cloud/parsefunction/pdf/PDF.js` | Append-only signing once a VLAD signed; signing commits as a compare-and-swap on `SignRevision`; the seal goes through `utils/seal.js`; email logo is `emailLogoUrl`; `signPdf` refuses `InPerson` documents | 2026-11-14 → 11-25 |
-| `Utils.js` | `appName` is Better DocSign (BetterSign, then BetterID, until 2026-11-23); adds `companyName` (BetterID, for copyright lines), `supportEmail` (default `contact@betterid.net`), `emailLogoUrl` (default `docsign.betterid.net`), `spamReportMsg`; `mailTemplate` logo | 2026-11-16 → 11-22 |
+| `Utils.js` | `saveFileUsage` takes the tenant to count against (emailed PDFs, 2026-11-25); `appName` is Better DocSign (BetterSign, then BetterID, until 2026-11-23); adds `companyName` (BetterID, for copyright lines), `supportEmail` (default `contact@betterid.net`), `emailLogoUrl` (default `docsign.betterid.net`), `spamReportMsg`; `mailTemplate` logo | 2026-11-16 → 11-22 |
 | `cloud/parsefunction/sendMailv3.js`, `sendMailWithAttachment.js`, `sendSystemMail.js` | Spam-report footer from `spamReportMsg` (to `supportEmail`, not `complaints@opensignlabs.com`) | 2026-11-16 |
 | `cloud/parsefunction/declinedocument.js`, `ForwardDoc.js` | Email logo is `emailLogoUrl` | 2026-11-16 |
 | `cloud/parsefunction/Newsletter.js` | Does nothing (upstream posts to `app.opensignlabs.com`) | 2026-11-16 |
@@ -919,10 +974,10 @@ Server (`apps/OpenSignServer/`):
 | `cloud/parsefunction/DocumentBeforesave.js` | `VladSignatures`, `SignRevision`, `Seal`, `CertificateSeal`, `PhoneSignLock*`, `InPerson` writable only with the master key (creates checked with `has()`) | 2026-11-14 → 11-25 |
 | `cloud/parsefunction/generateCertificatebydocId.js` | Certificate sealed through `utils/seal.js` | 2026-11-15 |
 | `cloud/parsefunction/SendMailOTPv1.js`, `AuthLoginAsMail.js`, `VerifyEmail.js` | Rewritten on `emailOtp.js` (recipient-only, hashed 6-digit codes) | 2026-11-13 |
-| `cloud/customRoute/deleteAccount/deleteUtils.js`, `deleteUser.js` | Share `emailOtp.js` constants; constant-time code comparison | 2026-11-13 |
+| `cloud/customRoute/deleteAccount/deleteUtils.js`, `deleteUser.js` | Share `emailOtp.js` constants; constant-time code comparison; `deleteUser` also deletes the user's emailed-PDF addresses (`deleteMailInboxes`, step 4b) | 2026-11-13 → 11-25 |
 | `cloud/parsefunction/sendDeleteUserMail.js`, `cloud/customRoute/deleteAccount/deleteUtils.js` | Copyright line names `companyName` (BetterID), not the app | 2026-11-23 |
-| `package.json`, `package-lock.json` | `@cantoo/pdf-lib`; test scripts `test:bsapi`, `test:bsapi:integration` | 2026-11-14 |
-| `.env.example` (repo root) | Seal settings (`SEAL_BACKEND`, `BS_SERVICE_IDENTITY_*`) | 2026-11-15 |
+| `package.json`, `package-lock.json` | `@cantoo/pdf-lib`, `mailparser`, `mailauth`; test scripts `test:bsapi`, `test:bsapi:integration` | 2026-11-14 → 11-25 |
+| `.env.example` (repo root) | Seal settings (`SEAL_BACKEND`, `BS_SERVICE_IDENTITY_*`); emailed-PDF settings (`BS_INBOUND_MAIL_*`) | 2026-11-15 → 11-25 |
 
 Frontend (`apps/OpenSign/`). Almost every file under `src/` was also restyled
 by the Material Design 3 migration (2026-10-09, 129 files, presentation only:
@@ -939,7 +994,7 @@ changes:
 | `src/pages/GuestLogin.jsx` | 6-digit code input; sends `docId`; shows server errors | 2026-11-13 |
 | `src/pages/UserList.jsx` | Reset-password action removed; Edit user action; BetterID identities section | 2026-11-13 → 11-15 |
 | `src/json/ReportJson.js` | `usersActions`: reset password removed, Edit added; Templates row menu: "Sign in person" (action `inperson`) | 2026-11-13 → 11-25 |
-| `src/pages/UserProfile.jsx` | Change Password button removed; "code sent" only on success | 2026-11-13 |
+| `src/pages/UserProfile.jsx` | Change Password button removed; "code sent" only on success; "Email PDFs to Better DocSign" card (`MailInboxCard`) under the profile | 2026-11-13 → 11-25 |
 | `src/pages/SignyourselfPdf.jsx`, `src/components/pdf/VerifyEmail.jsx` | 6-digit codes; "code sent" only on success; `SignyourselfPdf` passes the document id to Sign on phone | 2026-11-13 → 11-15 |
 | `src/pages/PdfRequestFiles.jsx` | Append-only signing for documents a VLAD signed; passes the document id to Sign on phone; an `InPerson` document shows `InPersonNotice` instead of the signing page | 2026-11-14 → 11-25 |
 | `src/components/pdf/WidgetsValueModal.jsx` | "Sign on phone" (PhoneSign), only for a Sign in with BetterID session on a saved document | 2026-10-06 → 11-15 |
@@ -954,7 +1009,7 @@ changes:
 | `src/reports/template/TemplatesReport.jsx` | `inperson` action opens `/in-person?templateId=` (also in the `APP_NAME` row below) | 2026-11-25 |
 | `src/components/Header.jsx`, `Footer.jsx`, `FullScreenButton.jsx`, `ThemeToggle.jsx`, `sidebar/Menu.jsx`, `Sidebar.jsx`, `SubMenu.jsx`, `src/layout/HomeLayout.jsx` | BetterID brand (ink top bar, wordmark, green pills, brand footer); Change Password menu item removed; footer links our source and AGPL-3.0 license, "Built on OpenSign", copyright `© 2026 BetterID` | 2026-11-06 → 11-23 |
 | `src/index.css`, `src/styles/dark-theme-improvements.css`, `tailwind.config.js`, `index.html`, `public/manifest.json` | Brand colours and DaisyUI themes, theme-color; manifest name Better DocSign (short name DocSign) | 2026-11-06 → 11-22 |
-| `public/locales/en/translation.json` | `signer-link-hint`, `bs-identities.*`, edit-user strings, `phone-sign.*`, `in-person.*`, `sidebar.Sign in person`, `btnLabel.Sign in person` (English only; other languages fall back); `home.*` | 2026-11-13 → 11-25 |
+| `public/locales/en/translation.json` | `signer-link-hint`, `bs-identities.*`, edit-user strings, `phone-sign.*`, `in-person.*`, `sidebar.Sign in person`, `btnLabel.Sign in person`, `mail-inbox.*` (English only; other languages fall back); `home.*` | 2026-11-13 → 11-25 |
 | `public/locales/{es,fr,it,de,hi,kr}/translation.json` | `signer-link-hint`, `home.*` (home page), appended at the end | 2026-11-15 |
 | `public/locales/*/translation.json` (all seven) | Values name the site Better DocSign and the identity BetterID (BetterSign until 2026-11-22) instead of OpenSign / OpenSign™, and `contact@betterid.net` (`contact@bettersign.ing` until 2026-11-22) instead of `*@opensignlabs.com`; keys unchanged | 2026-11-16 → 11-22 |
 | `package.json`, `package-lock.json` | MUI v7, `@cantoo/pdf-lib`, `patch-package` postinstall | 2026-10-07 → 11-14 |
@@ -981,6 +1036,9 @@ changes them, drop the change; if upstream adds new imports of them, remove thos
 - **Sealing:** `apps/OpenSignServer/utils/seal.js`, `docs/BsServiceIdentitySealing.md`.
 - **Sign in person, assigned:** `cloud/parsefunction/inPersonAssign.js`,
   `spec/bsapi-integration/inperson.spec.js`.
+- **Emailed PDFs:** `cloud/customRoute/inboundMail.js`,
+  `cloud/parsefunction/mailInbox.js`, `spec/bsapi-integration/inboundmail.spec.js`,
+  `spec/bsapi/inboundWorker.spec.js`, the Email Worker `deploy/cloudflare-inbound-mail/`.
 - **Sign-in and admin cloud functions:** `cloud/parsefunction/bsidlogin.js`,
   `betteridlogin.js`, `emailOtp.js`, `bsIdentityAdmin.js`, `updateUserByAdmin.js`.
 - **Frontend:** `src/theme/md3Theme.js`, `src/theme/ThemeModeProvider.jsx`,
@@ -988,7 +1046,7 @@ changes them, drop the change; if upstream adds new imports of them, remove thos
   `src/vendor/signInWithBetterIDButton/*` (vendored), `src/components/BrandHero.jsx`, `BsIdentities.jsx`,
   `EditUser.jsx` (both with `*.test.jsx`), `pdf/PhoneSign.jsx` (+ test), `src/utils/appendOnlyPdf.js` (+ test),
   `src/utils/phoneSignBase.js` (+ test), in-person signing `src/pages/InPersonFields.jsx` and
-  `src/utils/inPersonFields.js` (both + test), `src/components/pdf/InPersonNotice.jsx`,
+  `src/utils/inPersonFields.js` (both + test), `src/components/pdf/InPersonNotice.jsx`, `src/components/MailInboxCard.jsx` (+ test), `src/pages/UserProfile.test.jsx`,
   `src/assets/images/betterid-icon.png`, `src/constant/brand.js`,
   `public/betterid-logo.png`, `public/logo192.png`, `public/logo512.png`,
   `patches/parse+8.6.0.patch`,
@@ -1001,7 +1059,9 @@ changes them, drop the change; if upstream adds new imports of them, remove thos
   this order on startup; keep their timestamps after upstream's):
   `20261113000000-lock_defaultdata_otp`, `20261114120000-create_bettersign_api_classes`,
   `20261115120000-create_bs_apiconfig`, `20261115140000-move_bs_id_users_to_bs_identity`,
-  `20261115150000-bs_identity_active_flag`, `20261115180000-create_bs_phonesign_classes`.
+  `20261115150000-bs_identity_active_flag`, `20261115180000-create_bs_phonesign_classes`,
+  `20261116120000-create_bs_phonesignpdf_classes`, `20261117120000-create_bs_publishedcert`,
+  `20261125120000-create_bs_mail_inbox`.
   Shared helpers live next to them in `databases/migrationUtils.cjs` (not in
   `migrations/`, where `parse-dbtool` would run them).
 

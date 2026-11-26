@@ -86,13 +86,17 @@ export function replaceMailVaribles(subject, body, variables) {
   return result;
 }
 
-export const saveFileUsage = async (size, fileUrl, userId) => {
+// `tenantId`, when given, is the tenant to count it against (BetterID: a
+// member of an organization isn't its tenant's UserId); otherwise the tenant
+// the user owns.
+export const saveFileUsage = async (size, fileUrl, userId, tenantId) => {
   //checking server url and save file's size
   try {
     if (userId) {
       const userPtr = { __type: 'Pointer', className: '_User', objectId: userId };
       const tenantQuery = new Parse.Query('partners_Tenant');
-      tenantQuery.equalTo('UserId', userPtr);
+      if (tenantId) tenantQuery.equalTo('objectId', tenantId);
+      else tenantQuery.equalTo('UserId', userPtr);
       const tenant = await tenantQuery.first({ useMasterKey: true });
       if (tenant) {
         const tenantPtr = { __type: 'Pointer', className: 'partners_Tenant', objectId: tenant.id };

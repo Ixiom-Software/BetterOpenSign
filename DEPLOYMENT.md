@@ -292,6 +292,59 @@ fly secrets unset SEAL_FALLBACK --app docsign-bettersign-api
 To go back to the PFX: `fly secrets unset SEAL_BACKEND`. Documents already
 sealed by the service keep their `Seal` and `.sig`.
 
+### Emailing PDFs in
+Mail to `<token>@in.betterid.net` becomes drafts and templates
+(BetterIDUpdates.md, "email PDFs to Better DocSign"). Cloudflare Email Routing
+takes the mail, the Email Worker `docsign-inbound` posts it to the backend's
+`POST /inbound/mail`, signed with a secret they share. Set it up once:
+```bash
+# 1. The shared secret, on both sides (the first doesn't redeploy)
+SECRET="$(openssl rand -hex 32)"
+fly secrets set BS_INBOUND_MAIL_SECRET="$SECRET" --stage --app docsign-bettersign-api
+fly deploy --app docsign-bettersign-api        # the backend with /inbound/mail
+cd deploy/cloudflare-inbound-mail && npm install
+echo "$SECRET" | npx wrangler secret put BS_INBOUND_MAIL_SECRET
+# Where betterid.net's other mail goes: the catch-all's old forward address
+# (`npx wrangler email routing rules get betterid.net catch-all`)
+npx wrangler secret put FORWARD_TO
+npx wrangler deploy
+```
+2. Add the subdomain `in.betterid.net` to betterid.net's Email Routing
+   (dashboard: Email → Email Routing → Settings → Subdomains; or the API,
+   `POST /zones/<zone id>/email/routing/dns` with `{"name":"in.betterid.net"}`).
+   It adds that subdomain's MX and SPF records; betterid.net's own are not
+   touched.
+3. Make the Worker betterid.net's catch-all. Cloudflare rules match only
+   exact addresses or the catch-all, and every user's address is different,
+   so the Worker takes the catch-all and forwards everything that isn't for
+   `in.betterid.net` to `FORWARD_TO`, as the catch-all did. The exact-address
+   rules (`jjones@`, `f5bot@`) are unchanged.
+   ```bash
+   npx wrangler email routing rules update betterid.net catch-all \
+     --action-type worker --action-value docsign-inbound
+   ```
+   To undo: the same with `--action-type forward --action-value <FORWARD_TO>`.
+4. Test: on your profile page turn on "Email PDFs to Better DocSign", copy
+   the "For a draft" address, email it a PDF from your account's address, and
+   check Drafts and your inbox. The card's "Recent emails" shows each email
+   and, for one that bounced, why.
+
+The backend checks the sender's DKIM signature itself, looking the key up in
+DNS from the Fly machine; mail from a provider that doesn't sign bounces
+with "We couldn't verify that this email came from…", and the reason on the
+card lists the signatures it found.
+
+**Largest message:** 25 MB by default, Cloudflare's own limit. To change
+it, set the same number on both sides: `MAX_MESSAGE_MB` in
+`deploy/cloudflare-inbound-mail/wrangler.jsonc` (then `npx wrangler deploy`)
+and `fly secrets set BS_INBOUND_MAIL_MAX_MB=...`. A larger value than
+Cloudflare's limit has no effect.
+
+Other settings, the same way (defaults in brackets): `BS_INBOUND_MAIL_DOMAIN`
+[`in.betterid.net`], `BS_INBOUND_MAIL_PER_HOUR` [20 PDFs an address],
+`BS_INBOUND_MAIL_BAD_PER_MIN` [10 bad signatures an IP]. Logs: `npx wrangler
+tail docsign-inbound` and `fly logs --app docsign-bettersign-api | grep "inbound mail"`.
+
 ### Cut backend cost with scale-to-zero (optional)
 In `apps/OpenSignServer/fly.toml` set `auto_stop_machines = "suspend"` and
 `min_machines_running = 0`, then `fly deploy`. First request after idle incurs a cold start.
@@ -340,6 +393,7 @@ the `betterid.net` zone in the Cloudflare account (and `bettersign.ing` for the 
 | `apps/OpenSignServer/fly.toml` | Backend Fly config |
 | `deploy/fly-mongo/fly.toml` | MongoDB Fly config |
 | `deploy/cloudflare-frontend/` | Frontend `cf` deploy config |
+| `deploy/cloudflare-inbound-mail/` | Email Worker `docsign-inbound`: emailed PDFs to `POST /inbound/mail` |
 | `apps/OpenSign/.env` | Frontend build-time env (non-secret: API URL + APP_ID) |
 | `DEPLOYMENT.md` | This document |
 | `DEPLOYMENT-SECRETS.local.txt` | Secrets backup (gitignored — do **not** commit) |

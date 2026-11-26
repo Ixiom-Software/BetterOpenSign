@@ -2,6 +2,7 @@ import axios from 'axios';
 import { cloudServerUrl, generateId, serverAppId } from '../../../Utils.js';
 import { deleteContactsInBatch, deleteDataFiles, deleteInBatches } from './deleteFileUrl.js';
 import { MAX_ATTEMPTS, codesMatch } from './deleteUtils.js';
+import { deleteMailInboxes } from '../../parsefunction/mailInbox.js';
 const serverUrl = cloudServerUrl;
 const appId = serverAppId;
 
@@ -134,6 +135,15 @@ export async function deleteUser(userId, adminId, adminTenantId, isOrgAdmin, org
     } catch (err) {
       console.error('Failed to delete appToken entries:', err);
       const errorMessage = 'Failed to delete appToken entries:' + err?.message;
+      return { code: 400, message: errorMessage };
+    }
+
+    // STEP 4b (BetterID): addresses for emailed PDFs, and their mail log
+    try {
+      await deleteMailInboxes(userPointer);
+    } catch (err) {
+      console.error('Failed to delete bs_MailInbox entries:', err);
+      const errorMessage = 'Failed to delete bs_MailInbox entries:' + err?.message;
       return { code: 400, message: errorMessage };
     }
 

@@ -1757,5 +1757,25 @@
     "assign-list-error": "Couldn't load the people in your teams.",
     "assigned": "\"{{name}}\" is assigned to {{to}}. It's in their list to sign, on the site and in their BetterID app.",
     "assigned-notice": "This document is signed in person. Open it in the BetterID app on your phone: it's in your list of documents to sign there."
+    },
+  "mail-inbox": {
+    "title": "Email PDFs to Better DocSign",
+    "help": "Email a PDF to your address and it becomes a draft document: open it to add signers and fields, then send it. Email it to your template address and it becomes a template. Only mail from your account's email, or from the senders you add, is accepted, and it must be signed by their email provider (DKIM), as Gmail, Outlook and most others do.",
+    "enabled": "Accept emailed PDFs",
+    "off": "Turn this on to get an address you can email PDFs to.",
+    "processing": "being taken in",
+    "document": "For a draft",
+    "template": "For a template",
+    "copy": "Copy address",
+    "copied": "Address copied.",
+    "senders": "Accepted from",
+    "add-sender": "Another email address",
+    "add": "Add",
+    "recent": "Recent emails",
+    "made_one": "made {{count}} item",
+    "made_other": "made {{count}} items",
+    "rotate": "Get a new address",
+    "rotate-confirm": "Get a new address? Mail to the old one will bounce.",
+    "rotated": "Your addresses have changed."
   }
 }
