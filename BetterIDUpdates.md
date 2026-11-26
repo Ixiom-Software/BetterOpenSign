@@ -61,10 +61,14 @@ as they were.
   and a well-formed signature, refuses an IP after 10 bad signatures a minute
   (`BS_INBOUND_MAIL_BAD_PER_MIN`), and reads at most 4 bodies at once, so
   large posts without the secret can't fill the machine's memory.
-- **How it gets here:** Cloudflare Email Routing for `in.betterid.net` (catch-all)
-  → Email Worker `docsign-inbound` (`deploy/cloudflare-inbound-mail/`), which
-  posts the raw message to the backend; a 4xx answer is bounced with its
-  reason, a 401 or 5xx retried twice. Setup: DEPLOYMENT.md, "Emailing PDFs in".
+- **How it gets here:** Cloudflare Email Routing, with the subdomain
+  `in.betterid.net` added → Email Worker `docsign-inbound`
+  (`deploy/cloudflare-inbound-mail/`), which posts the raw message to the
+  backend; a 4xx answer is bounced with its reason, a 401 or 5xx retried
+  twice. Routing rules match only exact addresses or a zone's catch-all, so
+  the Worker is betterid.net's catch-all: other unmatched mail it forwards to
+  `FORWARD_TO` (a Worker secret), as the catch-all did before. Setup:
+  DEPLOYMENT.md, "Emailing PDFs in".
 - **Deleting an account** deletes its addresses and their mail log.
 - **Code:** server `cloud/customRoute/inboundMail.js` (the route),
   `cloud/parsefunction/mailInbox.js` (`mailinboxget`, `mailinboxrotate`,

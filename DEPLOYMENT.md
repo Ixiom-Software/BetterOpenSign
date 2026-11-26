@@ -304,14 +304,26 @@ fly secrets set BS_INBOUND_MAIL_SECRET="$SECRET" --stage --app docsign-bettersig
 fly deploy --app docsign-bettersign-api        # the backend with /inbound/mail
 cd deploy/cloudflare-inbound-mail && npm install
 echo "$SECRET" | npx wrangler secret put BS_INBOUND_MAIL_SECRET
+# Where betterid.net's other mail goes: the catch-all's old forward address
+# (`npx wrangler email routing rules get betterid.net catch-all`)
+npx wrangler secret put FORWARD_TO
 npx wrangler deploy
 ```
-2. Cloudflare dashboard → betterid.net → Email → Email Routing: enable it
-   for the **subdomain** `in.betterid.net` (Settings → Subdomains → add), and
-   let it add that subdomain's MX and SPF records. betterid.net's own MX
-   records are not touched.
-3. Routing rules → Catch-all address (for `in.betterid.net`) → Action
-   "Send to a Worker" → `docsign-inbound`. Leave it on.
+2. Add the subdomain `in.betterid.net` to betterid.net's Email Routing
+   (dashboard: Email → Email Routing → Settings → Subdomains; or the API,
+   `POST /zones/<zone id>/email/routing/dns` with `{"name":"in.betterid.net"}`).
+   It adds that subdomain's MX and SPF records; betterid.net's own are not
+   touched.
+3. Make the Worker betterid.net's catch-all. Cloudflare rules match only
+   exact addresses or the catch-all, and every user's address is different,
+   so the Worker takes the catch-all and forwards everything that isn't for
+   `in.betterid.net` to `FORWARD_TO`, as the catch-all did. The exact-address
+   rules (`jjones@`, `f5bot@`) are unchanged.
+   ```bash
+   npx wrangler email routing rules update betterid.net catch-all \
+     --action-type worker --action-value docsign-inbound
+   ```
+   To undo: the same with `--action-type forward --action-value <FORWARD_TO>`.
 4. Test: on your profile page turn on "Email PDFs to Better DocSign", copy
    the "For a draft" address, email it a PDF from your account's address, and
    check Drafts and your inbox. The card's "Recent emails" shows each email

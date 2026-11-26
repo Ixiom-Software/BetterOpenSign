@@ -11,13 +11,18 @@ const ENV = {
 };
 const RAW = 'From: a@example.com\r\nSubject: hi\r\n\r\nbody\r\n';
 
-function emailMessage(raw = RAW, rawSize = Buffer.byteLength(raw)) {
+function emailMessage(
+  raw = RAW,
+  rawSize = Buffer.byteLength(raw),
+  to = 'abcdefghijklmnopqrst@in.betterid.net'
+) {
   return {
     from: 'bounce@example.com',
-    to: 'abcdefghijklmnopqrst@in.betterid.net',
+    to,
     rawSize,
     raw: new Blob([raw]).stream(),
     setReject: jasmine.createSpy('setReject'),
+    forward: jasmine.createSpy('forward').and.resolveTo(),
   };
 }
 
@@ -99,6 +104,36 @@ describe('docsign-inbound Email Worker', () => {
     await worker.email(message, ENV);
     expect(calls).toEqual([]);
     expect(message.setReject).toHaveBeenCalledWith('This email is too large (at most 1 MB).');
+  });
+
+  it('forwards mail for other addresses, as the catch-all did', async () => {
+    const env = { ...ENV, FORWARD_TO: 'owner@example.net' };
+    for (const to of ['contact@betterid.net', 'x@sub.in.betterid.net', 'x@notin.betterid.net']) {
+      const message = emailMessage(RAW, 30 * 1024 * 1024, to);
+      await worker.email(message, env);
+      expect(message.forward).withContext(to).toHaveBeenCalledWith('owner@example.net');
+      expect(message.setReject).not.toHaveBeenCalled();
+    }
+    expect(calls).toEqual([]);
+  });
+
+  it('bounces other addresses when FORWARD_TO isn’t set', async () => {
+    const message = emailMessage(RAW, undefined, 'contact@betterid.net');
+    await worker.email(message, ENV);
+    expect(message.forward).not.toHaveBeenCalled();
+    expect(message.setReject).toHaveBeenCalledWith('There’s no such address.');
+    expect(calls).toEqual([]);
+  });
+
+  it('takes its domain in any case, and from INBOUND_DOMAIN', async () => {
+    const upper = emailMessage(RAW, undefined, 'ABCDEFGHIJKLMNOPQRST@IN.BetterID.net');
+    await worker.email(upper, { ...ENV, FORWARD_TO: 'owner@example.net' });
+    expect(upper.forward).not.toHaveBeenCalled();
+    expect(calls.length).toBe(1);
+
+    const other = emailMessage(RAW, undefined, 'tok@mail.example.org');
+    await worker.email(other, { ...ENV, INBOUND_DOMAIN: 'mail.example.org' });
+    expect(calls.length).toBe(2);
   });
 
   it('defaults to 25 MB', async () => {

@@ -1,11 +1,20 @@
-// The docsign-inbound Email Worker: Cloudflare Email Routing sends it every
-// message for in.betterid.net (a catch-all rule), and it posts each one, as
+// The docsign-inbound Email Worker: betterid.net's Email Routing catch-all.
+// Mail for in.betterid.net (users' addresses for emailing PDFs) it posts, as
 // it came, to the backend's POST /inbound/mail
 // (apps/OpenSignServer/cloud/customRoute/inboundMail.js), signed with the
 // shared BS_INBOUND_MAIL_SECRET. The backend decides everything else; when it
 // refuses a message, the Worker bounces it with the backend's reason.
 //
+// Any other address the zone's own rules don't take (the catch-all's job
+// before this Worker) it forwards to FORWARD_TO, as the catch-all did.
+//
 //   API_URL                  the backend origin (wrangler.jsonc vars)
+//   INBOUND_DOMAIN           the users' addresses' domain (wrangler.jsonc
+//                            vars); default in.betterid.net
+//   FORWARD_TO               where other mail goes: wrangler secret put
+//                            FORWARD_TO (a verified Email Routing destination;
+//                            a secret so the address isn't in this public
+//                            repo). Unset, other mail bounces.
 //   MAX_MESSAGE_MB           largest message, in MB (wrangler.jsonc vars;
 //                            default 25, Cloudflare's own limit); keep it the
 //                            same as the backend's BS_INBOUND_MAIL_MAX_MB
@@ -54,6 +63,13 @@ async function post(env, message, body) {
 
 export default {
   async email(message, env) {
+    const domain = (env.INBOUND_DOMAIN || "in.betterid.net").toLowerCase();
+    const to = String(message.to || "").toLowerCase();
+    if (!to.endsWith(`@${domain}`)) {
+      if (env.FORWARD_TO) return message.forward(env.FORWARD_TO);
+      message.setReject("There’s no such address.");
+      return;
+    }
     const maxMb = Number(env.MAX_MESSAGE_MB) || 25;
     if (message.rawSize > maxMb * 1024 * 1024) {
       message.setReject(`This email is too large (at most ${maxMb} MB).`);
