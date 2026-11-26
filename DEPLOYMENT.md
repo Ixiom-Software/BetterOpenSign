@@ -319,11 +319,18 @@ npx wrangler deploy
    so the Worker takes the catch-all and forwards everything that isn't for
    `in.betterid.net` to `FORWARD_TO`, as the catch-all did. The exact-address
    rules (`jjones@`, `f5bot@`) are unchanged.
+   Dashboard: Email → Email Routing → Routing rules → Catch-all address →
+   Edit → "Send to a Worker" → `docsign-inbound`. Wrangler can't do it
+   (`rules update ... catch-all` takes only `forward` or `drop`); the API can,
+   with a token that has Email Routing write (wrangler's OAuth token does,
+   in `~/.wrangler/config/default.toml` after `npx wrangler whoami`):
    ```bash
-   npx wrangler email routing rules update betterid.net catch-all \
-     --action-type worker --action-value docsign-inbound
+   curl -X PUT -H "Authorization: Bearer $TOKEN" -H "content-type: application/json" \
+     "https://api.cloudflare.com/client/v4/zones/<zone id>/email/routing/rules/catch_all" \
+     -d '{"enabled":true,"matchers":[{"type":"all"}],"actions":[{"type":"worker","value":["docsign-inbound"]}]}'
    ```
-   To undo: the same with `--action-type forward --action-value <FORWARD_TO>`.
+   To undo: `npx wrangler email routing rules update betterid.net catch-all
+   --action-type forward --action-value <FORWARD_TO>`.
 4. Test: on your profile page turn on "Email PDFs to Better DocSign", copy
    the "For a draft" address, email it a PDF from your account's address, and
    check Drafts and your inbox. The card's "Recent emails" shows each email

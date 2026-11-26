@@ -80,6 +80,10 @@ as they were.
   `src/pages/UserProfile.test.jsx`, strings `mail-inbox.*`.
 - **Not yet:** Word files and images (the web form converts them), and
   sending straight to signers named in the email.
+- **Deployed 2026-11-26:** `in.betterid.net` added to betterid.net's Email
+  Routing and the catch-all set to `docsign-inbound`. DEPLOYMENT.md's step
+  for the catch-all now uses the dashboard or the API, since wrangler only
+  sets a catch-all to `forward` or `drop`.
 
 ### 2026-11-25: assign a PDF for signing in person
 
