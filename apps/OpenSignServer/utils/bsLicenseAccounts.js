@@ -8,12 +8,13 @@
 //     TenantId -> partners_Tenant, OrganizationId -> contracts_Organizations,
 //     TeamId -> contracts_Teams, LastSeenAt }
 // The first sign-in with a seat in a new license team creates it. Members get
-// the role contracts_User; the tenant admin (or an org admin they appoint)
-// manages them as any other organization's users.
+// the role contracts_User, or contracts_OrgAdmin if the license service says
+// their VLAD is an admin of the team (so they can use the Team seats card);
+// the tenant admin manages them as any other organization's users.
 
 import crypto from 'node:crypto';
 import { ATTEMPT_LABEL } from './bsIdentity.js';
-import { accountDetails } from './bsLicense.js';
+import { accountDetails, productApi } from './bsLicense.js';
 
 const CLASS = 'bs_LicenseTeam';
 export const SEAT_LABEL = 'BetterID team seat';
@@ -52,6 +53,30 @@ export async function licenseTeamOfUser(userId) {
     .equalTo('OrganizationId', ptr('contracts_Organizations', orgId))
     .first({ useMasterKey: true });
   return row?.get('LicenseTeam') || null;
+}
+
+// With BS_LICENSE_REQUIRED, an account in a license team's organization on a
+// sign-in path that can't show a seat (the extension, the desktop API) is
+// refused. True if this account is.
+export async function seatGateRefuses(userId, config) {
+  if (!config.required) return false;
+  return !!(await licenseTeamOfUser(userId));
+}
+
+// Is `vlad` an admin of license team `team`? Asks the license service's
+// product API as that VLAD (its team list is the teams it administers). False
+// without LICENSE_PRODUCT_TOKEN, or if the service can't be asked.
+export async function isLicenseTeamAdmin(vlad, team, config) {
+  if (!config.productToken) return false;
+  try {
+    const res = await productApi({ ...config, timeoutMs: 5000 }).teams(vlad);
+    return Array.isArray(res.teams) && res.teams.some(t => t?.id === team);
+  } catch (e) {
+    console.log(
+      JSON.stringify({ event: 'bslicense_admin_check_failed', status: e.status, code: e.code })
+    );
+    return false;
+  }
 }
 
 // License team ids -> { name, organizationId } for the teams mapped here.
@@ -189,6 +214,10 @@ export async function provisionAccount(vlad, claims, license, config) {
     throw new Error('the placeholder email already has an account');
   }
 
+  const role = (await isLicenseTeamAdmin(vlad, license.team, config))
+    ? 'contracts_OrgAdmin'
+    : 'contracts_User';
+
   const made = [];
   try {
     const user = new Parse.User();
@@ -204,7 +233,7 @@ export async function provisionAccount(vlad, claims, license, config) {
     const ext = new Parse.Object('contracts_Users');
     ext.set('Name', details.name);
     ext.set('Email', email);
-    ext.set('UserRole', 'contracts_User');
+    ext.set('UserRole', role);
     ext.set('UserId', ptr('_User', user.id));
     ext.set('CreatedBy', ptr('_User', user.id));
     ext.set('TenantId', ptr('partners_Tenant', tenantId));
@@ -251,6 +280,7 @@ export async function provisionAccount(vlad, claims, license, config) {
         userId: user.id,
         team: license.team,
         org: orgId,
+        role,
         placeholderEmail: email === details.placeholder,
       })
     );

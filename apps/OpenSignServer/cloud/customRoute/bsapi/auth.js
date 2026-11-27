@@ -29,6 +29,8 @@ import { accountForVlad, recordSignInAttempt, VLAD_HEX_RE } from '../../../utils
 import { ensureReceiverVlad } from './receiverVlad.js';
 import { parseStatement, signedMessageFrom } from './statement.js';
 import { verifySignature } from './verifier.js';
+import { NO_SEAT_CODE, NO_SEAT_MESSAGE, licenseConfig } from '../../../utils/bsLicense.js';
+import { seatGateRefuses } from '../../../utils/bsLicenseAccounts.js';
 
 const CHALLENGE_TTL_MS = 60 * 1000;
 const STATEMENT_SKEW_S = 120;
@@ -99,6 +101,11 @@ function sweep(className) {
 // No active link, but nothing wrong with the link either: an admin can turn
 // one on from the Users page.
 const PENDING_REASONS = new Set(['not_linked', 'inactive']);
+
+// The license gate (BS_LICENSE_REQUIRED, utils/bsLicense.js): the desktop
+// app can't show a seat, so an account in a license team's organization is
+// refused here, at sign-in and on every call.
+const noSeat = res => apiError(res, 403, 'no_seat', NO_SEAT_MESSAGE, { code: NO_SEAT_CODE });
 
 const notLinked = res =>
   apiError(
@@ -246,6 +253,10 @@ export async function issueToken(req, res) {
     if (PENDING_REASONS.has(account.reason)) await recordSignInAttempt(vlad);
     return notLinked(res);
   }
+  if (await seatGateRefuses(account.user.id, licenseConfig())) {
+    log('token_no_seat', { vlad: vlad.slice(0, 16), userId: account.user.id });
+    return noSeat(res);
+  }
 
   const expiresAt = new Date(Date.now() + c.tokenTtlS * 1000);
 
@@ -295,6 +306,7 @@ export async function requireToken(req, res, next) {
     if (!account.user || account.user.id !== token.get('UserId').id) {
       return apiError(res, 401, 'invalid_token', 'This BetterID identity is no longer linked.');
     }
+    if (await seatGateRefuses(account.user.id, licenseConfig())) return noSeat(res);
     req.bs = { vlad, user: account.user, token };
     return next();
   } catch (e) {

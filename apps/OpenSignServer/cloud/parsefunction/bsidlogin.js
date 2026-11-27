@@ -32,7 +32,13 @@ import axios from 'axios';
 import { sessionViaLoginAs } from './betteridlogin.js';
 import { accountForVlad, recordSignInAttempt } from '../../utils/bsIdentity.js';
 import { recordBsIdSession } from '../../utils/bsWebSession.js';
-import { licenseConfig, licenseFromClaims, signInDecision } from '../../utils/bsLicense.js';
+import {
+  NO_SEAT_CODE,
+  NO_SEAT_MESSAGE,
+  licenseConfig,
+  licenseFromClaims,
+  signInDecision,
+} from '../../utils/bsLicense.js';
 import { licenseTeamOfUser, provisionAccount } from '../../utils/bsLicenseAccounts.js';
 
 const B64URL_RE = /^[A-Za-z0-9_-]+$/;
@@ -152,20 +158,19 @@ export default async function bsidlogin(request) {
   return signInVlad(claims.vlad.toLowerCase(), 'bsidlogin', claims);
 }
 
-// The message for a sign-in the license gate refuses.
-export const NO_SEAT_MESSAGE = "This account doesn't have a Better DocSign seat.";
-
 // A VLAD that has proved itself (bs-id's id_token, or the phone's signature
 // in bsextlogin.js) -> a session for its linked account. `event` prefixes the
 // log lines. `claims`: the verified id_token's, when the sign-in came through
-// bs-id; its license claims can create the account or gate it.
+// bs-id; its license claims can create the account or gate it. Without claims
+// (the extension) nothing is provisioned, and with BS_LICENSE_REQUIRED an
+// account in a license team's organization is refused: it can't show a seat.
 export async function signInVlad(vlad, event, claims) {
   // 3. VLAD -> account.
   let account = await accountForVlad(vlad);
   const config = licenseConfig();
   const license = claims ? licenseFromClaims(claims) : null;
   const accountTeam =
-    account.user && license && config.required ? await licenseTeamOfUser(account.user.id) : null;
+    account.user && config.required ? await licenseTeamOfUser(account.user.id) : null;
   const decision = signInDecision({ account, license, accountTeam, config });
   if (license && !license.ok && license.reason !== 'no_license') {
     console.log(
@@ -186,7 +191,7 @@ export async function signInVlad(vlad, event, claims) {
         detail: decision.detail,
       })
     );
-    throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, NO_SEAT_MESSAGE);
+    throw new Parse.Error(NO_SEAT_CODE, NO_SEAT_MESSAGE);
   }
   if (decision.action === 'provision') {
     try {

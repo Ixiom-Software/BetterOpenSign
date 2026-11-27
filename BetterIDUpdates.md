@@ -46,7 +46,11 @@ this site it checks their license and puts it in the id_token:
   the site's one tenant (the only tenant admin's, or `BS_LICENSE_TENANT_ID`),
   with an "All Users" team, made on the team's first sign-in and remembered in
   `bs_LicenseTeam` (master key only, unique `LicenseTeam`; two first
-  sign-ins at once end up with one). The account: role `contracts_User`, the
+  sign-ins at once end up with one). The account: role `contracts_User`
+  (`contracts_OrgAdmin` if the license service's product API, asked as that
+  VLAD, lists the team among those it administers, so a team's admin can use
+  Team seats; skipped without `LICENSE_PRODUCT_TOKEN` or if the service
+  can't be asked), the
   id_token's `email` and `name` if it has them, otherwise
   `<16 hex of SHA-256(VLAD)>@users.betterid.invalid` and "BetterID user". An
   email that already has an account is never reused: the new account gets the
@@ -58,15 +62,25 @@ this site it checks their license and puts it in the id_token:
 - **The license gate** (`BS_LICENSE_REQUIRED=true`): an account in a license
   team's organization signs in through bs-id only with a valid seat for that
   team; otherwise "This account doesn't have a Better DocSign seat." (code 119).
-  Accounts in other organizations, the extension sign-in (`bsextlogin`) and
-  the desktop API (`/api/v1`) aren't gated.
+  The extension sign-in (`bsextlogin`) and the desktop API (`/api/v1`) can't
+  carry a license, so they refuse those accounts outright: `bsextlogin` with
+  the same code and message, `/auth/token` and every call with a token (so
+  tokens from before the gate stop too) with `403 no_seat` (`code: 119`, the
+  same message). Neither path creates accounts. Accounts in other
+  organizations aren't gated anywhere.
+- **Removing a seat** at the license service is enforced only by the gate:
+  the member's next bs-id sign-in has no valid license (its status assertion
+  lasts at most a day). With `BS_LICENSE_REQUIRED` off, their account here
+  keeps working; turn it off on the Users page if needed.
 - **Team seats** on the Users page, under BetterID identities: for each team
   the admin's BetterID identity administers at the license service, seats used
   of paid (and how many to remove when more are held than paid for), the join
   code (copy, get a new one), the members (remove) and the people asking to
   join (approve), with "Add seats at store.betterid.net". The cloud functions
   `bslicenseteams`, `bslicenseteam`, `bslicenseremove`, `bslicenseapprove` and
-  `bslicenserotate` (`cloud/parsefunction/bsLicenseAdmin.js`) are for
+  `bslicenserotate` (`cloud/parsefunction/bsLicenseAdmin.js`; they pass on the
+  service's team view, seats with `account` added, `admins`, and the new
+  `join_code` and `join_link`) are for
   Admins and OrgAdmins (`adminScope`) and call the license service's product
   API (`LICENSE_URL`, bearer `LICENSE_PRODUCT_TOKEN`) with `X-Acting-Vlad` set
   to the VLAD this session signed in with, or the caller's only active link;
@@ -75,7 +89,8 @@ this site it checks their license and puts it in the id_token:
 - **Code:** `utils/bsLicense.js` (the rules and the product API client),
   `utils/bsLicenseAccounts.js` (organizations and accounts),
   `cloud/parsefunction/bsidlogin.js` (`signInVlad` takes the id_token's
-  claims), `bsLicenseAdmin.js`, `bsIdentityAdmin.js` (`adminScope` exported),
+  claims), `cloud/customRoute/bsapi/auth.js` (the gate on `/auth/token` and
+  `requireToken`), `bsLicenseAdmin.js`, `bsIdentityAdmin.js` (`adminScope` exported),
   migration `20261126120000-create_bs_licenseteam`; frontend
   `src/components/TeamSeats.jsx`, strings `team-seats.*` (English).
 - **Tests:** `spec/bsapi/bsLicense.spec.js`,
@@ -1213,20 +1228,16 @@ Known issues, found in review on 2026-11-15:
   use it; a check that `CreatedBy` is the caller and the signers are the
   caller's contacts would close it for everything else.
 
-- **Team seats: seat holders are plain users, and the tenant admin can't see
-  their organizations on the Users page.** Provisioned accounts get
-  `contracts_User`; `getuserlistbyorg` lists only the caller's own
-  organization, so the tenant admin (in their own organization) doesn't see
-  team members there, and a team's license admin can use the Team seats card
-  only once someone makes their account an Admin or OrgAdmin. Options: make
-  the VLADs the license service lists as a team's admins OrgAdmins of its
-  organization at sign-in (the product API can tell), and an organization
-  picker for the tenant admin.
-- **Team seats: removing a seat doesn't turn off the account here.** With
-  `BS_LICENSE_REQUIRED` on, the removed member's sign-ins stop once their
-  license has no status assertion (within a day, at bs-id); without it they
-  keep signing in. The extension sign-in and the desktop API are never gated:
-  gating them needs the license presented on those paths too.
+- **Team seats: the tenant admin can't see team organizations on the Users
+  page.** `getuserlistbyorg` lists only the caller's own organization, so the
+  tenant admin doesn't see team members there. An organization picker for the
+  tenant admin would fix it. Also, only a team admin's *first* sign-in (when
+  the account is made) checks whether they're a team admin; one added later
+  needs the tenant admin to make them OrgAdmin.
+- **Team seats: removing a seat doesn't turn off the account here** unless
+  `BS_LICENSE_REQUIRED` is on (see the change log). With the gate on, team
+  members can't use the extension sign-in or the desktop app until those
+  paths can present a license.
 
 Other follow-ups:
 

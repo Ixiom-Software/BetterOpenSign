@@ -5,10 +5,10 @@
 // Here, the caller must also be an Admin or OrgAdmin (adminScope).
 //
 //   bslicenseteams   {}               -> { configured, teams: [team + { organization }] }
-//   bslicenseteam    { id }           -> { team, seats: [seat + { account }] }
+//   bslicenseteam    { id }           -> { team, seats: [seat + { account }], admins }
 //   bslicenseremove  { id, vlad }     -> the service's answer
 //   bslicenseapprove { id, vlad }     -> the service's answer
-//   bslicenserotate  { id }           -> { join_code }
+//   bslicenserotate  { id }           -> { join_code, join_link }
 //
 // The acting VLAD is the one this session signed in with (bsWebSession), or
 // else the caller's only active BetterID link.
@@ -137,6 +137,7 @@ export async function getLicenseTeam(request) {
         ...s,
         account: byVlad[String(s.vlad || '').toLowerCase()] || null,
       })),
+      admins: Array.isArray(res.admins) ? res.admins : [],
     };
   });
 }
@@ -166,6 +167,6 @@ export async function rotateLicenseCode(request) {
   return withApi(request, async ({ api, vlad }) => {
     const res = await api.rotateCode(vlad, id);
     logged(request, 'bslicense_code_rotated', { team: id });
-    return { join_code: res.join_code };
+    return { join_code: res.join_code, join_link: res.join_link || null };
   });
 }

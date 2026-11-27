@@ -8,6 +8,7 @@ import {
   productApi,
   signInDecision,
 } from '../../utils/bsLicense.js';
+import { isLicenseTeamAdmin, seatGateRefuses } from '../../utils/bsLicenseAccounts.js';
 
 const NOW = 1_800_000_000;
 const VLAD = '8724' + 'ab'.repeat(38);
@@ -81,7 +82,7 @@ describe('signInDecision', () => {
     expect(decide(linked, none).action).toBe('sign_in');
     expect(decide(linked, ok).action).toBe('sign_in');
     expect(decide(linked, none, {}, 'team_abc123').action).toBe('sign_in');
-    expect(decide(linked, null, { required: true }, 'team_abc123').action).toBe('sign_in');
+    expect(decide(linked, null, {}, 'team_abc123').action).toBe('sign_in');
   });
 
   it('with BS_LICENSE_REQUIRED, needs a seat for the team of an account in a team organization', () => {
@@ -98,6 +99,20 @@ describe('signInDecision', () => {
     });
     // Accounts outside team organizations aren't gated.
     expect(decide(linked, none, on, null)).toEqual({ action: 'sign_in' });
+  });
+
+  it('with BS_LICENSE_REQUIRED, refuses a team account on a path that carries no license', () => {
+    // The extension sign-in (bsextlogin) and the desktop API pass no license.
+    expect(decide(linked, null, { required: true }, 'team_abc123')).toEqual({
+      action: 'refuse',
+      reason: 'no_seat',
+      detail: 'no_license_path',
+    });
+    expect(decide(linked, null, { required: true }, null)).toEqual({ action: 'sign_in' });
+    // Never provisioned there.
+    expect(
+      decide({ reason: 'not_linked' }, null, { provisioning: true, required: true }).action
+    ).toBe('refuse');
   });
 
   it('with BS_LICENSE_PROVISIONING, creates an account for an unlinked VLAD with a seat', () => {
@@ -271,5 +286,54 @@ describe('productApi', () => {
       productApi({ url: 'https://license.example', productToken: '' }).teams(ADMIN)
     ).toBeRejectedWith(jasmine.objectContaining({ code: 'not_configured' }));
     expect(calls.length).toBe(0);
+  });
+});
+
+describe('isLicenseTeamAdmin', () => {
+  const ADMIN = '8724' + 'ee'.repeat(38);
+  const config = { url: 'https://license.example', productToken: 'prod-token' };
+  let realFetch;
+  let calls;
+  let answer;
+
+  beforeEach(() => {
+    realFetch = globalThis.fetch;
+    calls = [];
+    answer = () => new Response(JSON.stringify({ teams: [{ id: 'team1' }] }), { status: 200 });
+    globalThis.fetch = async (url, init) => {
+      calls.push({ url, init });
+      return answer();
+    };
+  });
+
+  afterEach(() => {
+    globalThis.fetch = realFetch;
+  });
+
+  it("is true when the VLAD's team list has the team", async () => {
+    expect(await isLicenseTeamAdmin(ADMIN, 'team1', config)).toBe(true);
+    expect(await isLicenseTeamAdmin(ADMIN, 'team2', config)).toBe(false);
+    expect(calls[0].url).toBe('https://license.example/v1/product/teams');
+    expect(calls[0].init.headers['x-acting-vlad']).toBe(ADMIN);
+  });
+
+  it('is false without a product token, without asking', async () => {
+    expect(await isLicenseTeamAdmin(ADMIN, 'team1', { ...config, productToken: '' })).toBe(false);
+    expect(calls.length).toBe(0);
+  });
+
+  it("is false when the service refuses or can't be reached", async () => {
+    answer = () => new Response(JSON.stringify({ error: 'forbidden' }), { status: 403 });
+    expect(await isLicenseTeamAdmin(ADMIN, 'team1', config)).toBe(false);
+    answer = () => {
+      throw new TypeError('fetch failed');
+    };
+    expect(await isLicenseTeamAdmin(ADMIN, 'team1', config)).toBe(false);
+  });
+});
+
+describe('seatGateRefuses', () => {
+  it('refuses nobody while BS_LICENSE_REQUIRED is off, without looking', async () => {
+    expect(await seatGateRefuses('u1', { required: false })).toBe(false);
   });
 });

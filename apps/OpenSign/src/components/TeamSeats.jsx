@@ -29,7 +29,17 @@ const shortVlad = (vlad) =>
 const storeHost = STORE_URL.replace(/^https?:\/\//, "").replace(/\/$/, "");
 const GOOD_BILLING = ["active", "trialing", "past_due", "manual"];
 
-// claimed_at: seconds, milliseconds or an ISO string.
+// The license service's view of a team (bs-license /v1/product/teams):
+// id, name, product, product_name, plan, seats_paid, seats_used, pending,
+// billing_status, billing_ok, over, suspend_at, join_code, join_link,
+// require_approval, code_expires_at, created_at. A seat: vlad, state
+// (active | pending), requested_at, claimed_at, license_exp.
+const billingOk = (team) =>
+  typeof team.billing_ok === "boolean"
+    ? team.billing_ok
+    : !team.billing_status || GOOD_BILLING.includes(team.billing_status);
+
+// Times: seconds, milliseconds or an ISO string.
 function when(v) {
   if (v === undefined || v === null || v === "") return "-";
   const d = new Date(typeof v === "number" && v < 1e12 ? v * 1000 : v);
@@ -115,7 +125,13 @@ const TeamSeats = ({ showAlert }) => {
     act(`${team.id}:code`, "bslicenserotate", { id: team.id }, (res) => {
       setTeams((prev) =>
         prev.map((x) =>
-          x.id === team.id ? { ...x, join_code: res.join_code } : x
+          x.id === team.id
+            ? {
+                ...x,
+                join_code: res.join_code,
+                join_link: res.join_link || x.join_link
+              }
+            : x
         )
       );
       showAlert("success", t("team-seats.rotated"));
@@ -214,14 +230,18 @@ const TeamSeats = ({ showAlert }) => {
               {(team.over || overBy > 0) && (
                 <Typography sx={{ ...cellSx, color: "error.main", mt: 0.5 }}>
                   {t("team-seats.over", { count: overBy })}
+                  {team.suspend_at
+                    ? ` ${t("team-seats.suspend-at", { date: when(team.suspend_at) })}`
+                    : ""}
                 </Typography>
               )}
-              {team.billing_status &&
-                !GOOD_BILLING.includes(team.billing_status) && (
-                  <Typography sx={{ ...cellSx, color: "error.main", mt: 0.5 }}>
-                    {t("team-seats.billing", { status: team.billing_status })}
-                  </Typography>
-                )}
+              {!billingOk(team) && (
+                <Typography sx={{ ...cellSx, color: "error.main", mt: 0.5 }}>
+                  {t("team-seats.billing", {
+                    status: team.billing_status || "-"
+                  })}
+                </Typography>
+              )}
               <Typography sx={{ ...cellSx, mt: 0.5 }}>
                 {t("team-seats.add-seats")} {storeLink}.
               </Typography>
@@ -258,6 +278,29 @@ const TeamSeats = ({ showAlert }) => {
                       style={{ fontSize: 12 }}
                     ></i>
                   </IconButton>
+                )}
+                {team.join_link && (
+                  <IconButton
+                    size="small"
+                    title={t("team-seats.copy-link")}
+                    aria-label={t("team-seats.copy-link")}
+                    onClick={() => {
+                      copytoData(team.join_link);
+                      showAlert("success", t("copied"));
+                    }}
+                  >
+                    <i
+                      className="fa-light fa-link"
+                      style={{ fontSize: 12 }}
+                    ></i>
+                  </IconButton>
+                )}
+                {team.code_expires_at && (
+                  <Typography sx={{ ...cellSx, color: "text.secondary" }}>
+                    {t("team-seats.code-expires", {
+                      date: when(team.code_expires_at)
+                    })}
+                  </Typography>
                 )}
                 <Button
                   size="small"
@@ -336,7 +379,11 @@ const TeamSeats = ({ showAlert }) => {
                             )}
                           </TableCell>
                           <TableCell sx={cellSx}>
-                            {when(seat.claimed_at)}
+                            {when(
+                              seat.state === "pending"
+                                ? seat.requested_at
+                                : seat.claimed_at || seat.requested_at
+                            )}
                           </TableCell>
                           <TableCell sx={{ ...cellSx, whiteSpace: "nowrap" }}>
                             {seat.state === "pending" && (

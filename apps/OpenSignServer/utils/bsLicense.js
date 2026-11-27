@@ -19,8 +19,10 @@
 //   BS_LICENSE_PROVISIONING  "true": a VLAD with no account but a valid seat
 //                            gets one on its first sign-in. Default off.
 //   BS_LICENSE_REQUIRED      "true": an account in a team's organization
-//                            can't sign in without a valid seat for that team.
-//                            Default off.
+//                            can't sign in without a valid seat for that team
+//                            (so not at all on paths that carry no license:
+//                            the extension and the desktop API). This is what
+//                            makes removing a seat stop someone. Default off.
 //   BS_LICENSE_TENANT_ID     The tenant team organizations are created in.
 //                            Default: the tenant of the only tenant admin.
 //   LICENSE_URL              The license service. Default https://license.betterid.net
@@ -31,6 +33,10 @@ import crypto from 'node:crypto';
 export const LICENSE_PRODUCT = 'docsign';
 export const SEND_ENTITLEMENT = 'docsign.send';
 export const PLACEHOLDER_EMAIL_DOMAIN = 'users.betterid.invalid';
+// What the license gate says, on every sign-in path (Parse code 119,
+// OPERATION_FORBIDDEN; the desktop API's 403 no_seat carries it too).
+export const NO_SEAT_CODE = 119;
+export const NO_SEAT_MESSAGE = "This account doesn't have a Better DocSign seat.";
 
 const TEAM_ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
 const MAX_NAME = 100;
@@ -96,8 +102,9 @@ export function licenseFromClaims(claims, now = Math.floor(Date.now() / 1000)) {
 // What to do with a BetterID sign-in.
 //   account     accountForVlad's answer (utils/bsIdentity.js)
 //   license     licenseFromClaims' answer, or null on a sign-in path that
-//               carries no claims (the extension, bsextlogin): never gated,
-//               never provisioned
+//               can't carry a license (the extension, bsextlogin; the desktop
+//               API): never provisioned, and with BS_LICENSE_REQUIRED a team
+//               account is refused there, since it can't show its seat
 //   accountTeam the license team id the account's organization belongs to,
 //               or null if it isn't a team organization
 //   config      licenseConfig()
@@ -106,7 +113,8 @@ export function licenseFromClaims(claims, now = Math.floor(Date.now() / 1000)) {
 // existing refusal; 'no_seat' and 'other_team' are the license gate's.
 export function signInDecision({ account, license, accountTeam, config }) {
   if (account?.user) {
-    if (!config.required || !license || !accountTeam) return { action: 'sign_in' };
+    if (!config.required || !accountTeam) return { action: 'sign_in' };
+    if (!license) return { action: 'refuse', reason: 'no_seat', detail: 'no_license_path' };
     if (!license.ok) return { action: 'refuse', reason: 'no_seat', detail: license.reason };
     if (license.license.team !== accountTeam) return { action: 'refuse', reason: 'other_team' };
     return { action: 'sign_in' };
