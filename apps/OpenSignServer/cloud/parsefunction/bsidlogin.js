@@ -39,6 +39,13 @@ function config() {
 }
 
 const fail = msg => new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, msg);
+
+// The error code for a VLAD that proved itself but has no account here (never
+// linked, or only its recorded sign-in attempts). The home page sends it to
+// /no-account, which points to the store (apps/OpenSign/src/constant/bsid.js
+// BSID_NO_ACCOUNT_CODE is the same number).
+export const NO_ACCOUNT_CODE = 4404;
+
 const b64urlJson = s => JSON.parse(Buffer.from(s, 'base64url').toString('utf8'));
 
 // --- id_token verification (bs-id, ES256) -------------------------------------
@@ -152,6 +159,12 @@ export async function signInVlad(vlad, event) {
     console.log(JSON.stringify({ event: `${event}_denied`, vlad, reason: account.reason }));
     // The VLAD proved itself: list it on the Users page for an admin.
     if (account.reason !== 'ambiguous') await recordSignInAttempt(vlad);
+    if (account.reason === 'not_linked' || account.unassigned) {
+      throw new Parse.Error(
+        NO_ACCOUNT_CODE,
+        `You don't have a Better DocSign account yet (VLAD ${vlad.slice(0, 16)}…).`
+      );
+    }
     throw fail(
       `This BetterID identity isn't linked to an account. Ask an admin to add it (VLAD ${vlad.slice(0, 16)}…).`
     );

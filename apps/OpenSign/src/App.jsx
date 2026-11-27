@@ -36,6 +36,7 @@ const VerifyDocument = lazyWithRetry(() => import("./pages/VerifyDocument"));
 const EmailBuilder = lazyWithRetry(() => import("./pages/EmailBuilder"));
 const PublishedCerts = lazyWithRetry(() => import("./pages/PublishedCerts"));
 const InPersonFields = lazyWithRetry(() => import("./pages/InPersonFields"));
+const NoAccount = lazyWithRetry(() => import("./pages/NoAccount"));
 
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/legacy/build/pdf.worker.min.mjs`;
 const AppLoader = () => {
@@ -145,6 +146,8 @@ function App() {
               path="/certs/:id"
               element={<Lazy Page={PublishedCerts} />}
             />
+            {/* signed in with BetterID, but no account: points to the store */}
+            <Route path="/no-account" element={<Lazy Page={NoAccount} />} />
             <Route path="/emailbuilder" element={<EmailBuilder />} />
             <Route path="*" element={<PageNotFound />} />
           </Routes>

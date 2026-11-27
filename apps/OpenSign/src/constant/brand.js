@@ -7,6 +7,8 @@ export const COMPANY_NAME = "BetterID";
 export const SUPPORT_EMAIL = "contact@betterid.net";
 export const WEBSITE_URL = "https://www.betterid.net/";
 export const TERMS_URL = "https://www.betterid.net/sign/terms";
+// Where to buy an account (pages/NoAccount.jsx).
+export const STORE_URL = "https://store.betterid.net/";
 // Emails need an absolute URL. The file is public/betterid-logo.png.
 export const EMAIL_LOGO_URL =
   "https://docsign.betterid.net/betterid-logo.png";

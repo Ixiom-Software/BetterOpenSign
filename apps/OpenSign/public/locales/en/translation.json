@@ -1694,6 +1694,14 @@
     "sign-in-denied": "Sign-in was denied on your phone.",
     "use-passkey-instead": "Use passkey instead"
   },
+  "no-account": {
+    "title": "You don't have an account yet",
+    "text": "You signed in with BetterID, but there's no Better DocSign account for your identity.",
+    "store-text": "You can buy a Better DocSign account at the BetterID store.",
+    "store-button": "Buy an account at {{store}}",
+    "company": "Already have one through your company? Ask its admin to add your BetterID identity, then sign in again.",
+    "back": "Back to sign-in"
+  },
   "published-certs": {
     "title": "Certificates of a BetterID identity",
     "title-one": "Certificate",

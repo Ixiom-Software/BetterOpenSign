@@ -1630,5 +1630,13 @@
     "status-signing-in": "Accesso in corso…",
     "sign-in-denied": "L'accesso è stato rifiutato sul telefono.",
     "use-passkey-instead": "Usa invece la passkey"
+  },
+  "no-account": {
+    "title": "Non hai ancora un account",
+    "text": "Hai effettuato l'accesso con BetterID, ma non esiste un account Better DocSign per la tua identità.",
+    "store-text": "Puoi acquistare un account Better DocSign nello store di BetterID.",
+    "store-button": "Acquista un account su {{store}}",
+    "company": "Ne hai già uno tramite la tua azienda? Chiedi al suo amministratore di aggiungere la tua identità BetterID, poi accedi di nuovo.",
+    "back": "Torna all'accesso"
   }
 }
