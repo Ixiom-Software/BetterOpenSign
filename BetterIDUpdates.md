@@ -28,6 +28,12 @@ as they were.
 
 ### 2026-11-27: team seat licenses
 
+**Deployed 2026-11-27:** API release v25 (`cae53bb`; the
+`bs_LicenseTeam` migration ran on boot) and the frontend, with
+`LICENSE_PRODUCT_TOKEN` set, so the Users page shows Team seats.
+`BS_LICENSE_PROVISIONING` and `BS_LICENSE_REQUIRED` are still off. This
+deploy also brought #34's no-account page to the API.
+
 Teams buy seats of Better DocSign at the store; members join in the BetterID
 app with the team's join code (BetterSignApps
 `docs/Technical/license-seats-design.md`). When bs-id signs someone in for
