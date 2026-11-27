@@ -26,6 +26,78 @@ Entries before 2026-11-23 were written when the product was BetterSign; their
 product names now read BetterID. Old addresses and stored values in them are kept
 as they were.
 
+### 2026-11-27: team seat licenses
+
+Teams buy seats of Better DocSign at the store; members join in the BetterID
+app with the team's join code (BetterSignApps
+`docs/Technical/license-seats-design.md`). When bs-id signs someone in for
+this site it checks their license and puts it in the id_token:
+`license: { jti, team, team_name, product, plan, exp }`, `entitlements` and
+`team`. Nothing here changes until the flags below are turned on (DEPLOYMENT.md,
+"Team seat licenses").
+
+- **A seat counts** when `license.product` is `docsign`, `entitlements` has
+  `docsign.send`, `exp` hasn't passed and the top-level `team` (if present)
+  is the license's team (`licenseFromClaims`, `utils/bsLicense.js`). The
+  id_token's own signature is what's trusted; the license isn't re-checked.
+- **Accounts for seat holders** (`BS_LICENSE_PROVISIONING=true`): a VLAD with
+  no account (never linked, or only its recorded sign-in attempts) that signs
+  in with a seat gets one. Each license team gets its own organization under
+  the site's one tenant (the only tenant admin's, or `BS_LICENSE_TENANT_ID`),
+  with an "All Users" team, made on the team's first sign-in and remembered in
+  `bs_LicenseTeam` (master key only, unique `LicenseTeam`; two first
+  sign-ins at once end up with one). The account: role `contracts_User`
+  (`contracts_OrgAdmin` if the license service's product API, asked as that
+  VLAD, lists the team among those it administers, so a team's admin can use
+  Team seats; skipped without `LICENSE_PRODUCT_TOKEN` or if the service
+  can't be asked), the
+  id_token's `email` and `name` if it has them, otherwise
+  `<16 hex of SHA-256(VLAD)>@users.betterid.invalid` and "BetterID user". An
+  email that already has an account is never reused: the new account gets the
+  placeholder, so nobody signs in to someone else's account by email. The VLAD
+  is linked with an active `bs_Identity` row (its recorded sign-in attempt, if
+  any, labelled `BetterID team seat`). If anything fails, what was made is
+  removed and the sign-in gets the usual no-account page. A link an admin
+  turned off is left alone.
+- **The license gate** (`BS_LICENSE_REQUIRED=true`): an account in a license
+  team's organization signs in through bs-id only with a valid seat for that
+  team; otherwise "This account doesn't have a Better DocSign seat." (code 119).
+  The extension sign-in (`bsextlogin`) and the desktop API (`/api/v1`) can't
+  carry a license, so they refuse those accounts outright: `bsextlogin` with
+  the same code and message, `/auth/token` and every call with a token (so
+  tokens from before the gate stop too) with `403 no_seat` (`code: 119`, the
+  same message). Neither path creates accounts. Accounts in other
+  organizations aren't gated anywhere.
+- **Removing a seat** at the license service is enforced only by the gate:
+  the member's next bs-id sign-in has no valid license (its status assertion
+  lasts at most a day). With `BS_LICENSE_REQUIRED` off, their account here
+  keeps working; turn it off on the Users page if needed.
+- **Team seats** on the Users page, under BetterID identities: for each team
+  the admin's BetterID identity administers at the license service, seats used
+  of paid (and how many to remove when more are held than paid for), the join
+  code (copy, get a new one), the members (remove) and the people asking to
+  join (approve), with "Add seats at store.betterid.net". The cloud functions
+  `bslicenseteams`, `bslicenseteam`, `bslicenseremove`, `bslicenseapprove` and
+  `bslicenserotate` (`cloud/parsefunction/bsLicenseAdmin.js`; they pass on the
+  service's team view, seats with `account` added, `admins`, and the new
+  `join_code` and `join_link`) are for
+  Admins and OrgAdmins (`adminScope`) and call the license service's product
+  API (`LICENSE_URL`, bearer `LICENSE_PRODUCT_TOKEN`) with `X-Acting-Vlad` set
+  to the VLAD this session signed in with, or the caller's only active link;
+  the service decides which teams that VLAD may see and change. Without
+  `LICENSE_PRODUCT_TOKEN` the card isn't shown.
+- **Code:** `utils/bsLicense.js` (the rules and the product API client),
+  `utils/bsLicenseAccounts.js` (organizations and accounts),
+  `cloud/parsefunction/bsidlogin.js` (`signInVlad` takes the id_token's
+  claims), `cloud/customRoute/bsapi/auth.js` (the gate on `/auth/token` and
+  `requireToken`), `bsLicenseAdmin.js`, `bsIdentityAdmin.js` (`adminScope` exported),
+  migration `20261126120000-create_bs_licenseteam`; frontend
+  `src/components/TeamSeats.jsx`, strings `team-seats.*` (English).
+- **Tests:** `spec/bsapi/bsLicense.spec.js`,
+  `spec/bsapi-integration/bslicense.spec.js` (the mock bs-id,
+  `support/bsid.js`, takes extra id_token claims),
+  `src/components/TeamSeats.test.jsx`.
+
 ### 2026-11-26: no account? A page that points to the store
 
 - **Signed in with BetterID, but no account here:** the home page now goes to
@@ -991,7 +1063,7 @@ Server (`apps/OpenSignServer/`):
 | File | What we changed | Since |
 |---|---|---|
 | `index.js` | Public file uploads (`FILE_UPLOAD_PUBLIC`), `Content-Length` exposed cross-origin | 2026-10-07 |
-| `cloud/main.js` | Registers our cloud functions (`betteridlogin`, `bsidlogin`, `bsidentity*`, `updateuserbyadmin`, `bsphonesign*`, `inpersonassign*`, `mailinbox*`) and the `bs_Identity` save hook; `beforeLogin` hook blocking password sign-in ("Sign in with BetterID") | 2026-10-06 → 11-25 |
+| `cloud/main.js` | Registers our cloud functions (`betteridlogin`, `bsidlogin`, `bsidentity*`, `updateuserbyadmin`, `bsphonesign*`, `inpersonassign*`, `mailinbox*`, `bslicense*`) and the `bs_Identity` save hook; `beforeLogin` hook blocking password sign-in ("Sign in with BetterID") | 2026-10-06 → 11-27 |
 | `cloud/customRoute/customApp.js` | Mounts the desktop API router (`bsapi`) at `/api/v1`, and `POST /inbound/mail` (`inboundMail.js`) | 2026-11-14 → 11-25 |
 | `cloud/parsefunction/pdf/PDF.js` | Append-only signing once a VLAD signed; signing commits as a compare-and-swap on `SignRevision`; the seal goes through `utils/seal.js`; email logo is `emailLogoUrl`; `signPdf` refuses `InPerson` documents | 2026-11-14 → 11-25 |
 | `Utils.js` | `saveFileUsage` takes the tenant to count against (emailed PDFs, 2026-11-25); `appName` is Better DocSign (BetterSign, then BetterID, until 2026-11-23); adds `companyName` (BetterID, for copyright lines), `supportEmail` (default `contact@betterid.net`), `emailLogoUrl` (default `docsign.betterid.net`), `spamReportMsg`; `mailTemplate` logo | 2026-11-16 → 11-22 |
@@ -1008,7 +1080,7 @@ Server (`apps/OpenSignServer/`):
 | `cloud/customRoute/deleteAccount/deleteUtils.js`, `deleteUser.js` | Share `emailOtp.js` constants; constant-time code comparison; `deleteUser` also deletes the user's emailed-PDF addresses (`deleteMailInboxes`, step 4b) | 2026-11-13 → 11-25 |
 | `cloud/parsefunction/sendDeleteUserMail.js`, `cloud/customRoute/deleteAccount/deleteUtils.js` | Copyright line names `companyName` (BetterID), not the app | 2026-11-23 |
 | `package.json`, `package-lock.json` | `@cantoo/pdf-lib`, `mailparser`, `mailauth`; test scripts `test:bsapi`, `test:bsapi:integration` | 2026-11-14 → 11-25 |
-| `.env.example` (repo root) | Seal settings (`SEAL_BACKEND`, `BS_SERVICE_IDENTITY_*`); emailed-PDF settings (`BS_INBOUND_MAIL_*`) | 2026-11-15 → 11-25 |
+| `.env.example` (repo root) | Seal settings (`SEAL_BACKEND`, `BS_SERVICE_IDENTITY_*`); emailed-PDF settings (`BS_INBOUND_MAIL_*`); team seat licenses (`BS_LICENSE_*`, `LICENSE_*`) | 2026-11-15 → 11-27 |
 
 Frontend (`apps/OpenSign/`). Almost every file under `src/` was also restyled
 by the Material Design 3 migration (2026-10-09, 129 files, presentation only:
@@ -1023,7 +1095,7 @@ changes:
 | `src/i18n.js` | `supportedLngs` instead of the removed `whitelist`; `ko` → `kr`; sets `<html lang>` | 2026-11-15 |
 | `src/components/pdf/SelectLanguage.jsx` | Value read from i18n (no local copy); "Language" label and globe icon; "Español" spelling | 2026-11-15 |
 | `src/pages/GuestLogin.jsx` | 6-digit code input; sends `docId`; shows server errors | 2026-11-13 |
-| `src/pages/UserList.jsx` | Reset-password action removed; Edit user action; BetterID identities section | 2026-11-13 → 11-15 |
+| `src/pages/UserList.jsx` | Reset-password action removed; Edit user action; BetterID identities section; Team seats section | 2026-11-13 → 11-27 |
 | `src/json/ReportJson.js` | `usersActions`: reset password removed, Edit added; Templates row menu: "Sign in person" (action `inperson`) | 2026-11-13 → 11-25 |
 | `src/pages/UserProfile.jsx` | Change Password button removed; "code sent" only on success; "Email PDFs to Better DocSign" card (`MailInboxCard`) under the profile | 2026-11-13 → 11-25 |
 | `src/pages/SignyourselfPdf.jsx`, `src/components/pdf/VerifyEmail.jsx` | 6-digit codes; "code sent" only on success; `SignyourselfPdf` passes the document id to Sign on phone | 2026-11-13 → 11-15 |
@@ -1040,7 +1112,7 @@ changes:
 | `src/reports/template/TemplatesReport.jsx` | `inperson` action opens `/in-person?templateId=` (also in the `APP_NAME` row below) | 2026-11-25 |
 | `src/components/Header.jsx`, `Footer.jsx`, `FullScreenButton.jsx`, `ThemeToggle.jsx`, `sidebar/Menu.jsx`, `Sidebar.jsx`, `SubMenu.jsx`, `src/layout/HomeLayout.jsx` | BetterID brand (ink top bar, wordmark, green pills, brand footer); Change Password menu item removed; footer links our source and AGPL-3.0 license, "Built on OpenSign", copyright `© 2026 BetterID` | 2026-11-06 → 11-23 |
 | `src/index.css`, `src/styles/dark-theme-improvements.css`, `tailwind.config.js`, `index.html`, `public/manifest.json` | Brand colours and DaisyUI themes, theme-color; manifest name Better DocSign (short name DocSign) | 2026-11-06 → 11-22 |
-| `public/locales/en/translation.json` | `signer-link-hint`, `bs-identities.*`, edit-user strings, `phone-sign.*`, `in-person.*`, `sidebar.Sign in person`, `btnLabel.Sign in person`, `mail-inbox.*` (English only; other languages fall back); `home.*`; `no-account.*` | 2026-11-13 → 11-26 |
+| `public/locales/en/translation.json` | `signer-link-hint`, `bs-identities.*`, edit-user strings, `phone-sign.*`, `in-person.*`, `sidebar.Sign in person`, `btnLabel.Sign in person`, `mail-inbox.*`, `team-seats.*` (English only; other languages fall back); `home.*`; `no-account.*` | 2026-11-13 → 11-27 |
 | `public/locales/{es,fr,it,de,hi,kr}/translation.json` | `signer-link-hint`, `home.*` (home page), `no-account.*` (the no-account page), appended at the end | 2026-11-15 → 11-26 |
 | `public/locales/*/translation.json` (all seven) | Values name the site Better DocSign and the identity BetterID (BetterSign until 2026-11-22) instead of OpenSign / OpenSign™, and `contact@betterid.net` (`contact@bettersign.ing` until 2026-11-22) instead of `*@opensignlabs.com`; keys unchanged | 2026-11-16 → 11-22 |
 | `package.json`, `package-lock.json` | MUI v7, `@cantoo/pdf-lib`, `patch-package` postinstall | 2026-10-07 → 11-14 |
@@ -1155,6 +1227,17 @@ Known issues, found in review on 2026-11-15:
   master key, without checking they're the caller's. `inpersonassign` doesn't
   use it; a check that `CreatedBy` is the caller and the signers are the
   caller's contacts would close it for everything else.
+
+- **Team seats: the tenant admin can't see team organizations on the Users
+  page.** `getuserlistbyorg` lists only the caller's own organization, so the
+  tenant admin doesn't see team members there. An organization picker for the
+  tenant admin would fix it. Also, only a team admin's *first* sign-in (when
+  the account is made) checks whether they're a team admin; one added later
+  needs the tenant admin to make them OrgAdmin.
+- **Team seats: removing a seat doesn't turn off the account here** unless
+  `BS_LICENSE_REQUIRED` is on (see the change log). With the gate on, team
+  members can't use the extension sign-in or the desktop app until those
+  paths can present a license.
 
 Other follow-ups:
 

@@ -20,7 +20,8 @@ const forbidden = () => new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Unauth
 const userPtr = id => ({ __type: 'Pointer', className: '_User', objectId: id });
 
 // The caller's tenant, and its accounts: { userId: { userId, name, email } }.
-async function adminScope(request) {
+// Also used by the Team seats functions (bsLicenseAdmin.js).
+export async function adminScope(request) {
   if (!request.user) {
     throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'User is not authenticated.');
   }
@@ -44,7 +45,7 @@ async function adminScope(request) {
     if (!userId) continue;
     accounts[userId] = { userId, name: ext.get('Name') || '', email: ext.get('Email') || '' };
   }
-  return { accounts };
+  return { accounts, caller, tenantId };
 }
 
 const visible = (row, accounts) => {

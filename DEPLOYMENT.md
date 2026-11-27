@@ -352,6 +352,47 @@ Other settings, the same way (defaults in brackets): `BS_INBOUND_MAIL_DOMAIN`
 `BS_INBOUND_MAIL_BAD_PER_MIN` [10 bad signatures an IP]. Logs: `npx wrangler
 tail docsign-inbound` and `fly logs --app docsign-bettersign-api | grep "inbound mail"`.
 
+### Team seat licenses
+A team buys seats at the store; each member joins in the BetterID app with the
+team's join code and gets a license from the license service (bs-license,
+`https://license.betterid.net`; BetterSignApps
+`docs/Technical/license-seats-design.md`). bs-id checks it at sign-in and puts
+`license`, `entitlements` and `team` in the id_token (BetterIDUpdates.md,
+"team seat licenses"). Nothing changes here until the flags are turned on:
+
+| Secret | Default | |
+| --- | --- | --- |
+| `BS_LICENSE_PROVISIONING` | off | `true`: a sign-in with a valid seat (`product` docsign, `docsign.send`, not expired) and no account gets one, in the organization for its license team (made on the team's first sign-in) |
+| `BS_LICENSE_REQUIRED` | off | `true`: an account in a license team's organization can't sign in through bs-id without a valid seat for that team, and can't sign in through the extension or the desktop app at all (they can't show a seat; existing desktop tokens stop too). Other accounts aren't affected |
+| `BS_LICENSE_TENANT_ID` | the only tenant admin's tenant | where team organizations go; set it if there's ever more than one tenant admin |
+| `LICENSE_URL` | `https://license.betterid.net` | the license service |
+| `LICENSE_PRODUCT_TOKEN` | none | the service's product token, for the Users page's Team seats card. Unset: no card |
+
+Turn them on in this order, once bs-id's `bs-opensign` client has its
+`license` setting and sends the claims:
+```bash
+fly secrets set LICENSE_PRODUCT_TOKEN="..." --stage --app docsign-bettersign-api
+fly secrets set BS_LICENSE_PROVISIONING=true --app docsign-bettersign-api
+# New accounts show in the logs as {"event":"bslicense_account_created",...}
+fly logs --app docsign-bettersign-api | grep bslicense_
+# Only when every member of a team organization signs in with a seat:
+fly secrets set BS_LICENSE_REQUIRED=true --app docsign-bettersign-api
+```
+**Removing someone from a team doesn't turn off their account here by
+itself.** The gate is what enforces it: with `BS_LICENSE_REQUIRED=true`, a
+removed member's next bs-id sign-in has no valid seat (within a day, when
+their status assertion runs out) and is refused. With it off, the removed
+member keeps signing in until an admin turns their BetterID link off on the
+Users page.
+
+With `LICENSE_PRODUCT_TOKEN` set, a new account whose VLAD the license
+service lists as an admin of its team gets `contracts_OrgAdmin` in the team's
+organization, so it can use Team seats.
+
+Refusals log `bsidlogin_no_seat`, `bsextlogin_no_seat` and `bsapi_token_no_seat`; a provisioning failure (for example, no
+tenant could be chosen) logs `bsidlogin_provision_failed` and the sign-in gets
+the usual no-account page.
+
 ### Cut backend cost with scale-to-zero (optional)
 In `apps/OpenSignServer/fly.toml` set `auto_stop_machines = "suspend"` and
 `min_machines_running = 0`, then `fly deploy`. First request after idle incurs a cold start.

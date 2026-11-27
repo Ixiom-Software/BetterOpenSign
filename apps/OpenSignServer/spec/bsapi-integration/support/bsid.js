@@ -10,11 +10,11 @@ const CLIENT_ID = 'bs-opensign'; // bsidlogin's default BS_ID_CLIENT_ID
 const KID = 'test-key';
 
 const { privateKey, publicKey } = crypto.generateKeyPairSync('ec', { namedCurve: 'P-256' });
-const codes = new Map(); // code -> { vlad, nonce }
+const codes = new Map(); // code -> { vlad, nonce, extra }
 
 const b64url = obj => Buffer.from(JSON.stringify(obj)).toString('base64url');
 
-function idToken({ vlad, nonce }) {
+function idToken({ vlad, nonce, extra }) {
   const now = Math.floor(Date.now() / 1000);
   const head = b64url({ alg: 'ES256', kid: KID, typ: 'JWT' });
   const body = b64url({
@@ -25,6 +25,7 @@ function idToken({ vlad, nonce }) {
     nonce,
     iat: now,
     exp: now + 300,
+    ...extra,
   });
   const sig = crypto.sign('sha256', Buffer.from(`${head}.${body}`), {
     key: privateKey,
@@ -34,10 +35,11 @@ function idToken({ vlad, nonce }) {
 }
 
 // The params the browser would pass to bsidlogin after bs-id approved `vlad`.
-export function bsidLoginParams(vlad) {
+// `extra`: more id_token claims (a team seat's license, email, name).
+export function bsidLoginParams(vlad, extra = {}) {
   const code = crypto.randomBytes(16).toString('base64url');
   const nonce = crypto.randomBytes(16).toString('base64url');
-  codes.set(code, { vlad, nonce });
+  codes.set(code, { vlad, nonce, extra });
   return {
     code,
     nonce,

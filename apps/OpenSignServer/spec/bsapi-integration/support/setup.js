@@ -101,6 +101,7 @@ beforeAll(async () => {
     Parse
   );
   await require('../../../databases/migrations/20261125120000-create_bs_mail_inbox.cjs').up(Parse);
+  await require('../../../databases/migrations/20261126120000-create_bs_licenseteam.cjs').up(Parse);
 }, 180000);
 
 afterAll(async () => {

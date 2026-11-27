@@ -12,7 +12,12 @@
 //      betteridlogin), which Login.jsx finishes with thirdpartyLoginfn.
 //
 // Only linked VLADs can sign in, and only to an account that already exists:
-// the admin picks the account, not the user.
+// the admin picks the account, not the user. The exception is a team seat
+// license (utils/bsLicense.js): with BS_LICENSE_PROVISIONING=true, a VLAD
+// with no account whose id_token carries a valid Better DocSign seat gets an
+// account in its team's organization on its first sign-in; with
+// BS_LICENSE_REQUIRED=true, an account in a team's organization needs a
+// valid seat for that team to sign in here.
 //
 // Env:
 //   BS_ID_URL        bs-id origin (= the id_token `iss`). Default https://id.betterid.net
@@ -27,6 +32,14 @@ import axios from 'axios';
 import { sessionViaLoginAs } from './betteridlogin.js';
 import { accountForVlad, recordSignInAttempt } from '../../utils/bsIdentity.js';
 import { recordBsIdSession } from '../../utils/bsWebSession.js';
+import {
+  NO_SEAT_CODE,
+  NO_SEAT_MESSAGE,
+  licenseConfig,
+  licenseFromClaims,
+  signInDecision,
+} from '../../utils/bsLicense.js';
+import { licenseTeamOfUser, provisionAccount } from '../../utils/bsLicenseAccounts.js';
 
 const B64URL_RE = /^[A-Za-z0-9_-]+$/;
 const JWKS_TTL_MS = 10 * 60 * 1000;
@@ -142,15 +155,59 @@ export default async function bsidlogin(request) {
   }
 
   // 3 and 4: the account and its session.
-  return signInVlad(claims.vlad.toLowerCase(), 'bsidlogin');
+  return signInVlad(claims.vlad.toLowerCase(), 'bsidlogin', claims);
 }
 
 // A VLAD that has proved itself (bs-id's id_token, or the phone's signature
 // in bsextlogin.js) -> a session for its linked account. `event` prefixes the
-// log lines.
-export async function signInVlad(vlad, event) {
+// log lines. `claims`: the verified id_token's, when the sign-in came through
+// bs-id; its license claims can create the account or gate it. Without claims
+// (the extension) nothing is provisioned, and with BS_LICENSE_REQUIRED an
+// account in a license team's organization is refused: it can't show a seat.
+export async function signInVlad(vlad, event, claims) {
   // 3. VLAD -> account.
-  const account = await accountForVlad(vlad);
+  let account = await accountForVlad(vlad);
+  const config = licenseConfig();
+  const license = claims ? licenseFromClaims(claims) : null;
+  const accountTeam =
+    account.user && config.required ? await licenseTeamOfUser(account.user.id) : null;
+  const decision = signInDecision({ account, license, accountTeam, config });
+  if (license && !license.ok && license.reason !== 'no_license') {
+    console.log(
+      JSON.stringify({
+        event: `${event}_license_invalid`,
+        vlad: vlad.slice(0, 16),
+        reason: license.reason,
+      })
+    );
+  }
+  if (decision.action === 'refuse' && account.user) {
+    console.log(
+      JSON.stringify({
+        event: `${event}_no_seat`,
+        vlad: vlad.slice(0, 16),
+        userId: account.user.id,
+        reason: decision.reason,
+        detail: decision.detail,
+      })
+    );
+    throw new Parse.Error(NO_SEAT_CODE, NO_SEAT_MESSAGE);
+  }
+  if (decision.action === 'provision') {
+    try {
+      const { user, email } = await provisionAccount(vlad, claims, license.license, config);
+      account = { user, email, source: 'license' };
+    } catch (e) {
+      // Fall through to the usual "no account" refusal (and its recorded attempt).
+      console.error(
+        JSON.stringify({
+          event: `${event}_provision_failed`,
+          vlad: vlad.slice(0, 16),
+          error: e.message,
+        })
+      );
+    }
+  }
   if (account.reason === 'no_account') {
     console.log(JSON.stringify({ event: `${event}_no_account`, vlad }));
     throw fail('The account linked to this BetterID identity does not exist.');

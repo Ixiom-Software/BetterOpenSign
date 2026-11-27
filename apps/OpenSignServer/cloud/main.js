@@ -69,6 +69,13 @@ import {
   listBsIdentities,
   saveBsIdentity,
 } from './parsefunction/bsIdentityAdmin.js';
+import {
+  approveLicenseSeat,
+  getLicenseTeam,
+  listLicenseTeams,
+  removeLicenseSeat,
+  rotateLicenseCode,
+} from './parsefunction/bsLicenseAdmin.js';
 import addUser from './parsefunction/addUser.js';
 import filterDocs from './parsefunction/filterDocs.js';
 import sendDeleteUserMail from './parsefunction/sendDeleteUserMail.js';
@@ -168,6 +175,11 @@ Parse.Cloud.define('bsphonesignpdfcancel', bsphonesignpdfcancel);
 Parse.Cloud.define('bsidentitylist', listBsIdentities);
 Parse.Cloud.define('bsidentitysave', saveBsIdentity);
 Parse.Cloud.define('bsidentitydelete', deleteBsIdentity);
+Parse.Cloud.define('bslicenseteams', listLicenseTeams);
+Parse.Cloud.define('bslicenseteam', getLicenseTeam);
+Parse.Cloud.define('bslicenseremove', removeLicenseSeat);
+Parse.Cloud.define('bslicenseapprove', approveLicenseSeat);
+Parse.Cloud.define('bslicenserotate', rotateLicenseCode);
 Parse.Cloud.define('updateuserbyadmin', updateUserByAdmin);
 Parse.Cloud.define('adduser', addUser);
 Parse.Cloud.define('filterdocs', filterDocs);

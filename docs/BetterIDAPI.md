@@ -207,6 +207,18 @@ and recorded: a new row with `Active: false`, no account, `Label`
 row, or, for a VLAD whose link is turned off, on its newest row. Simultaneous
 first attempts are reduced to one row.
 
+The exception is a team seat license. With `BS_LICENSE_PROVISIONING=true`,
+a VLAD with no account that signs in through bs-id with a valid Better DocSign
+seat in its id_token gets an account in its license team's organization and
+an active link (labelled `BetterID team seat`, taking over its recorded
+attempt). With `BS_LICENSE_REQUIRED=true`, an account in a license team's
+organization signs in through bs-id only with a seat for that team. The
+desktop API carries no license yet, so with the gate on, such an account is
+refused at `/auth/token` and on every call with an existing token:
+`403 { "error": "no_seat", "message": "This account doesn't have a Better
+DocSign seat.", "code": 119 }`. `/auth/token` never creates accounts.
+(BetterIDUpdates.md, "team seat licenses".)
+
 Admins manage links on the Users page (BetterID identities), through the
 cloud functions `bsidentitylist`, `bsidentitysave` and `bsidentitydelete`
 (`cloud/parsefunction/bsIdentityAdmin.js`). An admin sees links to accounts in
