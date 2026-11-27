@@ -18,6 +18,9 @@ export const ATTEMPT_LABEL = 'Sign-in attempt';
 
 // Returns { user, email, source } or
 // { reason: 'not_linked' | 'inactive' | 'ambiguous' | 'no_account' }.
+// 'inactive' carries `unassigned: true` when none of the VLAD's rows names an
+// account (only recorded sign-in attempts): like 'not_linked', its owner has
+// no account here, rather than one an admin turned off.
 export async function accountForVlad(vladHex) {
   const vlad = String(vladHex || '').toLowerCase();
   if (!VLAD_HEX_RE.test(vlad)) return { reason: 'not_linked' };
@@ -29,7 +32,9 @@ export async function accountForVlad(vladHex) {
   const rows = await idQuery.find({ useMasterKey: true });
   if (!rows.length) return { reason: 'not_linked' };
   const active = rows.filter(r => r.get('Active') === true);
-  if (active.length === 0) return { reason: 'inactive' };
+  if (active.length === 0) {
+    return { reason: 'inactive', unassigned: rows.every(r => !r.get('UserId')) };
+  }
   if (active.length > 1) {
     console.error(`bsIdentity: ${active.length} active bs_Identity rows for one VLAD`);
     return { reason: 'ambiguous' };

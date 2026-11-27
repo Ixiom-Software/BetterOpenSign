@@ -22,6 +22,11 @@ import { getEnv } from "./Utils";
 
 export const BSID_CALLBACK_PATH = "/auth/bettersign/callback";
 
+// The cloud functions' error code for a BetterID identity with no account
+// here (bsidlogin.js NO_ACCOUNT_CODE). Login.jsx sends it to NO_ACCOUNT_PATH.
+export const BSID_NO_ACCOUNT_CODE = 4404;
+export const NO_ACCOUNT_PATH = "/no-account";
+
 function config() {
   const env = typeof getEnv === "function" ? getEnv() : null;
   const url =

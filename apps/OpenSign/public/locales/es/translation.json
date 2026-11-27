@@ -1630,5 +1630,13 @@
     "status-signing-in": "Iniciando sesión…",
     "sign-in-denied": "El inicio de sesión se rechazó en tu teléfono.",
     "use-passkey-instead": "Usar una llave de acceso"
+  },
+  "no-account": {
+    "title": "Todavía no tienes una cuenta",
+    "text": "Has iniciado sesión con BetterID, pero no hay ninguna cuenta de Better DocSign para tu identidad.",
+    "store-text": "Puedes comprar una cuenta de Better DocSign en la tienda de BetterID.",
+    "store-button": "Comprar una cuenta en {{store}}",
+    "company": "¿Ya tienes una a través de tu empresa? Pide a su administrador que añada tu identidad BetterID y vuelve a iniciar sesión.",
+    "back": "Volver a iniciar sesión"
   }
 }

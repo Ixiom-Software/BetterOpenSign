@@ -18,7 +18,11 @@ import Loader from "../primitives/Loader";
 import { useTranslation } from "react-i18next";
 import SelectLanguage from "../components/pdf/SelectLanguage";
 import { markBetterIDSession } from "../components/pdf/PhoneSign";
-import { BSID_CALLBACK_PATH } from "../constant/bsid";
+import {
+  BSID_CALLBACK_PATH,
+  BSID_NO_ACCOUNT_CODE,
+  NO_ACCOUNT_PATH
+} from "../constant/bsid";
 import BetterIDSignInButton from "../components/BetterIDSignInButton";
 import Box from "@mui/material/Box";
 import Paper from "@mui/material/Paper";
@@ -78,9 +82,14 @@ function Login() {
     }
   };
 
-  // The button shows the error itself.
+  // The button shows the error itself, except "no account": that one gets a
+  // page of its own, which points to the store.
   const onBetterIDError = (error) => {
     leaveCallbackPath();
+    if (error?.code === BSID_NO_ACCOUNT_CODE) {
+      navigate(NO_ACCOUNT_PATH, { replace: true });
+      return;
+    }
     console.error("BetterID sign-in failed", error);
   };
 

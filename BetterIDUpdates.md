@@ -26,6 +26,29 @@ Entries before 2026-11-23 were written when the product was BetterSign; their
 product names now read BetterID. Old addresses and stored values in them are kept
 as they were.
 
+### 2026-11-26: no account? A page that points to the store
+
+- **Signed in with BetterID, but no account here:** the home page now goes to
+  `/no-account` instead of showing an error under the button. The page says
+  there's no Better DocSign account for this identity, links to the store
+  (**store.betterid.net**, `STORE_URL` in `src/constant/brand.js`) to buy one,
+  tells people who already have one through their company to ask its admin,
+  and repeats the hint about the emailed signing link. Translated in all seven
+  languages (`no-account.*`).
+- **Which refusals count:** a VLAD with no `bs_Identity` row, or with only its
+  recorded sign-in attempts (no row names an account). `bsidlogin` and
+  `bsextlogin` refuse those with error code **4404** (`NO_ACCOUNT_CODE` in
+  `bsidlogin.js`; the frontend's `BSID_NO_ACCOUNT_CODE`) instead of 101. The
+  attempt is still recorded for an admin. A link an admin turned off, a link
+  whose account is gone, or a broken (ambiguous) link keep code 101 and their
+  message under the button: those people have an account.
+- `accountForVlad` (`utils/bsIdentity.js`) marks `inactive` results whose rows
+  name no account with `unassigned: true`. The desktop API (`/api/v1`) is
+  unchanged.
+- **Tests:** `spec/bsapi-integration/bsidlogin.spec.js` and `bsextlogin.spec.js`
+  (code 4404; a turned-off link still 101), `src/pages/Login.test.jsx` (both
+  sign-in paths go to `/no-account`), `src/pages/NoAccount.test.jsx`.
+
 ### 2026-11-25: email PDFs to Better DocSign
 
 - **Your address,** on the profile page ("Email PDFs to Better DocSign"),
@@ -642,6 +665,10 @@ device), so there is no password to steal.
   Users page (BetterID identities); an unknown VLAD that signs in shows up there,
   turned off. Or [docs/BetterIDAPI.md §3](docs/BetterIDAPI.md#3-linking-a-vlad-to-an-account). Unknown VLADs
   are refused and logged as `{"event":"bsidlogin_denied","vlad":…}`.
+- **No account:** a VLAD with no link, or only its recorded sign-in attempts, is
+  refused with error code 4404 (`NO_ACCOUNT_CODE`), and `Login.jsx` sends it to
+  `/no-account` (`src/pages/NoAccount.jsx`), which links to the store
+  (store.betterid.net) to buy an account.
 - **Configuration:** `BS_ID_URL` and `BS_ID_CLIENT_ID` on the server;
   `REACT_APP_BS_ID_URL` and `REACT_APP_BS_ID_CLIENT_ID` at frontend build time.
   Defaults are `https://id.betterid.net` and `bs-opensign`.
@@ -992,7 +1019,7 @@ changes:
 
 | File | What we changed | Since |
 |---|---|---|
-| `src/pages/Login.jsx` | BetterID-only sign-in card (bs-id) with the shared `<betterid-sign-in>` button; password form, code form and "additional info" modal removed; marks a Sign in with BetterID session (`bsSession`) for Sign on phone; hero text translated (`home.*`) | 2026-10-06 → 11-22 |
+| `src/pages/Login.jsx` | BetterID-only sign-in card (bs-id) with the shared `<betterid-sign-in>` button; password form, code form and "additional info" modal removed; marks a Sign in with BetterID session (`bsSession`) for Sign on phone; hero text translated (`home.*`); a "no account" refusal (code 4404) goes to `/no-account` | 2026-10-06 → 11-26 |
 | `src/i18n.js` | `supportedLngs` instead of the removed `whitelist`; `ko` → `kr`; sets `<html lang>` | 2026-11-15 |
 | `src/components/pdf/SelectLanguage.jsx` | Value read from i18n (no local copy); "Language" label and globe icon; "Español" spelling | 2026-11-15 |
 | `src/pages/GuestLogin.jsx` | 6-digit code input; sends `docId`; shows server errors | 2026-11-13 |
@@ -1008,13 +1035,13 @@ changes:
 | `src/components/pdf/AgreementContent.jsx` | Site link is www.betterid.net; support address is `SUPPORT_EMAIL` (contact@betterid.net) | 2026-11-16 → 11-22 |
 | `src/components/SocialMedia.jsx` | Only a GitHub link, to this repository | 2026-11-16 |
 | `src/constant/appinfo.js`, `src/assets/images/logo.png` | App-icon favicon; Better DocSign wordmark | 2026-11-16 → 11-23 |
-| `src/App.jsx` | `/auth/bettersign/callback` route; `/forgetpassword`, `/changepassword` removed; `/in-person` route | 2026-11-06 → 11-24 |
+| `src/App.jsx` | `/auth/bettersign/callback` route; `/forgetpassword`, `/changepassword` removed; `/in-person` route; `/no-account` route | 2026-11-06 → 11-26 |
 | `src/json/menuJson.js` | "Sign in person" sidebar item (`/in-person`) | 2026-11-24 |
 | `src/reports/template/TemplatesReport.jsx` | `inperson` action opens `/in-person?templateId=` (also in the `APP_NAME` row below) | 2026-11-25 |
 | `src/components/Header.jsx`, `Footer.jsx`, `FullScreenButton.jsx`, `ThemeToggle.jsx`, `sidebar/Menu.jsx`, `Sidebar.jsx`, `SubMenu.jsx`, `src/layout/HomeLayout.jsx` | BetterID brand (ink top bar, wordmark, green pills, brand footer); Change Password menu item removed; footer links our source and AGPL-3.0 license, "Built on OpenSign", copyright `© 2026 BetterID` | 2026-11-06 → 11-23 |
 | `src/index.css`, `src/styles/dark-theme-improvements.css`, `tailwind.config.js`, `index.html`, `public/manifest.json` | Brand colours and DaisyUI themes, theme-color; manifest name Better DocSign (short name DocSign) | 2026-11-06 → 11-22 |
-| `public/locales/en/translation.json` | `signer-link-hint`, `bs-identities.*`, edit-user strings, `phone-sign.*`, `in-person.*`, `sidebar.Sign in person`, `btnLabel.Sign in person`, `mail-inbox.*` (English only; other languages fall back); `home.*` | 2026-11-13 → 11-25 |
-| `public/locales/{es,fr,it,de,hi,kr}/translation.json` | `signer-link-hint`, `home.*` (home page), appended at the end | 2026-11-15 |
+| `public/locales/en/translation.json` | `signer-link-hint`, `bs-identities.*`, edit-user strings, `phone-sign.*`, `in-person.*`, `sidebar.Sign in person`, `btnLabel.Sign in person`, `mail-inbox.*` (English only; other languages fall back); `home.*`; `no-account.*` | 2026-11-13 → 11-26 |
+| `public/locales/{es,fr,it,de,hi,kr}/translation.json` | `signer-link-hint`, `home.*` (home page), `no-account.*` (the no-account page), appended at the end | 2026-11-15 → 11-26 |
 | `public/locales/*/translation.json` (all seven) | Values name the site Better DocSign and the identity BetterID (BetterSign until 2026-11-22) instead of OpenSign / OpenSign™, and `contact@betterid.net` (`contact@bettersign.ing` until 2026-11-22) instead of `*@opensignlabs.com`; keys unchanged | 2026-11-16 → 11-22 |
 | `package.json`, `package-lock.json` | MUI v7, `@cantoo/pdf-lib`, `patch-package` postinstall | 2026-10-07 → 11-14 |
 
@@ -1051,6 +1078,7 @@ changes them, drop the change; if upstream adds new imports of them, remove thos
   `EditUser.jsx` (both with `*.test.jsx`), `pdf/PhoneSign.jsx` (+ test), `src/utils/appendOnlyPdf.js` (+ test),
   `src/utils/phoneSignBase.js` (+ test), in-person signing `src/pages/InPersonFields.jsx` and
   `src/utils/inPersonFields.js` (both + test), `src/components/pdf/InPersonNotice.jsx`, `src/components/MailInboxCard.jsx` (+ test), `src/pages/UserProfile.test.jsx`,
+  the no-account page `src/pages/NoAccount.jsx` (+ test),
   `src/assets/images/betterid-icon.png`, `src/constant/brand.js`,
   `public/betterid-logo.png`, `public/logo192.png`, `public/logo512.png`,
   `patches/parse+8.6.0.patch`,

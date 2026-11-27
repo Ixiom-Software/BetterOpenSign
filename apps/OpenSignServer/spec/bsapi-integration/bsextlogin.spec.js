@@ -94,12 +94,12 @@ describe('Sign in with BetterID through the extension (bsextlogin)', () => {
     expect(r.json.error).toMatch(/could not be verified/);
   });
 
-  it('refuses an unlinked VLAD and records it for an admin', async () => {
+  it('refuses an unlinked VLAD as having no account and records it for an admin', async () => {
     const id = identity();
     verifier.register(id);
     const r = await run('bsextlogin', approve(id, await newChallenge()));
-    expect(r.json.code).toBe(101);
-    expect(r.json.error).toMatch(/isn't linked/);
+    expect(r.json.code).toBe(4404); // NO_ACCOUNT_CODE
+    expect(r.json.error).toMatch(/don't have a Better DocSign account/);
   });
 
   it("says so when the verifier can't check", async () => {

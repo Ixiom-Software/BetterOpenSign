@@ -11,8 +11,9 @@ vi.mock("parse", () => ({
 }));
 vi.mock("axios", () => ({ default: { get: vi.fn() } }));
 vi.mock("react-redux", () => ({ useDispatch: () => vi.fn() }));
+const navigate = vi.hoisted(() => vi.fn());
 vi.mock("react-router", () => ({
-  useNavigate: () => vi.fn(),
+  useNavigate: () => navigate,
   useLocation: () => ({ pathname: window.location.pathname, search: window.location.search, state: null })
 }));
 // English strings from the real locale file, so the tests read like the page.
@@ -134,6 +135,29 @@ describe("Sign in with BetterID button", () => {
     fireEvent.click(await button());
     await waitFor(async () => expect(await status()).toHaveTextContent(/isn't linked to an account/));
     expect(markBetterIDSession).not.toHaveBeenCalled();
+  });
+
+  it("no account: off to the no-account page, which points to the store", async () => {
+    kit.extensionSignIn.mockResolvedValue({
+      result: "failed",
+      error: Object.assign(new Error("You don't have a Better DocSign account yet."), { code: 4404 })
+    });
+    render(<Login />);
+    fireEvent.click(await button());
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith("/no-account", { replace: true }));
+    expect(markBetterIDSession).not.toHaveBeenCalled();
+  });
+
+  it("back from bs-id with no account: off to the no-account page", async () => {
+    window.history.replaceState(null, "", "/auth/bettersign/callback?code=c&state=s");
+    kit.hasPendingPasskeySignIn.mockReturnValue(true);
+    kit.takePasskeyCallback.mockReturnValue({ code: "c", codeVerifier: "v", nonce: "n", redirectUri: "x" });
+    run.mockImplementation(async () => {
+      throw Object.assign(new Error("You don't have a Better DocSign account yet."), { code: 4404 });
+    });
+    render(<Login />);
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith("/no-account", { replace: true }));
+    expect(window.location.pathname).toBe("/");
   });
 
   it("not linked: off to bs-id for the passkey, busy until the page leaves", async () => {

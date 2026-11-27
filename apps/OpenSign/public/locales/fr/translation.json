@@ -1631,5 +1631,13 @@
     "status-signing-in": "Connexion en cours…",
     "sign-in-denied": "La connexion a été refusée sur votre téléphone.",
     "use-passkey-instead": "Utiliser plutôt une clé d'accès"
+  },
+  "no-account": {
+    "title": "Vous n'avez pas encore de compte",
+    "text": "Vous vous êtes connecté avec BetterID, mais aucun compte Better DocSign n'existe pour votre identité.",
+    "store-text": "Vous pouvez acheter un compte Better DocSign sur la boutique BetterID.",
+    "store-button": "Acheter un compte sur {{store}}",
+    "company": "Vous en avez déjà un via votre entreprise ? Demandez à son administrateur d'ajouter votre identité BetterID, puis reconnectez-vous.",
+    "back": "Retour à la connexion"
   }
 }

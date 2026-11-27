@@ -28,18 +28,19 @@ describe('Sign in with BetterID (bsidlogin)', () => {
     expect(r.json.result.sessionToken).toMatch(/^r:/);
   });
 
-  it('refuses an unlinked VLAD and records it, once', async () => {
+  it('refuses an unlinked VLAD as having no account and records it, once', async () => {
     const id = identity();
     const first = await bsidlogin(id.vlad);
-    expect(first.json.code).toBe(101); // OBJECT_NOT_FOUND
-    expect(first.json.error).toMatch(/isn't linked/);
+    expect(first.json.code).toBe(4404); // NO_ACCOUNT_CODE: the home page sends it to /no-account
+    expect(first.json.error).toMatch(/don't have a Better DocSign account/);
     const rows = await rowsFor(id.vlad);
     expect(rows.length).toBe(1);
     expect(rows[0]).toEqual(
       jasmine.objectContaining({ Active: false, Label: 'Sign-in attempt', ACL: {} })
     );
     expect(rows[0].UserId).toBeUndefined();
-    expect((await bsidlogin(id.vlad)).json.code).toBe(101);
+    // Still no account the second time, with its attempt on record.
+    expect((await bsidlogin(id.vlad)).json.code).toBe(4404);
     expect((await rowsFor(id.vlad)).length).toBe(1);
   });
 
@@ -47,7 +48,9 @@ describe('Sign in with BetterID (bsidlogin)', () => {
     const id = identity();
     const userId = await mkUser(`off-${tag()}@example.com`);
     await link(id, userId, { Active: false });
-    expect((await bsidlogin(id.vlad)).json.code).toBe(101);
+    const r = await bsidlogin(id.vlad);
+    expect(r.json.code).toBe(101); // it has an account, turned off: not "no account"
+    expect(r.json.error).toMatch(/isn't linked/);
     const rows = await rowsFor(id.vlad);
     expect(rows.length).toBe(1);
     expect(rows[0].UserId.objectId).toBe(userId);

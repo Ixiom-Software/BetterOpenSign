@@ -1629,5 +1629,13 @@
     "status-signing-in": "Anmeldung läuft…",
     "sign-in-denied": "Die Anmeldung wurde auf Ihrem Smartphone abgelehnt.",
     "use-passkey-instead": "Stattdessen Passkey verwenden"
+  },
+  "no-account": {
+    "title": "Sie haben noch kein Konto",
+    "text": "Sie haben sich mit BetterID angemeldet, aber für Ihre Identität gibt es kein Better DocSign-Konto.",
+    "store-text": "Ein Better DocSign-Konto können Sie im BetterID-Store kaufen.",
+    "store-button": "Konto kaufen bei {{store}}",
+    "company": "Haben Sie schon eines über Ihr Unternehmen? Bitten Sie dessen Administrator, Ihre BetterID-Identität hinzuzufügen, und melden Sie sich dann erneut an.",
+    "back": "Zurück zur Anmeldung"
   }
 }
