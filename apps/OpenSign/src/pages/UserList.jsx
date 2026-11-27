@@ -8,6 +8,7 @@ import pad from "../assets/images/pad.svg";
 import Tooltip from "../primitives/Tooltip";
 import AddUser from "../components/AddUser";
 import BsIdentities from "../components/BsIdentities";
+import TeamSeats from "../components/TeamSeats";
 import EditUser from "../components/EditUser";
 import {
   useTranslation
@@ -698,6 +699,8 @@ const UserList = () => {
                   )}
                   <Divider sx={{ my: 1 }} />
                   <BsIdentities showAlert={showAlert} />
+                  <Divider sx={{ my: 1 }} />
+                  <TeamSeats showAlert={showAlert} />
                   <ModalUi
                     isOpen={isModal.form}
                     title={formHeader}
